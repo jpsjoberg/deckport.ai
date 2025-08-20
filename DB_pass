@@ -1,0 +1,5 @@
+DB_NAME=deckport
+DB_USER=deckport_app
+DB_PASS='N0D3-N0D3-N0D3#M0nk3y33'
+
+postgresql+psycopg://deckport_app:REPLACE_WITH_STRONG_PASSWORD@127.0.0.1:5432/deckport

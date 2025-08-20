@@ -1,0 +1,17 @@
+[Unit]
+Description=Deckport API Service (New Structure)
+Wants=network-online.target
+After=network-online.target
+
+[Service]
+User=jp
+Group=www-data
+WorkingDirectory=/home/jp/deckport.ai/services/api
+Environment="PATH=/home/jp/deckport.ai/services/api/venv/bin"
+Environment="PYTHONPATH=/home/jp/deckport.ai"
+ExecStart=/home/jp/deckport.ai/services/api/venv/bin/gunicorn --workers 2 --bind 127.0.0.1:8002 wsgi:app
+Restart=on-failure
+RestartSec=2
+
+[Install]
+WantedBy=multi-user.target

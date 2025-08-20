@@ -1,0 +1,27 @@
+<!doctype html>
+<html>
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>My Cards</title>
+    <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet" />
+  </head>
+  <body class="bg-gray-900 text-white">
+    <main class="container mx-auto p-6">
+      <h1 class="text-2xl font-semibold mb-4">My Cards</h1>
+      <form method="get" class="flex gap-2 mb-4">
+        <input name="q" value="{{ q }}" placeholder="Search" class="px-3 py-2 rounded bg-gray-800" />
+        <button class="px-3 py-2 bg-indigo-600 rounded">Filter</button>
+      </form>
+      <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+        {% for c in items %}
+        <div class="p-4 bg-gray-800 rounded">
+          <div class="text-sm text-gray-400">{{ c.product_sku }}</div>
+          <div class="font-semibold">{{ c.name }}</div>
+          <div class="text-xs text-gray-400">{{ c.rarity }}</div>
+        </div>
+        {% endfor %}
+      </div>
+    </main>
+  </body>
+  </html>

@@ -1,0 +1,28 @@
+<!doctype html>
+<html>
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Performance</title>
+    <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet" />
+  </head>
+  <body class="bg-gray-900 text-white">
+    <main class="container mx-auto p-6">
+      <h1 class="text-2xl font-semibold mb-4">Performance</h1>
+      <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+        <div class="bg-gray-800 p-4 rounded">
+          <div class="text-sm text-gray-400">W / L / D</div>
+          <div class="text-xl">{{ stats.win_loss_draw.win }} / {{ stats.win_loss_draw.loss }} / {{ stats.win_loss_draw.draw }}</div>
+        </div>
+        <div class="bg-gray-800 p-4 rounded">
+          <div class="text-sm text-gray-400">Avg Turn Time</div>
+          <div class="text-xl">{{ stats.avg_turn_time_ms }} ms</div>
+        </div>
+        <div class="bg-gray-800 p-4 rounded">
+          <div class="text-sm text-gray-400">Play Window Expired</div>
+          <div class="text-xl">{{ stats.play_window_expired_rate * 100 }}%</div>
+        </div>
+      </div>
+    </main>
+  </body>
+  </html>

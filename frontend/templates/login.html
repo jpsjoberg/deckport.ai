@@ -1,0 +1,26 @@
+<!doctype html>
+<html>
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Login</title>
+    <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet" />
+  </head>
+  <body class="bg-gray-900 text-white">
+    <main class="min-h-screen flex items-center justify-center p-6">
+      <form method="post" class="w-full max-w-sm bg-gray-800 p-6 rounded">
+        <h1 class="text-xl font-semibold mb-4">Login</h1>
+        {% if error %}
+        <div class="mb-3 text-red-400 text-sm">{{ error }}</div>
+        {% endif %}
+        <input type="hidden" name="csrf" value="{{ csrf }}" />
+        <label class="block text-sm mb-1">Email</label>
+        <input name="email" type="email" class="w-full mb-3 px-3 py-2 rounded bg-gray-900" required />
+        <label class="block text-sm mb-1">Password</label>
+        <input name="password" type="password" class="w-full mb-4 px-3 py-2 rounded bg-gray-900" required />
+        <button class="w-full py-2 bg-indigo-600 rounded">Login</button>
+        <div class="text-sm mt-3 text-gray-400">No account? <a href="/register" class="underline">Register</a></div>
+      </form>
+    </main>
+  </body>
+  </html>

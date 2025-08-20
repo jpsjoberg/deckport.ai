@@ -1,0 +1,25 @@
+<!doctype html>
+<html>
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>{{ card.name }}</title>
+    <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet" />
+  </head>
+  <body class="bg-gray-900 text-white">
+    <header class="p-4 flex justify-between container mx-auto">
+      <a href="/" class="font-bold">Deckport</a>
+      <nav class="space-x-4">
+        <a href="/cards">Cards</a>
+        <a href="/shop">Shop</a>
+        <a href="/login">Login</a>
+      </nav>
+    </header>
+    <main class="container mx-auto p-4">
+      <a href="/cards" class="text-sm text-gray-400">← Back</a>
+      <h1 class="text-3xl font-bold mb-2">{{ card.name }}</h1>
+      <div class="text-gray-300 mb-4">{{ card.product_sku }} • {{ card.category }} • {{ card.rarity }}</div>
+      <div class="p-4 bg-gray-800 rounded">Card details coming soon.</div>
+    </main>
+  </body>
+  </html>

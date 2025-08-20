@@ -1,0 +1,36 @@
+<!doctype html>
+<html>
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Shop</title>
+    <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet" />
+  </head>
+  <body class="bg-gray-900 text-white">
+    <header class="p-4 flex justify-between container mx-auto">
+      <a href="/" class="font-bold">Deckport</a>
+      <nav class="space-x-4">
+        <a href="/cards">Cards</a>
+        <a href="/shop">Shop</a>
+        <a href="/login">Login</a>
+      </nav>
+    </header>
+    <main class="container mx-auto p-4">
+      <h1 class="text-2xl font-semibold mb-4">Shop</h1>
+      <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+        {% for b in bundles %}
+        <div class="p-4 bg-gray-800 rounded">
+          <div class="font-semibold text-lg">{{ b.name }}</div>
+          <div class="text-gray-300 mb-3">{{ b.price }} {{ b.currency }}</div>
+          <form method="post" action="/shop/checkout" class="flex items-center gap-2">
+            <input type="hidden" name="csrf" value="{{ csrf }}" />
+            <input type="hidden" name="product_sku" value="{{ b.product_sku }}" />
+            <input type="number" min="1" value="1" name="quantity" class="px-2 py-1 w-20 rounded bg-gray-900" />
+            <button class="px-3 py-2 bg-indigo-600 rounded">Buy Now</button>
+          </form>
+        </div>
+        {% endfor %}
+      </div>
+    </main>
+  </body>
+  </html>

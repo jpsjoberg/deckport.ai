@@ -1,0 +1,38 @@
+<!doctype html>
+<html>
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Cards</title>
+    <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet" />
+  </head>
+  <body class="bg-gray-900 text-white">
+    <header class="p-4 flex justify-between container mx-auto">
+      <a href="/" class="font-bold">Deckport</a>
+      <nav class="space-x-4">
+        <a href="/cards">Cards</a>
+        <a href="/shop">Shop</a>
+        <a href="/login">Login</a>
+      </nav>
+    </header>
+    <main class="container mx-auto p-4">
+      <h1 class="text-2xl font-semibold mb-4">Card Catalog</h1>
+      <form method="get" class="grid grid-cols-1 md:grid-cols-4 gap-2 mb-4">
+        <input name="q" value="{{ q }}" placeholder="Search" class="px-2 py-1 rounded bg-gray-800" />
+        <input name="color" value="{{ color }}" placeholder="Color" class="px-2 py-1 rounded bg-gray-800" />
+        <input name="rarity" value="{{ rarity }}" placeholder="Rarity" class="px-2 py-1 rounded bg-gray-800" />
+        <input name="category" value="{{ category }}" placeholder="Category" class="px-2 py-1 rounded bg-gray-800" />
+        <button class="px-3 py-1 bg-indigo-600 rounded md:col-span-4">Filter</button>
+      </form>
+      <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+        {% for c in items %}
+        <a href="/cards/{{ c.product_sku }}" class="block p-4 bg-gray-800 rounded hover:bg-gray-700">
+          <div class="text-sm text-gray-400">{{ c.product_sku }}</div>
+          <div class="font-semibold">{{ c.name }}</div>
+          <div class="text-xs text-gray-400">{{ c.category }} • {{ c.rarity }}</div>
+        </a>
+        {% endfor %}
+      </div>
+    </main>
+  </body>
+  </html>

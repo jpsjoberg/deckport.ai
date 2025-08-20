@@ -1,0 +1,173 @@
+[gd_scene load_steps=2 format=3 uid="uid://d8n6yqs0sihxwj"]
+
+[ext_resource type="Script" path="res://scripts/HeroSelection.gd" id="1_2hdqh"]
+
+[node name="HeroSelection" type="Control"]
+layout_mode = 3
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+script = ExtResource("1_2hdqh")
+
+[node name="Background" type="ColorRect" parent="."]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+color = Color(0.05, 0.1, 0.2, 1)
+
+[node name="BackgroundVideo" type="VideoStreamPlayer" parent="."]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+expand = true
+
+[node name="InstructionPanel" type="Panel" parent="."]
+layout_mode = 1
+anchors_preset = 8
+anchor_left = 0.5
+anchor_top = 0.5
+anchor_right = 0.5
+anchor_bottom = 0.5
+offset_left = -300.0
+offset_top = -200.0
+offset_right = 300.0
+offset_bottom = -100.0
+
+[node name="InstructionLabel" type="Label" parent="InstructionPanel"]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+offset_left = 20.0
+offset_top = 20.0
+offset_right = -20.0
+offset_bottom = -20.0
+text = "Scan your starting Hero
+(Creature or Structure card)"
+horizontal_alignment = 1
+vertical_alignment = 1
+
+[node name="ScanAnimation" type="ColorRect" parent="InstructionPanel"]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+color = Color(0, 1, 1, 0.3)
+
+[node name="HeroPreviewPanel" type="Panel" parent="."]
+layout_mode = 1
+anchors_preset = 6
+anchor_left = 1.0
+anchor_top = 0.5
+anchor_right = 1.0
+anchor_bottom = 0.5
+offset_left = -400.0
+offset_top = -250.0
+offset_right = -20.0
+offset_bottom = 250.0
+visible = false
+
+[node name="HeroCardDisplay" type="TextureRect" parent="HeroPreviewPanel"]
+layout_mode = 1
+anchors_preset = 1
+anchor_left = 1.0
+anchor_right = 1.0
+offset_left = -200.0
+offset_top = 20.0
+offset_right = -20.0
+offset_bottom = 220.0
+expand_mode = 1
+stretch_mode = 5
+
+[node name="HeroName" type="Label" parent="HeroPreviewPanel"]
+layout_mode = 1
+anchors_preset = 2
+anchor_top = 1.0
+anchor_bottom = 1.0
+offset_left = 20.0
+offset_top = -180.0
+offset_right = 360.0
+offset_bottom = -150.0
+text = "Hero Name"
+
+[node name="StatsPanel" type="VBoxContainer" parent="HeroPreviewPanel"]
+layout_mode = 1
+anchors_preset = 2
+anchor_top = 1.0
+anchor_bottom = 1.0
+offset_left = 20.0
+offset_top = -140.0
+offset_right = 180.0
+offset_bottom = -40.0
+
+[node name="StatsLabel" type="Label" parent="HeroPreviewPanel/StatsPanel"]
+layout_mode = 2
+text = "Attack: 3
+Defense: 2
+Health: 5
+Energy: 2"
+
+[node name="ConfirmButton" type="Button" parent="HeroPreviewPanel"]
+layout_mode = 1
+anchors_preset = 3
+anchor_left = 1.0
+anchor_top = 1.0
+anchor_right = 1.0
+anchor_bottom = 1.0
+offset_left = -100.0
+offset_top = -40.0
+offset_right = -20.0
+offset_bottom = -10.0
+text = "Confirm"
+disabled = true
+
+[node name="CancelButton" type="Button" parent="HeroPreviewPanel"]
+layout_mode = 1
+anchors_preset = 2
+anchor_top = 1.0
+anchor_bottom = 1.0
+offset_left = 20.0
+offset_top = -40.0
+offset_right = 100.0
+offset_bottom = -10.0
+text = "Cancel"
+
+[node name="OpponentStatusPanel" type="Panel" parent="."]
+layout_mode = 1
+anchors_preset = 7
+anchor_left = 0.5
+anchor_top = 1.0
+anchor_right = 0.5
+anchor_bottom = 1.0
+offset_left = -200.0
+offset_top = -80.0
+offset_right = 200.0
+offset_bottom = -20.0
+visible = false
+
+[node name="StatusLabel" type="Label" parent="OpponentStatusPanel"]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+offset_left = 10.0
+offset_top = 10.0
+offset_right = -10.0
+offset_bottom = -10.0
+text = "Waiting for opponent..."
+horizontal_alignment = 1
+vertical_alignment = 1
+
+[node name="HeroRevealVideo" type="VideoStreamPlayer" parent="."]
+layout_mode = 1
+anchors_preset = 8
+anchor_left = 0.5
+anchor_top = 0.5
+anchor_right = 0.5
+anchor_bottom = 0.5
+offset_left = -300.0
+offset_top = -200.0
+offset_right = 300.0
+offset_bottom = 200.0
