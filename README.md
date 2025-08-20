@@ -54,35 +54,58 @@ deckport.ai/
 
 ### **Prerequisites**
 - Python 3.9+
+- PostgreSQL 13+
 - Godot Engine 4.4+
-- SQLite (for development)
 - Git
 
 ### **1. Clone Repository**
 ```bash
-git clone <your-github-repo-url>
+git clone https://github.com/jpsjoberg/deckport.ai.git
 cd deckport.ai
 ```
 
-### **2. Set Up API Service**
+### **2. Set Up PostgreSQL Database**
+```bash
+# Install PostgreSQL (Ubuntu/Debian)
+sudo apt update && sudo apt install postgresql postgresql-contrib
+
+# Create database and user
+sudo -u postgres psql
+CREATE DATABASE deckport;
+CREATE USER deckport_app WITH PASSWORD 'your_strong_password';
+GRANT ALL PRIVILEGES ON DATABASE deckport TO deckport_app;
+\q
+```
+
+### **3. Set Up API Service**
 ```bash
 cd api
 python -m venv venv
 source venv/bin/activate  # On Windows: venv\Scripts\activate
 pip install -r requirements.txt
+
+# Set up environment variables
+echo "DATABASE_URL=postgresql+psycopg://deckport_app:your_password@127.0.0.1:5432/deckport" > .env
+echo "SECRET_KEY=$(python -c 'import secrets; print(secrets.token_hex(32))')" >> .env
+
 python app.py
 ```
 
-### **3. Set Up Frontend**
+### **4. Set Up Frontend**
 ```bash
 cd ../frontend
 python -m venv venv
 source venv/bin/activate  # On Windows: venv\Scripts\activate
 pip install -r requirements.txt
+
+# Set up environment variables
+echo "API_URL=http://127.0.0.1:8002" > .env
+echo "SECRET_KEY=$(python -c 'import secrets; print(secrets.token_hex(32))')" >> .env
+
 python app.py
 ```
 
-### **4. Set Up Console**
+### **5. Set Up Console**
 ```bash
 cd ../console
 godot project.godot  # Open in Godot Editor
@@ -184,7 +207,7 @@ curl http://127.0.0.1:8001/
 ### **Environment Variables**
 ```bash
 # API Service
-DATABASE_URL=sqlite:///deckport.db
+DATABASE_URL=postgresql+psycopg://deckport_app:your_password@127.0.0.1:5432/deckport
 SECRET_KEY=your-secret-key-here
 DEBUG=True
 
