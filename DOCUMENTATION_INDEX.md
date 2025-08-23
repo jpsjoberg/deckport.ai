@@ -24,10 +24,10 @@ All documentation has been updated to reflect the new modular structure and curr
    - ✅ Implementation status for each endpoint
    - ✅ Request/response examples
 
-4. **[services/frontend/FRONTEND_PLAN.md](services/frontend/FRONTEND_PLAN.md)** - Frontend service
-   - ✅ Updated route documentation
-   - ✅ Current working features
-   - ✅ Phase 2+ planning
+4. **Frontend Documentation** - Consolidated into main README.md
+   - ✅ Admin panel features documented
+   - ✅ Card generation system documented
+   - ✅ Authentication flows documented
 
 5. **[SYSTEMD_SERVICES.md](SYSTEMD_SERVICES.md)** - Service management
    - ✅ Updated for new structure
@@ -51,11 +51,12 @@ All documentation has been updated to reflect the new modular structure and curr
    - ✅ Testing and deployment guides
 
 ### Console Documentation
-9. **[console/README.md](console/README.md)** - Console project (standalone repo ready)
+9. **[console/CONSOLE_DOCUMENTATION.md](console/CONSOLE_DOCUMENTATION.md)** - Console project documentation
    - ✅ Complete Godot project documentation
    - ✅ Kiosk mode setup and configuration
    - ✅ Authentication system integration
    - ✅ Development and deployment workflows
+   - ✅ QR login flow and video background system
 
 ## 🎯 Phase Status Overview
 

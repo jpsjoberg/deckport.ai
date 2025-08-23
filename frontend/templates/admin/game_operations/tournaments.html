@@ -1,0 +1,471 @@
+{% extends "admin/base.html" %}
+
+{% block title %}Tournament Management - Deckport Admin{% endblock %}
+{% block page_title %}Tournament Management{% endblock %}
+{% block page_subtitle %}Organize and monitor competitive tournaments{% endblock %}
+
+{% block content %}
+<!-- Tournament Statistics -->
+<div class="grid grid-cols-1 lg:grid-cols-4 gap-6 mb-8">
+    <div class="bg-gray-800 rounded-lg p-6 border border-gray-700">
+        <div class="flex items-center justify-between">
+            <div>
+                <h3 class="text-lg font-semibold text-white">Active Tournaments</h3>
+                <span class="text-3xl font-bold text-green-400">{{ active_tournaments | length }}</span>
+            </div>
+            <i class="fas fa-trophy text-2xl text-green-400"></i>
+        </div>
+    </div>
+    
+    <div class="bg-gray-800 rounded-lg p-6 border border-gray-700">
+        <div class="flex items-center justify-between">
+            <div>
+                <h3 class="text-lg font-semibold text-white">Scheduled</h3>
+                <span class="text-3xl font-bold text-blue-400">{{ scheduled_tournaments | length }}</span>
+            </div>
+            <i class="fas fa-calendar text-2xl text-blue-400"></i>
+        </div>
+    </div>
+    
+    <div class="bg-gray-800 rounded-lg p-6 border border-gray-700">
+        <div class="flex items-center justify-between">
+            <div>
+                <h3 class="text-lg font-semibold text-white">Total Participants</h3>
+                <span class="text-3xl font-bold text-purple-400">{{ (active_tournaments + scheduled_tournaments) | map(attribute='participants') | list | sum if (active_tournaments + scheduled_tournaments) else 0 }}</span>
+            </div>
+            <i class="fas fa-users text-2xl text-purple-400"></i>
+        </div>
+    </div>
+    
+    <div class="bg-gray-800 rounded-lg p-6 border border-gray-700">
+        <div class="flex items-center justify-between">
+            <div>
+                <h3 class="text-lg font-semibold text-white">Total Prize Pool</h3>
+                <span class="text-3xl font-bold text-yellow-400">${{ (active_tournaments + scheduled_tournaments) | map(attribute='prize_pool') | list | sum if (active_tournaments + scheduled_tournaments) else 0 }}</span>
+            </div>
+            <i class="fas fa-dollar-sign text-2xl text-yellow-400"></i>
+        </div>
+    </div>
+</div>
+
+<!-- Tournament Management Tabs -->
+<div class="bg-gray-800 rounded-lg border border-gray-700">
+    <div class="border-b border-gray-700">
+        <nav class="flex space-x-8 px-6" aria-label="Tabs">
+            <button class="tab-button active py-4 px-1 border-b-2 border-blue-500 font-medium text-sm text-blue-400" data-tab="active">
+                <i class="fas fa-play mr-2"></i>
+                Active Tournaments
+            </button>
+            <button class="tab-button py-4 px-1 border-b-2 border-transparent font-medium text-sm text-gray-400 hover:text-gray-300" data-tab="scheduled">
+                <i class="fas fa-calendar mr-2"></i>
+                Scheduled Tournaments
+            </button>
+            <button class="tab-button py-4 px-1 border-b-2 border-transparent font-medium text-sm text-gray-400 hover:text-gray-300" data-tab="create">
+                <i class="fas fa-plus mr-2"></i>
+                Create Tournament
+            </button>
+            <button class="tab-button py-4 px-1 border-b-2 border-transparent font-medium text-sm text-gray-400 hover:text-gray-300" data-tab="history">
+                <i class="fas fa-history mr-2"></i>
+                Tournament History
+            </button>
+        </nav>
+    </div>
+    
+    <!-- Active Tournaments Tab -->
+    <div id="active-tab" class="tab-content p-6">
+        <div class="flex items-center justify-between mb-6">
+            <h3 class="text-lg font-semibold text-white">Active Tournaments</h3>
+            <button class="px-4 py-2 bg-blue-600 hover:bg-blue-700 rounded text-sm" onclick="refreshTournaments()">
+                <i class="fas fa-sync-alt mr-2"></i>
+                Refresh
+            </button>
+        </div>
+        
+        {% if active_tournaments %}
+        <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+            {% for tournament in active_tournaments %}
+            <div class="bg-gray-700 rounded-lg p-6 border border-gray-600">
+                <div class="flex items-center justify-between mb-4">
+                    <div>
+                        <h4 class="text-lg font-semibold text-white">{{ tournament.name }}</h4>
+                        <div class="flex items-center space-x-4 text-sm text-gray-400">
+                            <span><i class="fas fa-users mr-1"></i>{{ tournament.participants }} players</span>
+                            <span><i class="fas fa-dollar-sign mr-1"></i>${{ tournament.prize_pool }}</span>
+                        </div>
+                    </div>
+                    <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-900 text-green-300">
+                        <div class="w-1.5 h-1.5 bg-green-400 rounded-full mr-1.5"></div>
+                        Active
+                    </span>
+                </div>
+                
+                <div class="mb-4">
+                    <div class="flex justify-between text-sm mb-2">
+                        <span class="text-gray-400">Progress</span>
+                        <span class="text-white">Round {{ tournament.current_round }}/{{ tournament.total_rounds }}</span>
+                    </div>
+                    <div class="w-full bg-gray-600 rounded-full h-2">
+                        <div class="bg-blue-600 h-2 rounded-full" style="width: {{ (tournament.current_round / tournament.total_rounds * 100) | round(1) }}%"></div>
+                    </div>
+                </div>
+                
+                <div class="grid grid-cols-2 gap-4 mb-4 text-sm">
+                    <div>
+                        <span class="text-gray-400">Active Matches:</span>
+                        <span class="text-white ml-2">{{ tournament.matches_active }}</span>
+                    </div>
+                    <div>
+                        <span class="text-gray-400">Completed:</span>
+                        <span class="text-white ml-2">{{ tournament.matches_completed }}</span>
+                    </div>
+                    <div>
+                        <span class="text-gray-400">Started:</span>
+                        <span class="text-white ml-2">{{ tournament.started_at | replace('T', ' ') | replace('Z', '') | truncate(16) }}</span>
+                    </div>
+                    <div>
+                        <span class="text-gray-400">Est. End:</span>
+                        <span class="text-white ml-2">{{ tournament.estimated_end | replace('T', ' ') | replace('Z', '') | truncate(16) }}</span>
+                    </div>
+                </div>
+                
+                <div class="flex space-x-2">
+                    <button class="flex-1 px-3 py-2 bg-blue-600 hover:bg-blue-700 rounded text-sm" onclick="viewTournament('{{ tournament.id }}')">
+                        <i class="fas fa-eye mr-1"></i>
+                        View Details
+                    </button>
+                    <button class="flex-1 px-3 py-2 bg-green-600 hover:bg-green-700 rounded text-sm" onclick="manageTournament('{{ tournament.id }}')">
+                        <i class="fas fa-cog mr-1"></i>
+                        Manage
+                    </button>
+                    <button class="px-3 py-2 bg-red-600 hover:bg-red-700 rounded text-sm" onclick="cancelTournament('{{ tournament.id }}')">
+                        <i class="fas fa-times"></i>
+                    </button>
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+        {% else %}
+        <div class="text-center text-gray-400 py-12">
+            <i class="fas fa-trophy text-6xl mb-4"></i>
+            <h3 class="text-xl font-semibold text-white mb-2">No Active Tournaments</h3>
+            <p>No tournaments are currently running.</p>
+            <button class="mt-4 px-4 py-2 bg-blue-600 hover:bg-blue-700 rounded font-medium text-sm" onclick="switchTab('create')">
+                <i class="fas fa-plus mr-2"></i>
+                Create Tournament
+            </button>
+        </div>
+        {% endif %}
+    </div>
+    
+    <!-- Scheduled Tournaments Tab -->
+    <div id="scheduled-tab" class="tab-content p-6 hidden">
+        <div class="flex items-center justify-between mb-6">
+            <h3 class="text-lg font-semibold text-white">Scheduled Tournaments</h3>
+            <button class="px-4 py-2 bg-green-600 hover:bg-green-700 rounded text-sm" onclick="switchTab('create')">
+                <i class="fas fa-plus mr-2"></i>
+                Schedule New Tournament
+            </button>
+        </div>
+        
+        {% if scheduled_tournaments %}
+        <div class="space-y-4">
+            {% for tournament in scheduled_tournaments %}
+            <div class="bg-gray-700 rounded-lg p-6 border border-gray-600">
+                <div class="flex items-center justify-between">
+                    <div class="flex-1">
+                        <div class="flex items-center justify-between mb-2">
+                            <h4 class="text-lg font-semibold text-white">{{ tournament.name }}</h4>
+                            <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-900 text-blue-300">
+                                <div class="w-1.5 h-1.5 bg-blue-400 rounded-full mr-1.5"></div>
+                                Scheduled
+                            </span>
+                        </div>
+                        
+                        <div class="grid grid-cols-2 lg:grid-cols-4 gap-4 text-sm">
+                            <div>
+                                <span class="text-gray-400">Start Time:</span>
+                                <div class="text-white">{{ tournament.scheduled_start | replace('T', ' ') | replace('Z', '') | truncate(16) }}</div>
+                            </div>
+                            <div>
+                                <span class="text-gray-400">Participants:</span>
+                                <div class="text-white">{{ tournament.participants }}/{{ tournament.max_participants }}</div>
+                            </div>
+                            <div>
+                                <span class="text-gray-400">Prize Pool:</span>
+                                <div class="text-white">${{ tournament.prize_pool }}</div>
+                            </div>
+                            <div>
+                                <span class="text-gray-400">Entry Fee:</span>
+                                <div class="text-white">${{ tournament.entry_fee or 'Free' }}</div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="flex space-x-2 ml-6">
+                        <button class="px-3 py-2 bg-blue-600 hover:bg-blue-700 rounded text-sm" onclick="editTournament('{{ tournament.id }}')">
+                            <i class="fas fa-edit mr-1"></i>
+                            Edit
+                        </button>
+                        <button class="px-3 py-2 bg-green-600 hover:bg-green-700 rounded text-sm" onclick="startTournament('{{ tournament.id }}')">
+                            <i class="fas fa-play mr-1"></i>
+                            Start Now
+                        </button>
+                        <button class="px-3 py-2 bg-red-600 hover:bg-red-700 rounded text-sm" onclick="cancelTournament('{{ tournament.id }}')">
+                            <i class="fas fa-times"></i>
+                        </button>
+                    </div>
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+        {% else %}
+        <div class="text-center text-gray-400 py-12">
+            <i class="fas fa-calendar text-6xl mb-4"></i>
+            <h3 class="text-xl font-semibold text-white mb-2">No Scheduled Tournaments</h3>
+            <p>No tournaments are currently scheduled.</p>
+            <button class="mt-4 px-4 py-2 bg-green-600 hover:bg-green-700 rounded font-medium text-sm" onclick="switchTab('create')">
+                <i class="fas fa-plus mr-2"></i>
+                Schedule Tournament
+            </button>
+        </div>
+        {% endif %}
+    </div>
+    
+    <!-- Create Tournament Tab -->
+    <div id="create-tab" class="tab-content p-6 hidden">
+        <div class="max-w-2xl mx-auto">
+            <h3 class="text-lg font-semibold text-white mb-6">Create New Tournament</h3>
+            
+            <form id="createTournamentForm" class="space-y-6">
+                <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                    <div>
+                        <label class="block text-sm font-medium text-gray-300 mb-2">Tournament Name</label>
+                        <input type="text" name="name" required
+                               class="w-full bg-gray-700 border border-gray-600 rounded px-3 py-2 text-white focus:outline-none focus:border-blue-500"
+                               placeholder="Weekly Championship #1">
+                    </div>
+                    
+                    <div>
+                        <label class="block text-sm font-medium text-gray-300 mb-2">Format</label>
+                        <select name="format" class="w-full bg-gray-700 border border-gray-600 rounded px-3 py-2 text-white focus:outline-none focus:border-blue-500">
+                            <option value="1v1">1v1 Elimination</option>
+                            <option value="swiss">Swiss System</option>
+                            <option value="round_robin">Round Robin</option>
+                        </select>
+                    </div>
+                    
+                    <div>
+                        <label class="block text-sm font-medium text-gray-300 mb-2">Max Participants</label>
+                        <select name="max_participants" class="w-full bg-gray-700 border border-gray-600 rounded px-3 py-2 text-white focus:outline-none focus:border-blue-500">
+                            <option value="8">8 Players</option>
+                            <option value="16">16 Players</option>
+                            <option value="32">32 Players</option>
+                            <option value="64">64 Players</option>
+                        </select>
+                    </div>
+                    
+                    <div>
+                        <label class="block text-sm font-medium text-gray-300 mb-2">Entry Fee ($)</label>
+                        <input type="number" name="entry_fee" min="0" step="0.01"
+                               class="w-full bg-gray-700 border border-gray-600 rounded px-3 py-2 text-white focus:outline-none focus:border-blue-500"
+                               placeholder="0.00">
+                    </div>
+                    
+                    <div>
+                        <label class="block text-sm font-medium text-gray-300 mb-2">Prize Pool ($)</label>
+                        <input type="number" name="prize_pool" min="0" step="0.01" required
+                               class="w-full bg-gray-700 border border-gray-600 rounded px-3 py-2 text-white focus:outline-none focus:border-blue-500"
+                               placeholder="1000.00">
+                    </div>
+                    
+                    <div>
+                        <label class="block text-sm font-medium text-gray-300 mb-2">Start Time</label>
+                        <input type="datetime-local" name="start_time" required
+                               class="w-full bg-gray-700 border border-gray-600 rounded px-3 py-2 text-white focus:outline-none focus:border-blue-500">
+                    </div>
+                </div>
+                
+                <div>
+                    <label class="block text-sm font-medium text-gray-300 mb-2">Description</label>
+                    <textarea name="description" rows="4"
+                              class="w-full bg-gray-700 border border-gray-600 rounded px-3 py-2 text-white focus:outline-none focus:border-blue-500"
+                              placeholder="Tournament description and rules..."></textarea>
+                </div>
+                
+                <div class="flex items-center space-x-4">
+                    <label class="flex items-center">
+                        <input type="checkbox" name="auto_start" class="rounded border-gray-600 bg-gray-700 text-blue-600">
+                        <span class="ml-2 text-sm text-gray-300">Auto-start when full</span>
+                    </label>
+                    
+                    <label class="flex items-center">
+                        <input type="checkbox" name="public" checked class="rounded border-gray-600 bg-gray-700 text-blue-600">
+                        <span class="ml-2 text-sm text-gray-300">Public registration</span>
+                    </label>
+                </div>
+                
+                <div class="flex justify-end space-x-3">
+                    <button type="button" onclick="resetForm()" class="px-4 py-2 bg-gray-600 hover:bg-gray-700 rounded">
+                        Reset
+                    </button>
+                    <button type="submit" class="px-4 py-2 bg-green-600 hover:bg-green-700 rounded">
+                        <i class="fas fa-plus mr-2"></i>
+                        Create Tournament
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+    
+    <!-- Tournament History Tab -->
+    <div id="history-tab" class="tab-content p-6 hidden">
+        <div class="flex items-center justify-between mb-6">
+            <h3 class="text-lg font-semibold text-white">Tournament History</h3>
+            <div class="flex space-x-2">
+                <select class="bg-gray-700 border border-gray-600 rounded px-3 py-2 text-sm text-white">
+                    <option>Last 30 days</option>
+                    <option>Last 3 months</option>
+                    <option>Last year</option>
+                    <option>All time</option>
+                </select>
+                <button class="px-4 py-2 bg-blue-600 hover:bg-blue-700 rounded text-sm">
+                    <i class="fas fa-download mr-2"></i>
+                    Export
+                </button>
+            </div>
+        </div>
+        
+        <div class="text-center text-gray-400 py-12">
+            <i class="fas fa-history text-6xl mb-4"></i>
+            <h3 class="text-xl font-semibold text-white mb-2">Tournament History</h3>
+            <p>Historical tournament data will be displayed here.</p>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+// Tab functionality
+document.querySelectorAll('.tab-button').forEach(button => {
+    button.addEventListener('click', function() {
+        const tabName = this.dataset.tab;
+        switchTab(tabName);
+    });
+});
+
+function switchTab(tabName) {
+    // Update button states
+    document.querySelectorAll('.tab-button').forEach(btn => {
+        btn.classList.remove('active', 'border-blue-500', 'text-blue-400');
+        btn.classList.add('border-transparent', 'text-gray-400');
+    });
+    document.querySelector(`[data-tab="${tabName}"]`).classList.add('active', 'border-blue-500', 'text-blue-400');
+    document.querySelector(`[data-tab="${tabName}"]`).classList.remove('border-transparent', 'text-gray-400');
+    
+    // Update tab content
+    document.querySelectorAll('.tab-content').forEach(content => {
+        content.classList.add('hidden');
+    });
+    document.getElementById(tabName + '-tab').classList.remove('hidden');
+}
+
+// Tournament management functions
+function viewTournament(tournamentId) {
+    window.location.href = `/admin/game-operations/tournament/${tournamentId}`;
+}
+
+function manageTournament(tournamentId) {
+    window.location.href = `/admin/game-operations/tournament/${tournamentId}/manage`;
+}
+
+function editTournament(tournamentId) {
+    // TODO: Implement tournament editing
+    showAlert(`Edit tournament ${tournamentId}`, 'info');
+}
+
+function startTournament(tournamentId) {
+    if (confirm(`Are you sure you want to start tournament ${tournamentId} now?`)) {
+        // TODO: Implement tournament start
+        showAlert(`Tournament ${tournamentId} started`, 'success');
+    }
+}
+
+function cancelTournament(tournamentId) {
+    if (confirm(`Are you sure you want to cancel tournament ${tournamentId}? This action cannot be undone.`)) {
+        // TODO: Implement tournament cancellation
+        showAlert(`Tournament ${tournamentId} cancelled`, 'warning');
+    }
+}
+
+function refreshTournaments() {
+    showAlert('Refreshing tournaments...', 'info');
+    setTimeout(() => location.reload(), 1000);
+}
+
+// Create tournament form
+document.getElementById('createTournamentForm').addEventListener('submit', function(e) {
+    e.preventDefault();
+    
+    const formData = new FormData(this);
+    const data = Object.fromEntries(formData.entries());
+    
+    // Convert checkboxes to boolean
+    data.auto_start = formData.has('auto_start');
+    data.public = formData.has('public');
+    
+    // Convert numbers
+    data.max_participants = parseInt(data.max_participants);
+    data.entry_fee = parseFloat(data.entry_fee) || 0;
+    data.prize_pool = parseFloat(data.prize_pool);
+    
+    // TODO: Send to API
+    console.log('Creating tournament:', data);
+    showAlert('Tournament created successfully!', 'success');
+    
+    // Reset form and switch to scheduled tab
+    this.reset();
+    setTimeout(() => {
+        switchTab('scheduled');
+        location.reload();
+    }, 1500);
+});
+
+function resetForm() {
+    document.getElementById('createTournamentForm').reset();
+}
+
+// Set minimum start time to current time
+document.addEventListener('DOMContentLoaded', function() {
+    const startTimeInput = document.querySelector('input[name="start_time"]');
+    if (startTimeInput) {
+        const now = new Date();
+        now.setMinutes(now.getMinutes() - now.getTimezoneOffset());
+        startTimeInput.min = now.toISOString().slice(0, 16);
+        
+        // Set default to 1 hour from now
+        const defaultTime = new Date(now.getTime() + 60 * 60 * 1000);
+        startTimeInput.value = defaultTime.toISOString().slice(0, 16);
+    }
+});
+
+// Alert system
+function showAlert(message, type = 'info') {
+    const alertDiv = document.createElement('div');
+    alertDiv.className = `fixed top-4 right-4 z-50 px-4 py-3 rounded-lg shadow-lg ${
+        type === 'success' ? 'bg-green-600 text-white' :
+        type === 'error' ? 'bg-red-600 text-white' :
+        type === 'warning' ? 'bg-yellow-600 text-black' :
+        'bg-blue-600 text-white'
+    }`;
+    alertDiv.textContent = message;
+    
+    document.body.appendChild(alertDiv);
+    
+    // Auto-remove after 5 seconds
+    setTimeout(() => {
+        alertDiv.remove();
+    }, 5000);
+}
+</script>
+{% endblock %}

@@ -9,8 +9,25 @@ from urllib.parse import urlencode
 import requests
 from flask import Flask, render_template, request, redirect, url_for, make_response, g
 
+# Load environment variables from .env file if it exists
+def load_env_file():
+    env_path = os.path.join(os.path.dirname(__file__), '.env')
+    if os.path.exists(env_path):
+        with open(env_path, 'r') as f:
+            for line in f:
+                line = line.strip()
+                if line and not line.startswith('#') and '=' in line:
+                    key, value = line.split('=', 1)
+                    os.environ.setdefault(key.strip(), value.strip())
+
+load_env_file()
+
 app = Flask(__name__)
 API_BASE = os.environ.get("API_BASE", "http://localhost:8000")
+
+# Register admin blueprint
+from admin_routes import admin_bp
+app.register_blueprint(admin_bp)
 
 
 # ---------- Logging setup ----------
@@ -298,9 +315,7 @@ def shop_checkout():
     return redirect(data["url"])
 
 
-@app.get("/admin")
-def admin_index():
-    return render_template("admin/index.html")
+# Admin routes now handled by admin_bp blueprint
 
 
 @app.get("/me")

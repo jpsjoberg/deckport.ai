@@ -18,8 +18,9 @@ from protocols.game_protocol import GameProtocol, MessageType
 logger = setup_logging("matchmaking", "INFO")
 
 class MatchmakingHandler:
-    def __init__(self, connection_manager):
+    def __init__(self, connection_manager, queue_manager=None):
         self.manager = connection_manager
+        self.queue_manager = queue_manager
         self.protocol = GameProtocol()
         self.queue_polling_task = None
         self._polling_started = False

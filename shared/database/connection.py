@@ -12,7 +12,7 @@ load_dotenv()
 # Database configuration
 DATABASE_URL = os.getenv(
     "DATABASE_URL", 
-    "postgresql+psycopg://deckport_app:N0D3-N0D3-N0D3#M0nk3y33@127.0.0.1:5432/deckport"
+    "postgresql+psycopg2://deckport_app:N0D3-N0D3-N0D3#M0nk3y33@127.0.0.1:5432/deckport"
 )
 
 # Create engine

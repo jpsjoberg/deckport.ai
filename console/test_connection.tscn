@@ -1,0 +1,30 @@
+[gd_scene load_steps=2 format=3 uid="uid://cw0k8qx5xm8qv"]
+
+[ext_resource type="Script" path="res://test_device_connection.gd" id="1_0k2xj"]
+
+[node name="TestConnection" type="Control"]
+layout_mode = 3
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+script = ExtResource("1_0k2xj")
+
+[node name="CenterContainer" type="CenterContainer" parent="."]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+
+[node name="VBoxContainer" type="VBoxContainer" parent="CenterContainer"]
+layout_mode = 2
+
+[node name="TitleLabel" type="Label" parent="CenterContainer/VBoxContainer"]
+layout_mode = 2
+text = "DEVICE CONNECTION TEST"
+horizontal_alignment = 1
+
+[node name="StatusLabel" type="Label" parent="CenterContainer/VBoxContainer"]
+layout_mode = 2
+text = "Running connection tests...
+Check console output for detailed results."
+horizontal_alignment = 1

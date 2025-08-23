@@ -1,0 +1,526 @@
+{% extends "admin/base.html" %}
+
+{% block title %}Console {{ console.device_uid }} - Deckport Admin{% endblock %}
+{% block page_title %}Console Details{% endblock %}
+{% block page_subtitle %}{{ console.device_uid }}{% endblock %}
+
+{% block content %}
+<!-- Console Overview -->
+<div class="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-8">
+    <!-- Console Status -->
+    <div class="bg-gray-800 rounded-lg p-6 border border-gray-700">
+        <div class="flex items-center justify-between mb-4">
+            <h3 class="text-lg font-semibold text-white">Status</h3>
+            {% if console.is_online %}
+            <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-900 text-green-300">
+                <div class="w-1.5 h-1.5 bg-green-400 rounded-full mr-1.5"></div>
+                Online
+            </span>
+            {% else %}
+            <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-red-900 text-red-300">
+                <div class="w-1.5 h-1.5 bg-red-400 rounded-full mr-1.5"></div>
+                Offline
+            </span>
+            {% endif %}
+        </div>
+        <div class="space-y-2 text-sm">
+            <div class="flex justify-between">
+                <span class="text-gray-400">Device UID:</span>
+                <span class="text-white font-mono">{{ console.device_uid }}</span>
+            </div>
+            <div class="flex justify-between">
+                <span class="text-gray-400">Registration:</span>
+                <span class="text-white">{{ console.registered_at.strftime('%Y-%m-%d') if console.registered_at else 'Unknown' }}</span>
+            </div>
+            <div class="flex justify-between">
+                <span class="text-gray-400">Last Seen:</span>
+                <span class="text-white">
+                    {% if console.last_seen_minutes is not none %}
+                        {% if console.last_seen_minutes < 60 %}
+                            {{ console.last_seen_minutes }} min ago
+                        {% elif console.last_seen_minutes < 1440 %}
+                            {{ (console.last_seen_minutes / 60)|int }} hours ago
+                        {% else %}
+                            {{ (console.last_seen_minutes / 1440)|int }} days ago
+                        {% endif %}
+                    {% else %}
+                        Never
+                    {% endif %}
+                </span>
+            </div>
+        </div>
+    </div>
+    
+    <!-- System Health -->
+    <div class="bg-gray-800 rounded-lg p-6 border border-gray-700">
+        <h3 class="text-lg font-semibold text-white mb-4">System Health</h3>
+        {% if console.diagnostics and console.diagnostics.hardware %}
+        <div class="space-y-3">
+            <div>
+                <div class="flex justify-between text-sm mb-1">
+                    <span class="text-gray-400">CPU Usage</span>
+                    <span class="text-white">{{ "%.1f"|format(console.diagnostics.hardware.cpu_usage_percent) }}%</span>
+                </div>
+                <div class="w-full bg-gray-700 rounded-full h-2">
+                    <div class="bg-blue-600 h-2 rounded-full" style="width: {{ console.diagnostics.hardware.cpu_usage_percent }}%"></div>
+                </div>
+            </div>
+            <div>
+                <div class="flex justify-between text-sm mb-1">
+                    <span class="text-gray-400">Memory Usage</span>
+                    <span class="text-white">{{ "%.1f"|format(console.diagnostics.hardware.memory_used_gb) }}GB / {{ console.diagnostics.hardware.memory_total_gb }}GB</span>
+                </div>
+                <div class="w-full bg-gray-700 rounded-full h-2">
+                    <div class="bg-green-600 h-2 rounded-full" style="width: {{ (console.diagnostics.hardware.memory_used_gb / console.diagnostics.hardware.memory_total_gb * 100)|int }}%"></div>
+                </div>
+            </div>
+            <div>
+                <div class="flex justify-between text-sm mb-1">
+                    <span class="text-gray-400">Disk Usage</span>
+                    <span class="text-white">{{ "%.1f"|format(console.diagnostics.hardware.disk_used_gb) }}GB / {{ console.diagnostics.hardware.disk_total_gb }}GB</span>
+                </div>
+                <div class="w-full bg-gray-700 rounded-full h-2">
+                    <div class="bg-yellow-600 h-2 rounded-full" style="width: {{ (console.diagnostics.hardware.disk_used_gb / console.diagnostics.hardware.disk_total_gb * 100)|int }}%"></div>
+                </div>
+            </div>
+        </div>
+        {% else %}
+        <div class="text-center text-gray-400 py-4">
+            <i class="fas fa-exclamation-triangle text-2xl mb-2"></i>
+            <p>No diagnostic data available</p>
+        </div>
+        {% endif %}
+    </div>
+    
+    <!-- Quick Actions -->
+    <div class="bg-gray-800 rounded-lg p-6 border border-gray-700">
+        <h3 class="text-lg font-semibold text-white mb-4">Quick Actions</h3>
+        <div class="space-y-3">
+            {% if console.is_online %}
+            <button class="w-full px-4 py-2 bg-yellow-600 hover:bg-yellow-700 rounded font-medium text-sm" onclick="remoteControl('{{ console.device_uid }}')">
+                <i class="fas fa-mouse-pointer mr-2"></i>
+                Remote Control
+            </button>
+            <button class="w-full px-4 py-2 bg-green-600 hover:bg-green-700 rounded font-medium text-sm" onclick="rebootConsole('{{ console.device_uid }}')">
+                <i class="fas fa-redo mr-2"></i>
+                Reboot Console
+            </button>
+            <button class="w-full px-4 py-2 bg-red-600 hover:bg-red-700 rounded font-medium text-sm" onclick="shutdownConsole('{{ console.device_uid }}')">
+                <i class="fas fa-power-off mr-2"></i>
+                Shutdown Console
+            </button>
+            {% else %}
+            <button class="w-full px-4 py-2 bg-orange-600 hover:bg-orange-700 rounded font-medium text-sm" onclick="pingConsole('{{ console.device_uid }}')">
+                <i class="fas fa-wifi mr-2"></i>
+                Ping Console
+            </button>
+            <button class="w-full px-4 py-2 bg-gray-600 cursor-not-allowed rounded font-medium text-sm" disabled>
+                <i class="fas fa-mouse-pointer mr-2"></i>
+                Remote Control (Offline)
+            </button>
+            {% endif %}
+            <button class="w-full px-4 py-2 bg-blue-600 hover:bg-blue-700 rounded font-medium text-sm" onclick="refreshDiagnostics()">
+                <i class="fas fa-sync-alt mr-2"></i>
+                Refresh Diagnostics
+            </button>
+        </div>
+    </div>
+</div>
+
+<!-- Detailed Information Tabs -->
+<div class="bg-gray-800 rounded-lg border border-gray-700">
+    <div class="border-b border-gray-700">
+        <nav class="flex space-x-8 px-6" aria-label="Tabs">
+            <button class="tab-button active py-4 px-1 border-b-2 border-blue-500 font-medium text-sm text-blue-400" data-tab="logs">
+                <i class="fas fa-list mr-2"></i>
+                Recent Logs
+            </button>
+            <button class="tab-button py-4 px-1 border-b-2 border-transparent font-medium text-sm text-gray-400 hover:text-gray-300" data-tab="diagnostics">
+                <i class="fas fa-stethoscope mr-2"></i>
+                Diagnostics
+            </button>
+            <button class="tab-button py-4 px-1 border-b-2 border-transparent font-medium text-sm text-gray-400 hover:text-gray-300" data-tab="network">
+                <i class="fas fa-network-wired mr-2"></i>
+                Network Info
+            </button>
+            <button class="tab-button py-4 px-1 border-b-2 border-transparent font-medium text-sm text-gray-400 hover:text-gray-300" data-tab="security">
+                <i class="fas fa-shield-alt mr-2"></i>
+                Security
+            </button>
+        </nav>
+    </div>
+    
+    <!-- Logs Tab -->
+    <div id="logs-tab" class="tab-content p-6">
+        <div class="flex items-center justify-between mb-4">
+            <h3 class="text-lg font-semibold text-white">Recent Activity Logs</h3>
+            <button class="px-4 py-2 bg-blue-600 hover:bg-blue-700 rounded text-sm" onclick="refreshLogs()">
+                <i class="fas fa-sync-alt mr-2"></i>
+                Refresh
+            </button>
+        </div>
+        
+        {% if console.logs %}
+        <div class="space-y-2 max-h-96 overflow-y-auto">
+            {% for log in console.logs %}
+            <div class="bg-gray-700 rounded p-3 text-sm">
+                <div class="flex items-center justify-between mb-1">
+                    <span class="text-blue-400 font-mono">{{ log.timestamp }}</span>
+                    <span class="text-gray-400">{{ log.action }}</span>
+                </div>
+                <div class="text-white">{{ log.details }}</div>
+                {% if log.meta %}
+                <div class="text-gray-400 text-xs mt-1">
+                    {{ log.meta|tojson }}
+                </div>
+                {% endif %}
+            </div>
+            {% endfor %}
+        </div>
+        {% else %}
+        <div class="text-center text-gray-400 py-8">
+            <i class="fas fa-file-alt text-4xl mb-4"></i>
+            <p>No recent logs available</p>
+        </div>
+        {% endif %}
+    </div>
+    
+    <!-- Diagnostics Tab -->
+    <div id="diagnostics-tab" class="tab-content p-6 hidden">
+        {% if console.diagnostics %}
+        <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+            <!-- System Information -->
+            <div>
+                <h4 class="text-lg font-semibold text-white mb-4">System Information</h4>
+                <div class="bg-gray-700 rounded p-4 space-y-2 text-sm">
+                    <div class="flex justify-between">
+                        <span class="text-gray-400">Operating System:</span>
+                        <span class="text-white">{{ console.diagnostics.system_info.os or 'Unknown' }}</span>
+                    </div>
+                    <div class="flex justify-between">
+                        <span class="text-gray-400">Kernel:</span>
+                        <span class="text-white">{{ console.diagnostics.system_info.kernel or 'Unknown' }}</span>
+                    </div>
+                    <div class="flex justify-between">
+                        <span class="text-gray-400">Architecture:</span>
+                        <span class="text-white">{{ console.diagnostics.system_info.architecture or 'Unknown' }}</span>
+                    </div>
+                    <div class="flex justify-between">
+                        <span class="text-gray-400">Uptime:</span>
+                        <span class="text-white">{{ (console.diagnostics.system_info.uptime_seconds / 3600)|int }} hours</span>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Hardware Information -->
+            <div>
+                <h4 class="text-lg font-semibold text-white mb-4">Hardware Information</h4>
+                <div class="bg-gray-700 rounded p-4 space-y-2 text-sm">
+                    <div class="flex justify-between">
+                        <span class="text-gray-400">CPU Model:</span>
+                        <span class="text-white">{{ console.diagnostics.hardware.cpu_model or 'Unknown' }}</span>
+                    </div>
+                    <div class="flex justify-between">
+                        <span class="text-gray-400">CPU Cores:</span>
+                        <span class="text-white">{{ console.diagnostics.hardware.cpu_cores or 'Unknown' }}</span>
+                    </div>
+                    <div class="flex justify-between">
+                        <span class="text-gray-400">Temperature:</span>
+                        <span class="text-white">{{ console.diagnostics.hardware.temperature_celsius }}°C</span>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Service Status -->
+            <div class="lg:col-span-2">
+                <h4 class="text-lg font-semibold text-white mb-4">Service Status</h4>
+                <div class="grid grid-cols-2 lg:grid-cols-4 gap-4">
+                    {% for service, status in console.diagnostics.services.items() %}
+                    <div class="bg-gray-700 rounded p-3 text-center">
+                        <div class="text-sm font-medium text-white mb-1">{{ service.replace('_', ' ').title() }}</div>
+                        <span class="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium 
+                            {% if status == 'running' %}bg-green-900 text-green-300{% else %}bg-red-900 text-red-300{% endif %}">
+                            <div class="w-1.5 h-1.5 {% if status == 'running' %}bg-green-400{% else %}bg-red-400{% endif %} rounded-full mr-1"></div>
+                            {{ status.title() }}
+                        </span>
+                    </div>
+                    {% endfor %}
+                </div>
+            </div>
+        </div>
+        {% else %}
+        <div class="text-center text-gray-400 py-8">
+            <i class="fas fa-stethoscope text-4xl mb-4"></i>
+            <p>No diagnostic data available</p>
+            <button class="mt-4 px-4 py-2 bg-blue-600 hover:bg-blue-700 rounded text-sm" onclick="refreshDiagnostics()">
+                Request Diagnostics
+            </button>
+        </div>
+        {% endif %}
+    </div>
+    
+    <!-- Network Tab -->
+    <div id="network-tab" class="tab-content p-6 hidden">
+        {% if console.diagnostics and console.diagnostics.network %}
+        <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+            <div>
+                <h4 class="text-lg font-semibold text-white mb-4">Network Configuration</h4>
+                <div class="bg-gray-700 rounded p-4 space-y-2 text-sm">
+                    <div class="flex justify-between">
+                        <span class="text-gray-400">Interface:</span>
+                        <span class="text-white">{{ console.diagnostics.network.interface }}</span>
+                    </div>
+                    <div class="flex justify-between">
+                        <span class="text-gray-400">IP Address:</span>
+                        <span class="text-white font-mono">{{ console.diagnostics.network.ip_address }}</span>
+                    </div>
+                    <div class="flex justify-between">
+                        <span class="text-gray-400">Connection Type:</span>
+                        <span class="text-white">{{ console.diagnostics.network.connection_type.title() }}</span>
+                    </div>
+                    <div class="flex justify-between">
+                        <span class="text-gray-400">Speed:</span>
+                        <span class="text-white">{{ console.diagnostics.network.speed_mbps }} Mbps</span>
+                    </div>
+                </div>
+            </div>
+            
+            <div>
+                <h4 class="text-lg font-semibold text-white mb-4">Traffic Statistics</h4>
+                <div class="bg-gray-700 rounded p-4 space-y-2 text-sm">
+                    <div class="flex justify-between">
+                        <span class="text-gray-400">Bytes Sent:</span>
+                        <span class="text-white">{{ (console.diagnostics.network.bytes_sent / 1024 / 1024)|round(2) }} MB</span>
+                    </div>
+                    <div class="flex justify-between">
+                        <span class="text-gray-400">Bytes Received:</span>
+                        <span class="text-white">{{ (console.diagnostics.network.bytes_received / 1024 / 1024)|round(2) }} MB</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+        {% else %}
+        <div class="text-center text-gray-400 py-8">
+            <i class="fas fa-network-wired text-4xl mb-4"></i>
+            <p>No network information available</p>
+        </div>
+        {% endif %}
+    </div>
+    
+    <!-- Security Tab -->
+    <div id="security-tab" class="tab-content p-6 hidden">
+        <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+            <div>
+                <h4 class="text-lg font-semibold text-white mb-4">Authentication</h4>
+                <div class="bg-gray-700 rounded p-4 space-y-2 text-sm">
+                    <div class="flex justify-between">
+                        <span class="text-gray-400">Public Key Fingerprint:</span>
+                        <span class="text-white font-mono">{{ console.public_key_fingerprint or 'Not available' }}</span>
+                    </div>
+                    <div class="flex justify-between">
+                        <span class="text-gray-400">Registration Status:</span>
+                        <span class="text-white">{{ console.status.title() }}</span>
+                    </div>
+                </div>
+                
+                {% if console.public_key_pem %}
+                <div class="mt-4">
+                    <button class="px-4 py-2 bg-blue-600 hover:bg-blue-700 rounded text-sm" onclick="showPublicKey()">
+                        <i class="fas fa-key mr-2"></i>
+                        View Full Public Key
+                    </button>
+                </div>
+                {% endif %}
+            </div>
+            
+            <div>
+                <h4 class="text-lg font-semibold text-white mb-4">Security Status</h4>
+                {% if console.diagnostics and console.diagnostics.health_checks %}
+                <div class="space-y-2">
+                    {% for check, status in console.diagnostics.health_checks.items() %}
+                    <div class="flex items-center justify-between bg-gray-700 rounded p-3">
+                        <span class="text-white">{{ check.replace('_', ' ').title() }}</span>
+                        <span class="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium 
+                            {% if status == 'healthy' %}bg-green-900 text-green-300
+                            {% elif status == 'warning' %}bg-yellow-900 text-yellow-300
+                            {% else %}bg-red-900 text-red-300{% endif %}">
+                            {{ status.title() }}
+                        </span>
+                    </div>
+                    {% endfor %}
+                </div>
+                {% else %}
+                <div class="text-center text-gray-400 py-4">
+                    <p>No security checks available</p>
+                </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Public Key Modal -->
+<div id="publicKeyModal" class="fixed inset-0 bg-black bg-opacity-50 hidden z-50">
+    <div class="flex items-center justify-center min-h-screen p-4">
+        <div class="bg-gray-800 rounded-lg max-w-2xl w-full max-h-96 overflow-hidden">
+            <div class="p-6 border-b border-gray-700">
+                <div class="flex items-center justify-between">
+                    <h3 class="text-lg font-semibold text-white">RSA Public Key</h3>
+                    <button onclick="closePublicKeyModal()" class="text-gray-400 hover:text-white">
+                        <i class="fas fa-times"></i>
+                    </button>
+                </div>
+            </div>
+            <div class="p-6">
+                <textarea id="modalPublicKey" class="w-full h-32 bg-gray-700 border border-gray-600 rounded text-white font-mono text-xs p-3" readonly>{{ console.public_key_pem or '' }}</textarea>
+                <div class="mt-4 flex justify-end space-x-2">
+                    <button onclick="copyPublicKey()" class="px-4 py-2 bg-blue-600 hover:bg-blue-700 rounded text-sm">
+                        <i class="fas fa-copy mr-2"></i>
+                        Copy Key
+                    </button>
+                    <button onclick="closePublicKeyModal()" class="px-4 py-2 bg-gray-600 hover:bg-gray-700 rounded text-sm">
+                        Close
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+// Tab functionality
+document.querySelectorAll('.tab-button').forEach(button => {
+    button.addEventListener('click', function() {
+        const tabName = this.dataset.tab;
+        
+        // Update button states
+        document.querySelectorAll('.tab-button').forEach(btn => {
+            btn.classList.remove('active', 'border-blue-500', 'text-blue-400');
+            btn.classList.add('border-transparent', 'text-gray-400');
+        });
+        this.classList.add('active', 'border-blue-500', 'text-blue-400');
+        this.classList.remove('border-transparent', 'text-gray-400');
+        
+        // Update tab content
+        document.querySelectorAll('.tab-content').forEach(content => {
+            content.classList.add('hidden');
+        });
+        document.getElementById(tabName + '-tab').classList.remove('hidden');
+    });
+});
+
+// Console actions
+function remoteControl(deviceUid) {
+    window.open(`/admin/console/${deviceUid}/remote`, '_blank');
+}
+
+function rebootConsole(deviceUid) {
+    if (confirm(`Are you sure you want to reboot console ${deviceUid}?`)) {
+        fetch(`/admin/api/console/${deviceUid}/reboot`, {method: 'POST'})
+            .then(response => response.json())
+            .then(data => {
+                showAlert(data.message, data.success ? 'success' : 'error');
+            });
+    }
+}
+
+function shutdownConsole(deviceUid) {
+    if (confirm(`Are you sure you want to shutdown console ${deviceUid}?`)) {
+        fetch(`/admin/api/console/${deviceUid}/shutdown`, {method: 'POST'})
+            .then(response => response.json())
+            .then(data => {
+                showAlert(data.message, data.success ? 'success' : 'error');
+            });
+    }
+}
+
+function pingConsole(deviceUid) {
+    fetch(`/admin/api/console/${deviceUid}/ping`, {method: 'POST'})
+        .then(response => response.json())
+        .then(data => {
+            showAlert(data.message, data.success ? 'success' : 'error');
+        });
+}
+
+function refreshDiagnostics() {
+    showAlert('Requesting fresh diagnostics...', 'info');
+    // In a real implementation, this would trigger a diagnostic refresh
+    setTimeout(() => {
+        location.reload();
+    }, 2000);
+}
+
+function refreshLogs() {
+    showAlert('Refreshing logs...', 'info');
+    setTimeout(() => {
+        location.reload();
+    }, 1000);
+}
+
+// Public key modal
+function showPublicKey() {
+    document.getElementById('publicKeyModal').classList.remove('hidden');
+}
+
+function closePublicKeyModal() {
+    document.getElementById('publicKeyModal').classList.add('hidden');
+}
+
+function copyPublicKey() {
+    const textarea = document.getElementById('modalPublicKey');
+    textarea.select();
+    document.execCommand('copy');
+    showAlert('Public key copied to clipboard', 'success');
+}
+
+// Alert system
+function showAlert(message, type = 'info') {
+    const alertDiv = document.createElement('div');
+    alertDiv.className = `fixed top-4 right-4 z-50 px-4 py-3 rounded-lg shadow-lg ${
+        type === 'success' ? 'bg-green-600 text-white' :
+        type === 'error' ? 'bg-red-600 text-white' :
+        type === 'warning' ? 'bg-yellow-600 text-black' :
+        'bg-blue-600 text-white'
+    }`;
+    alertDiv.textContent = message;
+    
+    document.body.appendChild(alertDiv);
+    
+    // Auto-remove after 5 seconds
+    setTimeout(() => {
+        alertDiv.remove();
+    }, 5000);
+}
+
+// Close modal when clicking outside
+document.getElementById('publicKeyModal').addEventListener('click', function(e) {
+    if (e.target === this) {
+        closePublicKeyModal();
+    }
+});
+
+// Auto-refresh status every 30 seconds
+setInterval(() => {
+    fetch(`/admin/api/console/{{ console.device_uid }}/status`)
+        .then(response => response.json())
+        .then(data => {
+            if (!data.error) {
+                // Update status indicators
+                const statusElement = document.querySelector('.inline-flex.items-center.px-2\\.5');
+                if (statusElement) {
+                    if (data.is_online) {
+                        statusElement.className = 'inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-900 text-green-300';
+                        statusElement.innerHTML = '<div class="w-1.5 h-1.5 bg-green-400 rounded-full mr-1.5"></div>Online';
+                    } else {
+                        statusElement.className = 'inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-red-900 text-red-300';
+                        statusElement.innerHTML = '<div class="w-1.5 h-1.5 bg-red-400 rounded-full mr-1.5"></div>Offline';
+                    }
+                }
+            }
+        })
+        .catch(error => console.log('Status update failed:', error));
+}, 30000);
+</script>
+{% endblock %}

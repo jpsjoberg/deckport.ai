@@ -1,0 +1,506 @@
+{% extends "admin/base.html" %}
+
+{% block title %}Game Operations - Deckport Admin{% endblock %}
+{% block page_title %}Game Operations{% endblock %}
+{% block page_subtitle %}Live matches, tournaments, and game balance monitoring{% endblock %}
+
+{% block content %}
+<!-- Game Operations Overview -->
+<div class="grid grid-cols-1 lg:grid-cols-4 gap-6 mb-8">
+    <!-- Live Matches -->
+    <div class="bg-gray-800 rounded-lg p-6 border border-gray-700">
+        <div class="flex items-center justify-between">
+            <div>
+                <h3 class="text-lg font-semibold text-white">Live Matches</h3>
+                <span class="text-3xl font-bold text-green-400">{{ dashboard_data.live_matches.active or 0 }}</span>
+            </div>
+            <i class="fas fa-gamepad text-2xl text-green-400"></i>
+        </div>
+        <div class="mt-2 text-sm text-gray-400">
+            {{ dashboard_data.live_matches.queued_players or 0 }} players queued
+        </div>
+    </div>
+
+    <!-- Active Tournaments -->
+    <div class="bg-gray-800 rounded-lg p-6 border border-gray-700">
+        <div class="flex items-center justify-between">
+            <div>
+                <h3 class="text-lg font-semibold text-white">Tournaments</h3>
+                <span class="text-3xl font-bold text-purple-400">{{ dashboard_data.tournaments.active or 0 }}</span>
+            </div>
+            <i class="fas fa-trophy text-2xl text-purple-400"></i>
+        </div>
+        <div class="mt-2 text-sm text-gray-400">
+            {{ dashboard_data.tournaments.participants_today or 0 }} participants today
+        </div>
+    </div>
+
+    <!-- Online Players -->
+    <div class="bg-gray-800 rounded-lg p-6 border border-gray-700">
+        <div class="flex items-center justify-between">
+            <div>
+                <h3 class="text-lg font-semibold text-white">Online Players</h3>
+                <span class="text-3xl font-bold text-blue-400">{{ dashboard_data.player_activity.online_now or 0 }}</span>
+            </div>
+            <i class="fas fa-users text-2xl text-blue-400"></i>
+        </div>
+        <div class="mt-2 text-sm text-gray-400">
+            {{ dashboard_data.player_activity.matches_today or 0 }} matches today
+        </div>
+    </div>
+
+    <!-- Balance Issues -->
+    <div class="bg-gray-800 rounded-lg p-6 border border-gray-700">
+        <div class="flex items-center justify-between">
+            <div>
+                <h3 class="text-lg font-semibold text-white">Balance Issues</h3>
+                <span class="text-3xl font-bold text-red-400">{{ dashboard_data.game_balance.imbalanced_cards or 0 }}</span>
+            </div>
+            <i class="fas fa-balance-scale text-2xl text-red-400"></i>
+        </div>
+        <div class="mt-2 text-sm text-gray-400">
+            {{ "%.1f"|format(dashboard_data.game_balance.meta_diversity or 0) }}% meta diversity
+        </div>
+    </div>
+</div>
+
+<!-- Main Dashboard Content -->
+<div class="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-8">
+    <!-- Live Matches Panel -->
+    <div class="lg:col-span-2 bg-gray-800 rounded-lg border border-gray-700">
+        <div class="p-6 border-b border-gray-700">
+            <div class="flex items-center justify-between">
+                <h3 class="text-lg font-semibold text-white">Recent Live Matches</h3>
+                <div class="flex space-x-2">
+                    <button class="px-3 py-1 bg-blue-600 hover:bg-blue-700 rounded text-sm" onclick="refreshMatches()">
+                        <i class="fas fa-sync-alt mr-1"></i> Refresh
+                    </button>
+                    <a href="{{ url_for('admin.live_matches') }}" class="px-3 py-1 bg-green-600 hover:bg-green-700 rounded text-sm">
+                        <i class="fas fa-eye mr-1"></i> View All
+                    </a>
+                </div>
+            </div>
+        </div>
+        
+        <div class="p-6">
+            {% if recent_matches %}
+            <div class="space-y-4">
+                {% for match in recent_matches %}
+                <div class="bg-gray-700 rounded-lg p-4">
+                    <div class="flex items-center justify-between mb-2">
+                        <div class="flex items-center space-x-3">
+                            <span class="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium 
+                                {% if match.status == 'active' %}bg-green-900 text-green-300
+                                {% elif match.status == 'ending' %}bg-yellow-900 text-yellow-300
+                                {% else %}bg-gray-900 text-gray-300{% endif %}">
+                                {{ match.status.title() }}
+                            </span>
+                            <span class="text-sm text-gray-400">{{ match.mode.upper() }}</span>
+                            <span class="text-sm text-gray-400">Turn {{ match.turn }}</span>
+                        </div>
+                        <div class="flex space-x-2">
+                            <button class="px-2 py-1 bg-blue-600 hover:bg-blue-700 rounded text-xs" 
+                                    onclick="viewMatch('{{ match.match_id }}')">
+                                <i class="fas fa-eye"></i>
+                            </button>
+                            <button class="px-2 py-1 bg-red-600 hover:bg-red-700 rounded text-xs" 
+                                    onclick="terminateMatch('{{ match.match_id }}')">
+                                <i class="fas fa-stop"></i>
+                            </button>
+                        </div>
+                    </div>
+                    
+                    <div class="flex items-center justify-between">
+                        <div class="flex items-center space-x-4">
+                            {% for player in match.players %}
+                            <div class="text-sm">
+                                <span class="text-white font-medium">{{ player.display_name }}</span>
+                                <span class="text-gray-400">({{ player.rating }})</span>
+                            </div>
+                            {% if not loop.last %}
+                            <span class="text-gray-500">vs</span>
+                            {% endif %}
+                            {% endfor %}
+                        </div>
+                        <div class="text-sm text-gray-400">
+                            {{ match.duration_minutes }}m
+                            {% if match.spectators > 0 %}
+                            • {{ match.spectators }} watching
+                            {% endif %}
+                        </div>
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
+            {% else %}
+            <div class="text-center text-gray-400 py-8">
+                <i class="fas fa-gamepad text-4xl mb-4"></i>
+                <p>No active matches</p>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+    
+    <!-- Quick Actions & Status -->
+    <div class="space-y-6">
+        <!-- Matchmaking Queue -->
+        <div class="bg-gray-800 rounded-lg p-6 border border-gray-700">
+            <h3 class="text-lg font-semibold text-white mb-4">Matchmaking Queue</h3>
+            <div class="space-y-3">
+                <div class="flex justify-between text-sm">
+                    <span class="text-gray-400">Total Queued:</span>
+                    <span class="text-white font-medium">{{ queue_data.total_queued or 0 }}</span>
+                </div>
+                <div class="flex justify-between text-sm">
+                    <span class="text-gray-400">Avg Wait Time:</span>
+                    <span class="text-white font-medium">{{ queue_data.avg_wait_time or 0 }}s</span>
+                </div>
+                <div class="flex justify-between text-sm">
+                    <span class="text-gray-400">Longest Wait:</span>
+                    <span class="text-white font-medium">{{ (queue_data.longest_wait or 0) // 60 }}m</span>
+                </div>
+                
+                {% if queue_data.by_mode %}
+                <div class="pt-2 border-t border-gray-700">
+                    <div class="text-xs text-gray-400 mb-2">By Mode:</div>
+                    {% for mode, count in queue_data.by_mode.items() %}
+                    <div class="flex justify-between text-xs">
+                        <span class="text-gray-400">{{ mode.upper() }}:</span>
+                        <span class="text-white">{{ count }}</span>
+                    </div>
+                    {% endfor %}
+                </div>
+                {% endif %}
+            </div>
+        </div>
+        
+        <!-- Active Tournaments -->
+        <div class="bg-gray-800 rounded-lg p-6 border border-gray-700">
+            <div class="flex items-center justify-between mb-4">
+                <h3 class="text-lg font-semibold text-white">Active Tournaments</h3>
+                <a href="{{ url_for('admin.tournaments') }}" class="text-blue-400 hover:text-blue-300 text-sm">
+                    View All →
+                </a>
+            </div>
+            
+            {% if active_tournaments %}
+            <div class="space-y-3">
+                {% for tournament in active_tournaments %}
+                <div class="p-3 bg-gray-700 rounded">
+                    <div class="flex items-center justify-between mb-1">
+                        <span class="text-sm font-medium text-white">{{ tournament.name }}</span>
+                        <span class="text-xs text-gray-400">Round {{ tournament.current_round }}/{{ tournament.total_rounds }}</span>
+                    </div>
+                    <div class="flex items-center justify-between text-xs text-gray-400">
+                        <span>{{ tournament.participants }} players</span>
+                        <span>${{ tournament.prize_pool }}</span>
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
+            {% else %}
+            <div class="text-center text-gray-400 py-4">
+                <i class="fas fa-trophy text-2xl mb-2"></i>
+                <p class="text-sm">No active tournaments</p>
+            </div>
+            {% endif %}
+        </div>
+        
+        <!-- System Actions -->
+        <div class="bg-gray-800 rounded-lg p-6 border border-gray-700">
+            <h3 class="text-lg font-semibold text-white mb-4">System Actions</h3>
+            <div class="space-y-3">
+                <button class="w-full px-4 py-2 bg-blue-600 hover:bg-blue-700 rounded font-medium text-sm" onclick="refreshDashboard()">
+                    <i class="fas fa-sync-alt mr-2"></i>
+                    Refresh Dashboard
+                </button>
+                <button class="w-full px-4 py-2 bg-yellow-600 hover:bg-yellow-700 rounded font-medium text-sm" onclick="triggerMaintenance()">
+                    <i class="fas fa-tools mr-2"></i>
+                    Maintenance Mode
+                </button>
+                <a href="{{ url_for('admin.card_balance') }}" class="block w-full px-4 py-2 bg-purple-600 hover:bg-purple-700 rounded font-medium text-sm text-center">
+                    <i class="fas fa-balance-scale mr-2"></i>
+                    Card Balance
+                </a>
+                <a href="{{ url_for('admin.analytics') }}" class="block w-full px-4 py-2 bg-green-600 hover:bg-green-700 rounded font-medium text-sm text-center">
+                    <i class="fas fa-chart-bar mr-2"></i>
+                    Analytics
+                </a>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Quick Stats Charts -->
+<div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+    <!-- Player Activity Chart -->
+    <div class="bg-gray-800 rounded-lg p-6 border border-gray-700">
+        <h3 class="text-lg font-semibold text-white mb-4">Player Activity (24h)</h3>
+        <canvas id="playerActivityChart" width="400" height="200"></canvas>
+    </div>
+    
+    <!-- Match Distribution -->
+    <div class="bg-gray-800 rounded-lg p-6 border border-gray-700">
+        <h3 class="text-lg font-semibold text-white mb-4">Match Types Distribution</h3>
+        <canvas id="matchDistributionChart" width="400" height="200"></canvas>
+    </div>
+</div>
+
+<!-- Maintenance Modal -->
+<div id="maintenanceModal" class="fixed inset-0 bg-black bg-opacity-50 hidden z-50">
+    <div class="flex items-center justify-center min-h-screen p-4">
+        <div class="bg-gray-800 rounded-lg max-w-md w-full">
+            <div class="p-6 border-b border-gray-700">
+                <div class="flex items-center justify-between">
+                    <h3 class="text-lg font-semibold text-white">Trigger Maintenance Mode</h3>
+                    <button onclick="closeMaintenanceModal()" class="text-gray-400 hover:text-white">
+                        <i class="fas fa-times"></i>
+                    </button>
+                </div>
+            </div>
+            <div class="p-6">
+                <form id="maintenanceForm">
+                    <div class="mb-4">
+                        <label class="block text-sm font-medium text-gray-300 mb-2">Maintenance Type</label>
+                        <select name="type" class="w-full bg-gray-700 border border-gray-600 rounded px-3 py-2 text-white">
+                            <option value="scheduled">Scheduled Maintenance</option>
+                            <option value="emergency">Emergency Maintenance</option>
+                            <option value="update">System Update</option>
+                        </select>
+                    </div>
+                    <div class="mb-4">
+                        <label class="block text-sm font-medium text-gray-300 mb-2">Duration (minutes)</label>
+                        <input type="number" name="duration_minutes" value="30" min="5" max="480" 
+                               class="w-full bg-gray-700 border border-gray-600 rounded px-3 py-2 text-white">
+                    </div>
+                    <div class="mb-6">
+                        <label class="block text-sm font-medium text-gray-300 mb-2">Message</label>
+                        <textarea name="message" rows="3" 
+                                  class="w-full bg-gray-700 border border-gray-600 rounded px-3 py-2 text-white"
+                                  placeholder="System maintenance in progress..."></textarea>
+                    </div>
+                    <div class="flex justify-end space-x-3">
+                        <button type="button" onclick="closeMaintenanceModal()" 
+                                class="px-4 py-2 bg-gray-600 hover:bg-gray-700 rounded">
+                            Cancel
+                        </button>
+                        <button type="submit" class="px-4 py-2 bg-yellow-600 hover:bg-yellow-700 rounded">
+                            <i class="fas fa-tools mr-2"></i>
+                            Trigger Maintenance
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script>
+// Initialize dashboard
+document.addEventListener('DOMContentLoaded', function() {
+    initializeCharts();
+    startRealTimeUpdates();
+});
+
+// Dashboard functions
+function refreshDashboard() {
+    showAlert('Refreshing dashboard...', 'info');
+    fetch('/admin/api/game-operations/dashboard/refresh')
+        .then(response => response.json())
+        .then(data => {
+            if (!data.error) {
+                location.reload();
+            } else {
+                showAlert('Failed to refresh dashboard', 'error');
+            }
+        })
+        .catch(error => {
+            showAlert('Error refreshing dashboard', 'error');
+        });
+}
+
+function refreshMatches() {
+    showAlert('Refreshing matches...', 'info');
+    setTimeout(() => location.reload(), 1000);
+}
+
+function viewMatch(matchId) {
+    window.location.href = `/admin/game-operations/match/${matchId}`;
+}
+
+function terminateMatch(matchId) {
+    if (confirm(`Are you sure you want to terminate match ${matchId}? This action cannot be undone.`)) {
+        fetch(`/admin/api/game-operations/match/${matchId}/terminate`, {
+            method: 'POST',
+            headers: {'Content-Type': 'application/json'},
+            body: JSON.stringify({reason: 'Admin intervention'})
+        })
+        .then(response => response.json())
+        .then(data => {
+            showAlert(data.message, data.success ? 'success' : 'error');
+            if (data.success) {
+                setTimeout(() => location.reload(), 1500);
+            }
+        })
+        .catch(error => {
+            showAlert('Error terminating match', 'error');
+        });
+    }
+}
+
+// Maintenance modal
+function triggerMaintenance() {
+    document.getElementById('maintenanceModal').classList.remove('hidden');
+}
+
+function closeMaintenanceModal() {
+    document.getElementById('maintenanceModal').classList.add('hidden');
+}
+
+document.getElementById('maintenanceForm').addEventListener('submit', function(e) {
+    e.preventDefault();
+    
+    const formData = new FormData(this);
+    const data = Object.fromEntries(formData.entries());
+    data.duration_minutes = parseInt(data.duration_minutes);
+    
+    fetch('/admin/api/game-operations/maintenance', {
+        method: 'POST',
+        headers: {'Content-Type': 'application/json'},
+        body: JSON.stringify(data)
+    })
+    .then(response => response.json())
+    .then(result => {
+        showAlert(result.message, result.success ? 'success' : 'error');
+        if (result.success) {
+            closeMaintenanceModal();
+        }
+    })
+    .catch(error => {
+        showAlert('Error triggering maintenance', 'error');
+    });
+});
+
+// Charts initialization
+function initializeCharts() {
+    // Player Activity Chart
+    const playerCtx = document.getElementById('playerActivityChart').getContext('2d');
+    new Chart(playerCtx, {
+        type: 'line',
+        data: {
+            labels: Array.from({length: 24}, (_, i) => `${i}:00`),
+            datasets: [{
+                label: 'Active Players',
+                data: Array.from({length: 24}, () => Math.floor(Math.random() * 100) + 20),
+                borderColor: 'rgb(59, 130, 246)',
+                backgroundColor: 'rgba(59, 130, 246, 0.1)',
+                tension: 0.4
+            }]
+        },
+        options: {
+            responsive: true,
+            plugins: {
+                legend: {
+                    labels: {color: 'white'}
+                }
+            },
+            scales: {
+                x: {
+                    ticks: {color: 'white'},
+                    grid: {color: 'rgba(255, 255, 255, 0.1)'}
+                },
+                y: {
+                    ticks: {color: 'white'},
+                    grid: {color: 'rgba(255, 255, 255, 0.1)'}
+                }
+            }
+        }
+    });
+    
+    // Match Distribution Chart
+    const matchCtx = document.getElementById('matchDistributionChart').getContext('2d');
+    new Chart(matchCtx, {
+        type: 'doughnut',
+        data: {
+            labels: ['1v1', 'Tournament', 'Casual'],
+            datasets: [{
+                data: [65, 20, 15],
+                backgroundColor: [
+                    'rgb(34, 197, 94)',
+                    'rgb(168, 85, 247)',
+                    'rgb(59, 130, 246)'
+                ]
+            }]
+        },
+        options: {
+            responsive: true,
+            plugins: {
+                legend: {
+                    labels: {color: 'white'}
+                }
+            }
+        }
+    });
+}
+
+// Real-time updates
+function startRealTimeUpdates() {
+    setInterval(() => {
+        fetch('/admin/api/game-operations/queue/status')
+            .then(response => response.json())
+            .then(data => {
+                if (!data.error) {
+                    // Update queue statistics
+                    updateQueueStats(data);
+                }
+            })
+            .catch(error => console.log('Queue update failed:', error));
+    }, 30000); // Update every 30 seconds
+}
+
+function updateQueueStats(data) {
+    // Update queue display elements
+    const elements = {
+        'total_queued': data.total_queued || 0,
+        'avg_wait_time': data.avg_wait_time || 0,
+        'longest_wait': Math.floor((data.longest_wait || 0) / 60)
+    };
+    
+    Object.entries(elements).forEach(([key, value]) => {
+        const element = document.querySelector(`[data-stat="${key}"]`);
+        if (element) {
+            element.textContent = value;
+        }
+    });
+}
+
+// Alert system
+function showAlert(message, type = 'info') {
+    const alertDiv = document.createElement('div');
+    alertDiv.className = `fixed top-4 right-4 z-50 px-4 py-3 rounded-lg shadow-lg ${
+        type === 'success' ? 'bg-green-600 text-white' :
+        type === 'error' ? 'bg-red-600 text-white' :
+        type === 'warning' ? 'bg-yellow-600 text-black' :
+        'bg-blue-600 text-white'
+    }`;
+    alertDiv.textContent = message;
+    
+    document.body.appendChild(alertDiv);
+    
+    // Auto-remove after 5 seconds
+    setTimeout(() => {
+        alertDiv.remove();
+    }, 5000);
+}
+
+// Close modal when clicking outside
+document.getElementById('maintenanceModal').addEventListener('click', function(e) {
+    if (e.target === this) {
+        closeMaintenanceModal();
+    }
+});
+</script>
+{% endblock %}

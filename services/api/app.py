@@ -13,6 +13,10 @@ from routes.cards import cards_bp
 from routes.device_auth import device_auth_bp
 from routes.console_login import console_login_bp
 from routes.console_logs import console_logs_bp
+from routes.admin_devices import admin_devices_bp
+from routes.admin_game_operations import admin_game_ops_bp
+from routes.admin_player_management import admin_player_mgmt_bp
+from routes.gameplay import gameplay_bp
 
 # Load environment variables
 load_dotenv()
@@ -29,6 +33,10 @@ app.register_blueprint(cards_bp)
 app.register_blueprint(device_auth_bp)
 app.register_blueprint(console_login_bp)
 app.register_blueprint(console_logs_bp)
+app.register_blueprint(admin_devices_bp)
+app.register_blueprint(admin_game_ops_bp)
+app.register_blueprint(admin_player_mgmt_bp)
+app.register_blueprint(gameplay_bp)
 
 # Legacy endpoints for backward compatibility
 @app.get("/v1/hello")

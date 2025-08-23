@@ -18,11 +18,13 @@ from protocols.game_protocol import GameProtocol, MessageType
 logger = setup_logging("game_state", "INFO")
 
 class GameStateHandler:
-    def __init__(self, connection_manager):
+    def __init__(self, connection_manager, match_manager=None):
         self.manager = connection_manager
+        self.match_manager = match_manager
         self.protocol = GameProtocol()
-        self.active_matches: Dict[str, Dict] = {}  # match_id -> game_state
-        self.match_timers: Dict[str, asyncio.Task] = {}  # match_id -> timer_task
+        # Use match manager's active matches if available
+        self.active_matches = match_manager.active_matches if match_manager else {}
+        self.match_timers = match_manager.match_timers if match_manager else {}
     
     async def handle_message(self, message: Dict, connection_id: str, user_info: Dict):
         """Handle game state related messages"""

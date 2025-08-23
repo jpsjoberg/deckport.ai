@@ -17,15 +17,16 @@ from sqlalchemy import (
     Text,
 )
 from sqlalchemy.dialects.postgresql import JSONB
-from sqlalchemy.orm import DeclarativeBase, Mapped, mapped_column, relationship
+from sqlalchemy.ext.declarative import declarative_base
+from sqlalchemy.orm import relationship, mapped_column, Mapped
+from sqlalchemy import Column
 
 
 def utcnow() -> datetime:
     return datetime.now(timezone.utc)
 
 
-class Base(DeclarativeBase):
-    pass
+Base = declarative_base()
 
 
 # --- Enums (code-facing, display labels live in content/clients) ---
@@ -100,19 +101,19 @@ class LoginTokenStatus(str, Enum):
 class Player(Base):
     __tablename__ = "players"
 
-    id: Mapped[int] = mapped_column(Integer, primary_key=True)
-    email: Mapped[str] = mapped_column(String(320), unique=True, nullable=False)
-    display_name: Mapped[Optional[str]] = mapped_column(String(120))
-    username: Mapped[Optional[str]] = mapped_column(String(50), unique=True, nullable=True)
-    phone_number: Mapped[Optional[str]] = mapped_column(String(20), nullable=True)
-    avatar_url: Mapped[Optional[str]] = mapped_column(String(500), nullable=True)
-    password_hash: Mapped[Optional[str]] = mapped_column(String(255))
-    elo_rating: Mapped[int] = mapped_column(Integer, nullable=False, default=1000)
-    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=utcnow, nullable=False)
-    updated_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=utcnow, onupdate=utcnow, nullable=False)
+    id = Column(Integer, primary_key=True)
+    email = Column(String(320), unique=True, nullable=False)
+    display_name = Column(String(120))
+    username = Column(String(50), unique=True, nullable=True)
+    phone_number = Column(String(20), nullable=True)
+    avatar_url = Column(String(500), nullable=True)
+    password_hash = Column(String(255))
+    elo_rating = Column(Integer, nullable=False, default=1000)
+    created_at = Column(DateTime(timezone=True), default=utcnow, nullable=False)
+    updated_at = Column(DateTime(timezone=True), default=utcnow, onupdate=utcnow, nullable=False)
 
-    consoles: Mapped[List[Console]] = relationship(back_populates="owner_player")
-    player_cards: Mapped[List[PlayerCard]] = relationship(back_populates="player")
+    consoles = relationship("Console", back_populates="owner_player")
+    player_cards = relationship("PlayerCard", back_populates="player")
 
 
 class Console(Base):
@@ -217,13 +218,11 @@ class Match(Base):
     id: Mapped[int] = mapped_column(Integer, primary_key=True)
     mode: Mapped[str] = mapped_column(String(32), default="1v1", nullable=False)
     status: Mapped[MatchStatus] = mapped_column(SAEnum(MatchStatus), default=MatchStatus.queued, nullable=False)
-    arena_id: Mapped[Optional[int]] = mapped_column(ForeignKey("arenas.id", ondelete="SET NULL"))
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=utcnow, nullable=False)
     started_at: Mapped[Optional[datetime]] = mapped_column(DateTime(timezone=True))
     ended_at: Mapped[Optional[datetime]] = mapped_column(DateTime(timezone=True))
 
     participants: Mapped[List[MatchParticipant]] = relationship(back_populates="match", cascade="all, delete-orphan")
-    arena: Mapped[Optional["Arena"]] = relationship(back_populates="matches")
 
 
 class MatchParticipant(Base):

@@ -1,0 +1,391 @@
+{% extends "admin/base.html" %}
+
+{% block title %}Live Matches - Deckport Admin{% endblock %}
+{% block page_title %}Live Match Monitoring{% endblock %}
+{% block page_subtitle %}Real-time monitoring and control of active matches{% endblock %}
+
+{% block content %}
+<!-- Match Statistics -->
+<div class="grid grid-cols-1 lg:grid-cols-4 gap-6 mb-8">
+    <div class="bg-gray-800 rounded-lg p-6 border border-gray-700">
+        <div class="flex items-center justify-between">
+            <div>
+                <h3 class="text-lg font-semibold text-white">Active Matches</h3>
+                <span class="text-3xl font-bold text-green-400">{{ total_matches }}</span>
+            </div>
+            <i class="fas fa-gamepad text-2xl text-green-400"></i>
+        </div>
+    </div>
+    
+    <div class="bg-gray-800 rounded-lg p-6 border border-gray-700">
+        <div class="flex items-center justify-between">
+            <div>
+                <h3 class="text-lg font-semibold text-white">Avg Duration</h3>
+                <span class="text-3xl font-bold text-blue-400">{{ (matches | map(attribute='duration_minutes') | list | sum / matches | length) | round(1) if matches else 0 }}m</span>
+            </div>
+            <i class="fas fa-clock text-2xl text-blue-400"></i>
+        </div>
+    </div>
+    
+    <div class="bg-gray-800 rounded-lg p-6 border border-gray-700">
+        <div class="flex items-center justify-between">
+            <div>
+                <h3 class="text-lg font-semibold text-white">Total Spectators</h3>
+                <span class="text-3xl font-bold text-purple-400">{{ matches | map(attribute='spectators') | list | sum if matches else 0 }}</span>
+            </div>
+            <i class="fas fa-eye text-2xl text-purple-400"></i>
+        </div>
+    </div>
+    
+    <div class="bg-gray-800 rounded-lg p-6 border border-gray-700">
+        <div class="flex items-center justify-between">
+            <div>
+                <h3 class="text-lg font-semibold text-white">Tournament Matches</h3>
+                <span class="text-3xl font-bold text-yellow-400">{{ matches | selectattr('mode', 'equalto', 'tournament') | list | length if matches else 0 }}</span>
+            </div>
+            <i class="fas fa-trophy text-2xl text-yellow-400"></i>
+        </div>
+    </div>
+</div>
+
+<!-- Live Matches Table -->
+<div class="bg-gray-800 rounded-lg border border-gray-700">
+    <div class="p-6 border-b border-gray-700">
+        <div class="flex items-center justify-between">
+            <h3 class="text-lg font-semibold text-white">Live Matches</h3>
+            <div class="flex items-center space-x-4">
+                <!-- Search -->
+                <div class="relative">
+                    <input type="text" placeholder="Search matches..." id="matchSearch"
+                           class="bg-gray-700 border border-gray-600 rounded-lg px-3 py-2 text-sm text-white w-64 focus:outline-none focus:border-blue-500">
+                    <i class="fas fa-search absolute right-3 top-2.5 text-gray-400"></i>
+                </div>
+                
+                <!-- Filters -->
+                <select id="modeFilter" class="bg-gray-700 border border-gray-600 rounded-lg px-3 py-2 text-sm text-white focus:outline-none focus:border-blue-500">
+                    <option value="">All Modes</option>
+                    <option value="1v1">1v1</option>
+                    <option value="tournament">Tournament</option>
+                    <option value="casual">Casual</option>
+                </select>
+                
+                <button class="px-4 py-2 bg-blue-600 hover:bg-blue-700 rounded text-sm" onclick="refreshMatches()">
+                    <i class="fas fa-sync-alt mr-2"></i>
+                    Refresh
+                </button>
+            </div>
+        </div>
+    </div>
+    
+    {% if matches %}
+    <div class="overflow-x-auto">
+        <table class="w-full">
+            <thead class="bg-gray-700">
+                <tr>
+                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-300 uppercase tracking-wider">Match ID</th>
+                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-300 uppercase tracking-wider">Players</th>
+                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-300 uppercase tracking-wider">Mode</th>
+                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-300 uppercase tracking-wider">Duration</th>
+                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-300 uppercase tracking-wider">Phase</th>
+                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-300 uppercase tracking-wider">Turn</th>
+                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-300 uppercase tracking-wider">Spectators</th>
+                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-300 uppercase tracking-wider">Actions</th>
+                </tr>
+            </thead>
+            <tbody class="divide-y divide-gray-700">
+                {% for match in matches %}
+                <tr class="hover:bg-gray-700 match-row" data-mode="{{ match.mode }}" data-match-id="{{ match.match_id }}">
+                    <td class="px-6 py-4 whitespace-nowrap">
+                        <div class="flex items-center">
+                            <span class="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium 
+                                {% if match.status == 'active' %}bg-green-900 text-green-300
+                                {% elif match.status == 'ending' %}bg-yellow-900 text-yellow-300
+                                {% else %}bg-gray-900 text-gray-300{% endif %} mr-2">
+                                {{ match.status.title() }}
+                            </span>
+                            <div>
+                                <div class="text-sm font-medium text-white font-mono">{{ match.match_id }}</div>
+                                <div class="text-sm text-gray-400">{{ match.started_at | replace('T', ' ') | replace('Z', '') | truncate(16) }}</div>
+                            </div>
+                        </div>
+                    </td>
+                    <td class="px-6 py-4 whitespace-nowrap">
+                        <div class="space-y-1">
+                            {% for player in match.players %}
+                            <div class="flex items-center justify-between">
+                                <div class="flex items-center">
+                                    <div class="text-sm font-medium text-white">{{ player.display_name }}</div>
+                                    <div class="text-sm text-gray-400 ml-2">({{ player.rating }})</div>
+                                </div>
+                                <div class="text-xs text-gray-500">{{ player.console_id }}</div>
+                            </div>
+                            {% if not loop.last %}
+                            <div class="text-center text-gray-500 text-xs">vs</div>
+                            {% endif %}
+                            {% endfor %}
+                        </div>
+                    </td>
+                    <td class="px-6 py-4 whitespace-nowrap">
+                        <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium 
+                            {% if match.mode == '1v1' %}bg-blue-900 text-blue-300
+                            {% elif match.mode == 'tournament' %}bg-purple-900 text-purple-300
+                            {% else %}bg-gray-900 text-gray-300{% endif %}">
+                            {{ match.mode.upper() }}
+                        </span>
+                    </td>
+                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-300">
+                        {{ match.duration_minutes }}m
+                    </td>
+                    <td class="px-6 py-4 whitespace-nowrap">
+                        <span class="inline-flex items-center px-2 py-1 rounded text-xs font-medium 
+                            {% if match.phase == 'setup' %}bg-yellow-900 text-yellow-300
+                            {% elif match.phase == 'main' %}bg-green-900 text-green-300
+                            {% elif match.phase == 'combat' %}bg-red-900 text-red-300
+                            {% else %}bg-gray-900 text-gray-300{% endif %}">
+                            {{ match.phase.title() }}
+                        </span>
+                    </td>
+                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-300">
+                        {{ match.turn }}
+                    </td>
+                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-300">
+                        {% if match.spectators > 0 %}
+                        <div class="flex items-center">
+                            <i class="fas fa-eye text-gray-400 mr-1"></i>
+                            {{ match.spectators }}
+                        </div>
+                        {% else %}
+                        <span class="text-gray-500">-</span>
+                        {% endif %}
+                    </td>
+                    <td class="px-6 py-4 whitespace-nowrap text-sm font-medium">
+                        <div class="flex space-x-2">
+                            <button class="text-blue-400 hover:text-blue-300" onclick="viewMatch('{{ match.match_id }}')" title="View Details">
+                                <i class="fas fa-eye"></i>
+                            </button>
+                            <button class="text-green-400 hover:text-green-300" onclick="spectateMatch('{{ match.match_id }}')" title="Spectate">
+                                <i class="fas fa-video"></i>
+                            </button>
+                            <button class="text-yellow-400 hover:text-yellow-300" onclick="pauseMatch('{{ match.match_id }}')" title="Pause">
+                                <i class="fas fa-pause"></i>
+                            </button>
+                            <button class="text-red-400 hover:text-red-300" onclick="terminateMatch('{{ match.match_id }}')" title="Terminate">
+                                <i class="fas fa-stop"></i>
+                            </button>
+                        </div>
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+    {% else %}
+    <div class="p-12 text-center">
+        <i class="fas fa-gamepad text-6xl text-gray-600 mb-4"></i>
+        <h3 class="text-xl font-semibold text-white mb-2">No Active Matches</h3>
+        <p class="text-gray-400">No matches are currently in progress.</p>
+        <button class="mt-4 px-4 py-2 bg-blue-600 hover:bg-blue-700 rounded font-medium text-sm" onclick="refreshMatches()">
+            <i class="fas fa-sync-alt mr-2"></i>
+            Refresh
+        </button>
+    </div>
+    {% endif %}
+</div>
+
+<!-- Match Actions Modal -->
+<div id="matchActionModal" class="fixed inset-0 bg-black bg-opacity-50 hidden z-50">
+    <div class="flex items-center justify-center min-h-screen p-4">
+        <div class="bg-gray-800 rounded-lg max-w-md w-full">
+            <div class="p-6 border-b border-gray-700">
+                <div class="flex items-center justify-between">
+                    <h3 class="text-lg font-semibold text-white" id="modalTitle">Match Action</h3>
+                    <button onclick="closeMatchActionModal()" class="text-gray-400 hover:text-white">
+                        <i class="fas fa-times"></i>
+                    </button>
+                </div>
+            </div>
+            <div class="p-6">
+                <div id="modalContent">
+                    <!-- Dynamic content will be loaded here -->
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+// Match management functions
+function viewMatch(matchId) {
+    window.location.href = `/admin/game-operations/match/${matchId}`;
+}
+
+function spectateMatch(matchId) {
+    // Open spectator view in new window
+    window.open(`/spectate/${matchId}`, '_blank', 'width=1200,height=800');
+    showAlert(`Opened spectator view for match ${matchId}`, 'info');
+}
+
+function pauseMatch(matchId) {
+    if (confirm(`Are you sure you want to pause match ${matchId}?`)) {
+        // TODO: Implement pause functionality
+        showAlert(`Match ${matchId} paused`, 'warning');
+    }
+}
+
+function terminateMatch(matchId) {
+    document.getElementById('modalTitle').textContent = 'Terminate Match';
+    document.getElementById('modalContent').innerHTML = `
+        <div class="mb-4">
+            <p class="text-white mb-4">Are you sure you want to terminate match <strong>${matchId}</strong>?</p>
+            <p class="text-gray-400 text-sm mb-4">This action cannot be undone and will end the match immediately.</p>
+            
+            <div class="mb-4">
+                <label class="block text-sm font-medium text-gray-300 mb-2">Reason</label>
+                <select id="terminateReason" class="w-full bg-gray-700 border border-gray-600 rounded px-3 py-2 text-white">
+                    <option value="admin_intervention">Admin Intervention</option>
+                    <option value="technical_issue">Technical Issue</option>
+                    <option value="player_violation">Player Violation</option>
+                    <option value="system_maintenance">System Maintenance</option>
+                    <option value="other">Other</option>
+                </select>
+            </div>
+            
+            <div class="mb-6">
+                <label class="block text-sm font-medium text-gray-300 mb-2">Additional Notes (Optional)</label>
+                <textarea id="terminateNotes" rows="3" 
+                          class="w-full bg-gray-700 border border-gray-600 rounded px-3 py-2 text-white"
+                          placeholder="Additional details..."></textarea>
+            </div>
+        </div>
+        
+        <div class="flex justify-end space-x-3">
+            <button onclick="closeMatchActionModal()" class="px-4 py-2 bg-gray-600 hover:bg-gray-700 rounded">
+                Cancel
+            </button>
+            <button onclick="confirmTerminate('${matchId}')" class="px-4 py-2 bg-red-600 hover:bg-red-700 rounded">
+                <i class="fas fa-stop mr-2"></i>
+                Terminate Match
+            </button>
+        </div>
+    `;
+    document.getElementById('matchActionModal').classList.remove('hidden');
+}
+
+function confirmTerminate(matchId) {
+    const reason = document.getElementById('terminateReason').value;
+    const notes = document.getElementById('terminateNotes').value;
+    
+    fetch(`/admin/api/game-operations/match/${matchId}/terminate`, {
+        method: 'POST',
+        headers: {'Content-Type': 'application/json'},
+        body: JSON.stringify({
+            reason: reason,
+            notes: notes
+        })
+    })
+    .then(response => response.json())
+    .then(data => {
+        showAlert(data.message, data.success ? 'success' : 'error');
+        if (data.success) {
+            closeMatchActionModal();
+            // Remove the row from the table
+            const row = document.querySelector(`[data-match-id="${matchId}"]`);
+            if (row) {
+                row.remove();
+            }
+            updateStatistics();
+        }
+    })
+    .catch(error => {
+        showAlert('Error terminating match', 'error');
+    });
+}
+
+function closeMatchActionModal() {
+    document.getElementById('matchActionModal').classList.add('hidden');
+}
+
+// Search and filter functionality
+document.getElementById('matchSearch').addEventListener('input', function() {
+    filterMatches();
+});
+
+document.getElementById('modeFilter').addEventListener('change', function() {
+    filterMatches();
+});
+
+function filterMatches() {
+    const searchTerm = document.getElementById('matchSearch').value.toLowerCase();
+    const modeFilter = document.getElementById('modeFilter').value;
+    const rows = document.querySelectorAll('.match-row');
+    
+    rows.forEach(row => {
+        const matchId = row.dataset.matchId.toLowerCase();
+        const mode = row.dataset.mode;
+        const playerNames = Array.from(row.querySelectorAll('.text-white')).map(el => el.textContent.toLowerCase()).join(' ');
+        
+        const matchesSearch = matchId.includes(searchTerm) || playerNames.includes(searchTerm);
+        const matchesMode = !modeFilter || mode === modeFilter;
+        
+        if (matchesSearch && matchesMode) {
+            row.style.display = '';
+        } else {
+            row.style.display = 'none';
+        }
+    });
+}
+
+// Refresh matches
+function refreshMatches() {
+    showAlert('Refreshing matches...', 'info');
+    setTimeout(() => location.reload(), 1000);
+}
+
+// Update statistics after match termination
+function updateStatistics() {
+    const visibleRows = document.querySelectorAll('.match-row:not([style*="display: none"])');
+    const totalMatches = visibleRows.length;
+    
+    // Update the total matches counter
+    const totalElement = document.querySelector('.text-green-400');
+    if (totalElement) {
+        totalElement.textContent = totalMatches;
+    }
+}
+
+// Real-time updates
+setInterval(() => {
+    // In a real implementation, this would fetch updated match data
+    // For now, we'll just show that updates are happening
+    console.log('Checking for match updates...');
+}, 30000);
+
+// Alert system
+function showAlert(message, type = 'info') {
+    const alertDiv = document.createElement('div');
+    alertDiv.className = `fixed top-4 right-4 z-50 px-4 py-3 rounded-lg shadow-lg ${
+        type === 'success' ? 'bg-green-600 text-white' :
+        type === 'error' ? 'bg-red-600 text-white' :
+        type === 'warning' ? 'bg-yellow-600 text-black' :
+        'bg-blue-600 text-white'
+    }`;
+    alertDiv.textContent = message;
+    
+    document.body.appendChild(alertDiv);
+    
+    // Auto-remove after 5 seconds
+    setTimeout(() => {
+        alertDiv.remove();
+    }, 5000);
+}
+
+// Close modal when clicking outside
+document.getElementById('matchActionModal').addEventListener('click', function(e) {
+    if (e.target === this) {
+        closeMatchActionModal();
+    }
+});
+</script>
+{% endblock %}

@@ -24,6 +24,11 @@ from handlers.matchmaking import MatchmakingHandler
 from handlers.game_state import GameStateHandler
 from protocols.game_protocol import GameProtocol
 
+# Import game engine components
+sys.path.append('/home/jp/deckport.ai/services/api')
+from game_engine.match_manager import MatchManager
+from matchmaking.queue_manager import QueueManager
+
 # Load environment
 load_dotenv()
 
@@ -101,18 +106,38 @@ class ConnectionManager:
 # Global connection manager
 manager = ConnectionManager()
 
+# Initialize game engine components
+match_manager = MatchManager()
+queue_manager = QueueManager(match_manager)
+
 # Initialize handlers (will be created when needed)
 matchmaking_handler = None
 game_state_handler = None
 protocol = GameProtocol()
 
+# Start queue manager
+async def startup_event():
+    """Initialize services on startup"""
+    await queue_manager.start()
+    logger.info("Queue manager started")
+
+# Register startup event
+@app.on_event("startup")
+async def startup():
+    await startup_event()
+
+@app.on_event("shutdown") 
+async def shutdown():
+    await queue_manager.stop()
+    logger.info("Queue manager stopped")
+
 def get_handlers():
     """Get or create handlers"""
     global matchmaking_handler, game_state_handler
     if matchmaking_handler is None:
-        matchmaking_handler = MatchmakingHandler(manager)
+        matchmaking_handler = MatchmakingHandler(manager, queue_manager)
     if game_state_handler is None:
-        game_state_handler = GameStateHandler(manager)
+        game_state_handler = GameStateHandler(manager, match_manager)
     return matchmaking_handler, game_state_handler
 
 async def get_current_user(websocket: WebSocket) -> Optional[dict]:
@@ -216,7 +241,7 @@ async def route_message(message: dict, connection_id: str, user_info: dict):
         # Route to handlers
         if message_type.startswith('queue.'):
             await mm_handler.handle_message(message, connection_id, user_info)
-        elif message_type.startswith('match.'):
+        elif message_type.startswith('match.') or message_type.startswith('state.') or message_type.startswith('card.') or message_type.startswith('sync.'):
             await gs_handler.handle_message(message, connection_id, user_info)
         elif message_type == 'ping':
             await manager.send_personal_message({"type": "pong"}, connection_id)

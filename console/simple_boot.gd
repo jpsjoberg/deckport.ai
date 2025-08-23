@@ -10,15 +10,18 @@ extends Control
 @onready var background_video = $BackgroundVideo
 
 var server_logger
+var device_connection_manager
 var boot_start_time: float
 
 var boot_steps = [
 	"Initializing console...",
 	"Loading systems...",
-	"Connecting to server...",
+	"Registering device...",
+	"Authenticating device...",
 	"Ready!"
 ]
 var current_step = 0
+var connection_established = false
 
 func _ready():
 	boot_start_time = Time.get_ticks_msec() / 1000.0
@@ -27,6 +30,16 @@ func _ready():
 	# Initialize server logger
 	server_logger = preload("res://server_logger.gd").new()
 	add_child(server_logger)
+	
+	# Initialize device connection manager
+	device_connection_manager = preload("res://device_connection_manager.gd").new()
+	add_child(device_connection_manager)
+	
+	# Connect signals for device connection events
+	device_connection_manager.device_registered.connect(_on_device_registered)
+	device_connection_manager.device_authenticated.connect(_on_device_authenticated)
+	device_connection_manager.connection_tested.connect(_on_connection_tested)
+	device_connection_manager.error_occurred.connect(_on_connection_error)
 	
 	# Enable fullscreen mode
 	DisplayServer.window_set_mode(DisplayServer.WINDOW_MODE_FULLSCREEN)
@@ -169,27 +182,51 @@ func setup_logo():
 		server_logger.log_system_event("logo_fallback", {"type": "text"})
 
 func start_boot_sequence():
-	"""Simple boot sequence with progress"""
+	"""Enhanced boot sequence with device connection"""
 	logo_label.text = "DECKPORT CONSOLE"
 	progress_bar.value = 0
 	
-	for i in range(boot_steps.size()):
+	# Initial steps (system initialization)
+	for i in range(2):  # First 2 steps: Initialize and Load systems
 		status_label.text = boot_steps[i]
-		progress_bar.value = (i + 1) * 25
+		progress_bar.value = (i + 1) * 20
 		print("Boot step: ", boot_steps[i])
 		
 		# Log each boot step
 		server_logger.log_system_event("boot_step", {
 			"step": i + 1,
 			"message": boot_steps[i],
-			"progress": (i + 1) * 25
+			"progress": (i + 1) * 20
 		})
 		
 		await get_tree().create_timer(1.0).timeout
 	
+	# Device connection steps will be handled by signal callbacks
+	# The connection manager will automatically start when initialized
+	
+	# Wait for device connection to complete or timeout
+	var timeout_counter = 0
+	while not connection_established and timeout_counter < 30:  # 30 second timeout
+		await get_tree().create_timer(1.0).timeout
+		timeout_counter += 1
+	
+	if not connection_established:
+		# Connection failed, but allow continue with limited functionality
+		status_label.text = "⚠️ Connection failed - Limited functionality"
+		progress_bar.value = 80
+		server_logger.log_system_event("boot_connection_failed", {"timeout": timeout_counter})
+		await get_tree().create_timer(2.0).timeout
+	
+	# Final step
+	current_step = boot_steps.size() - 1
+	status_label.text = boot_steps[current_step]
+	progress_bar.value = 100
+	
 	# Log boot completion
 	var boot_time = (Time.get_ticks_msec() / 1000.0) - boot_start_time
 	server_logger.log_console_boot(boot_time)
+	
+	await get_tree().create_timer(1.0).timeout
 	
 	# Boot complete - show simple menu
 	show_simple_menu()
@@ -210,12 +247,77 @@ func _input(event):
 		if event.keycode == KEY_SPACE:
 			print("📱 Loading QR login...")
 			load_main_menu()
+		elif event.keycode == KEY_R:
+			print("🔄 Retrying device connection...")
+			connection_established = false
+			progress_bar.value = 0
+			device_connection_manager.force_reconnect()
 		elif event.keycode == KEY_ESCAPE:
 			print("👋 Exiting console")
 			get_tree().quit()
 
 func load_main_menu():
 	"""Load QR login scene directly after boot"""
-	print("📱 Transitioning to QR login")
-	server_logger.log_scene_change("boot", "qr_login")
-	get_tree().change_scene_to_file("res://qr_login_scene.tscn")
+	if device_connection_manager.is_connected():
+		print("📱 Transitioning to QR login (device authenticated)")
+		server_logger.log_scene_change("boot", "qr_login")
+		get_tree().change_scene_to_file("res://qr_login_scene.tscn")
+	else:
+		print("⚠️ Device not authenticated - showing connection status")
+		show_connection_status()
+
+func show_connection_status():
+	"""Show detailed connection status to help debug issues"""
+	var status_text = "❌ DEVICE CONNECTION FAILED\n\n"
+	status_text += "Troubleshooting:\n"
+	status_text += "• Check if API server is running on port 8002\n"
+	status_text += "• Verify network connectivity\n"
+	status_text += "• Check server logs for errors\n\n"
+	status_text += "Press R to retry connection\n"
+	status_text += "Press ESC to exit"
+	
+	status_label.text = status_text
+
+# Device Connection Signal Handlers
+func _on_connection_tested(success: bool, response: Dictionary):
+	"""Handle server connection test result"""
+	if success:
+		print("✅ Server connection established")
+		status_label.text = "✅ Server connected - Registering device..."
+		progress_bar.value = 40
+		server_logger.log_system_event("server_connected", response)
+	else:
+		print("❌ Server connection failed")
+		server_logger.log_system_event("server_connection_failed", response)
+
+func _on_device_registered(success: bool, message: String):
+	"""Handle device registration result"""
+	if success:
+		print("✅ Device registration: ", message)
+		status_label.text = "📝 Device registered - Authenticating..."
+		progress_bar.value = 60
+		server_logger.log_system_event("device_registered", {"message": message})
+	else:
+		print("❌ Device registration failed: ", message)
+		server_logger.log_system_event("device_registration_failed", {"message": message})
+
+func _on_device_authenticated(success: bool, token: String):
+	"""Handle device authentication result"""
+	if success:
+		print("✅ Device authenticated successfully")
+		status_label.text = "🔐 Device authenticated - Ready!"
+		progress_bar.value = 80
+		connection_established = true
+		server_logger.log_system_event("device_authenticated", {"token_length": token.length()})
+	else:
+		print("❌ Device authentication failed")
+		server_logger.log_system_event("device_authentication_failed", {})
+
+func _on_connection_error(error_type: String, message: String, details: Dictionary):
+	"""Handle connection errors with detailed logging"""
+	print("💥 Connection error (", error_type, "): ", message)
+	status_label.text = "❌ Connection Error: " + message
+	server_logger.log_error("DeviceConnection", error_type + ": " + message, details)
+	
+	# Update progress bar to show error state
+	progress_bar.value = 30

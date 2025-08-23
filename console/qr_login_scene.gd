@@ -12,10 +12,8 @@ extends Control
 @onready var background_video = $BackgroundVideo
 
 var server_logger
-var device_id = "DECK_DEV_CONSOLE_01"  # Fixed device ID for development
+var device_connection_manager
 var server_url = "http://127.0.0.1:8002"
-# Alternative URLs to try if main fails
-var backup_urls = ["http://localhost:8002"]
 
 # QR Login state
 var login_token = ""
@@ -32,6 +30,15 @@ func _ready():
 	server_logger = preload("res://server_logger.gd").new()
 	add_child(server_logger)
 	server_logger.log_scene_change("main_menu", "qr_login")
+	
+	# Get device connection manager from parent or create new one
+	device_connection_manager = preload("res://device_connection_manager.gd").new()
+	add_child(device_connection_manager)
+	
+	# Check if device is properly authenticated
+	if not device_connection_manager.is_connected():
+		_show_error("Device not authenticated. Please restart console.")
+		return
 	
 	# Setup HTTP request
 	http_request = HTTPRequest.new()
@@ -93,14 +100,8 @@ func start_qr_login_flow():
 	status_label.text = "Generating QR code..."
 	qr_text.text = "⏳ Loading..."
 	
-	# Call server to start QR login
-	var headers = [
-		"Content-Type: application/json", 
-		"X-Device-UID: " + device_id,
-		"User-Agent: Deckport-Console/1.0 (Godot/" + Engine.get_version_info().string + ")",
-		"Accept: application/json",
-		"Connection: close"
-	]
+	# Call server to start QR login with device authentication
+	var headers = device_connection_manager.get_authenticated_headers()
 	var body = "{}"
 	var url = server_url + "/v1/console-login/start"
 	
@@ -328,7 +329,7 @@ func _poll_login_status():
 	if not is_polling or login_token.is_empty():
 		return
 	
-	var headers = ["Content-Type: application/json", "X-Device-UID: " + device_id]
+	var headers = device_connection_manager.get_authenticated_headers()
 	var url = server_url + "/v1/console-login/poll?login_token=" + login_token
 	
 	http_request.request(url, headers, HTTPClient.METHOD_GET)

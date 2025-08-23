@@ -56,7 +56,6 @@ class Arena(Base):
     
     # Relationships
     clips: Mapped[List[ArenaClip]] = relationship(back_populates="arena", cascade="all, delete-orphan")
-    matches: Mapped[List["Match"]] = relationship(back_populates="arena")
 
 class ArenaClip(Base):
     __tablename__ = "arena_clips"

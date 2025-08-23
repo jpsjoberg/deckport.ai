@@ -1,0 +1,438 @@
+{% extends "admin/base.html" %}
+
+{% block title %}Communications Hub - Deckport Admin{% endblock %}
+{% block page_title %}Communications Command Center{% endblock %}
+{% block page_subtitle %}Multi-channel community engagement and marketing{% endblock %}
+
+{% block content %}
+<!-- Communication Channels Overview -->
+<div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+    <!-- Email Newsletter -->
+    <div class="bg-gray-800 rounded-lg p-6 border border-gray-700">
+        <div class="flex items-center">
+            <div class="flex-shrink-0">
+                <i class="fas fa-envelope text-2xl text-blue-400"></i>
+            </div>
+            <div class="ml-4 flex-1">
+                <h3 class="text-lg font-semibold text-white">Email Newsletter</h3>
+                <div class="flex items-baseline">
+                    <span class="text-3xl font-bold text-blue-400">15,247</span>
+                </div>
+                <p class="text-sm text-green-400">94.2% open rate</p>
+            </div>
+        </div>
+    </div>
+
+    <!-- Discord Server -->
+    <div class="bg-gray-800 rounded-lg p-6 border border-gray-700">
+        <div class="flex items-center">
+            <div class="flex-shrink-0">
+                <i class="fab fa-discord text-2xl text-purple-400"></i>
+            </div>
+            <div class="ml-4 flex-1">
+                <h3 class="text-lg font-semibold text-white">Discord Server</h3>
+                <div class="flex items-baseline">
+                    <span class="text-3xl font-bold text-purple-400">8,432</span>
+                </div>
+                <p class="text-sm text-green-400">2,341 online</p>
+            </div>
+        </div>
+    </div>
+
+    <!-- Telegram Channel -->
+    <div class="bg-gray-800 rounded-lg p-6 border border-gray-700">
+        <div class="flex items-center">
+            <div class="flex-shrink-0">
+                <i class="fab fa-telegram text-2xl text-cyan-400"></i>
+            </div>
+            <div class="ml-4 flex-1">
+                <h3 class="text-lg font-semibold text-white">Telegram</h3>
+                <div class="flex items-baseline">
+                    <span class="text-3xl font-bold text-cyan-400">3,156</span>
+                </div>
+                <p class="text-sm text-gray-400">Followers</p>
+            </div>
+        </div>
+    </div>
+
+    <!-- Social Media -->
+    <div class="bg-gray-800 rounded-lg p-6 border border-gray-700">
+        <div class="flex items-center">
+            <div class="flex-shrink-0">
+                <i class="fab fa-twitter text-2xl text-blue-300"></i>
+            </div>
+            <div class="ml-4 flex-1">
+                <h3 class="text-lg font-semibold text-white">Twitter/X</h3>
+                <div class="flex items-baseline">
+                    <span class="text-3xl font-bold text-blue-300">12,089</span>
+                </div>
+                <p class="text-sm text-green-400">+5.2% this week</p>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Quick Actions Bar -->
+<div class="bg-gray-800 rounded-lg p-6 border border-gray-700 mb-8">
+    <div class="flex items-center justify-between">
+        <h3 class="text-lg font-semibold text-white">Quick Broadcast Actions</h3>
+        <div class="flex space-x-3">
+            <button class="px-4 py-2 bg-red-600 hover:bg-red-700 rounded font-medium text-sm" onclick="emergencyAlert()">
+                <i class="fas fa-exclamation-triangle mr-2"></i>
+                Emergency Alert
+            </button>
+            <button class="px-4 py-2 bg-blue-600 hover:bg-blue-700 rounded font-medium text-sm" onclick="scheduleAnnouncement()">
+                <i class="fas fa-calendar-plus mr-2"></i>
+                Schedule Announcement
+            </button>
+            <button class="px-4 py-2 bg-green-600 hover:bg-green-700 rounded font-medium text-sm" onclick="newCampaign()">
+                <i class="fas fa-plus-circle mr-2"></i>
+                New Campaign
+            </button>
+        </div>
+    </div>
+</div>
+
+<!-- Communication Channels Management -->
+<div class="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-8">
+    <!-- Email Marketing -->
+    <div class="bg-gray-800 rounded-lg p-6 border border-gray-700">
+        <div class="flex items-center justify-between mb-4">
+            <h3 class="text-lg font-semibold text-white flex items-center">
+                <i class="fas fa-envelope text-blue-400 mr-2"></i>
+                Email Marketing
+            </h3>
+            <a href="{{ url_for('admin.email_campaigns') }}" class="text-blue-400 hover:text-blue-300 text-sm">
+                Manage →
+            </a>
+        </div>
+        
+        <div class="space-y-3">
+            <div class="flex items-center justify-between p-3 bg-gray-700 rounded">
+                <div>
+                    <div class="text-sm font-medium text-white">Weekly Newsletter</div>
+                    <div class="text-xs text-gray-400">Scheduled for Friday 10 AM</div>
+                </div>
+                <span class="px-2 py-1 bg-green-600 text-xs font-medium rounded">Active</span>
+            </div>
+            
+            <div class="flex items-center justify-between p-3 bg-gray-700 rounded">
+                <div>
+                    <div class="text-sm font-medium text-white">Tournament Announcement</div>
+                    <div class="text-xs text-gray-400">Draft saved</div>
+                </div>
+                <span class="px-2 py-1 bg-yellow-600 text-xs font-medium rounded">Draft</span>
+            </div>
+            
+            <div class="flex items-center justify-between p-3 bg-gray-700 rounded">
+                <div>
+                    <div class="text-sm font-medium text-white">New Card Reveal</div>
+                    <div class="text-xs text-gray-400">Sent 2 days ago</div>
+                </div>
+                <span class="px-2 py-1 bg-gray-600 text-xs font-medium rounded">Sent</span>
+            </div>
+        </div>
+        
+        <button class="w-full mt-4 px-4 py-2 bg-blue-600 hover:bg-blue-700 rounded font-medium text-sm">
+            <i class="fas fa-plus mr-2"></i>
+            Create Email Campaign
+        </button>
+    </div>
+
+    <!-- Discord Management -->
+    <div class="bg-gray-800 rounded-lg p-6 border border-gray-700">
+        <div class="flex items-center justify-between mb-4">
+            <h3 class="text-lg font-semibold text-white flex items-center">
+                <i class="fab fa-discord text-purple-400 mr-2"></i>
+                Discord Server
+            </h3>
+            <a href="{{ url_for('admin.discord_management') }}" class="text-purple-400 hover:text-purple-300 text-sm">
+                Manage →
+            </a>
+        </div>
+        
+        <div class="space-y-3">
+            <div class="flex items-center justify-between">
+                <span class="text-sm text-gray-300">Server Status</span>
+                <div class="flex items-center">
+                    <div class="w-2 h-2 bg-green-400 rounded-full mr-2"></div>
+                    <span class="text-sm text-green-400">Online</span>
+                </div>
+            </div>
+            
+            <div class="flex items-center justify-between">
+                <span class="text-sm text-gray-300">Active Channels</span>
+                <span class="text-sm text-white">23</span>
+            </div>
+            
+            <div class="flex items-center justify-between">
+                <span class="text-sm text-gray-300">Moderators</span>
+                <span class="text-sm text-white">12</span>
+            </div>
+            
+            <div class="flex items-center justify-between">
+                <span class="text-sm text-gray-300">Auto-Moderation</span>
+                <span class="text-sm text-green-400">Enabled</span>
+            </div>
+        </div>
+        
+        <div class="flex space-x-2 mt-4">
+            <button class="flex-1 px-3 py-2 bg-purple-600 hover:bg-purple-700 rounded font-medium text-sm">
+                <i class="fas fa-bullhorn mr-1"></i>
+                Announce
+            </button>
+            <button class="flex-1 px-3 py-2 bg-yellow-600 hover:bg-yellow-700 rounded font-medium text-sm">
+                <i class="fas fa-cog mr-1"></i>
+                Settings
+            </button>
+        </div>
+    </div>
+
+    <!-- Telegram Channel -->
+    <div class="bg-gray-800 rounded-lg p-6 border border-gray-700">
+        <div class="flex items-center justify-between mb-4">
+            <h3 class="text-lg font-semibold text-white flex items-center">
+                <i class="fab fa-telegram text-cyan-400 mr-2"></i>
+                Telegram Channel
+            </h3>
+            <a href="{{ url_for('admin.telegram_channel') }}" class="text-cyan-400 hover:text-cyan-300 text-sm">
+                Manage →
+            </a>
+        </div>
+        
+        <div class="space-y-3">
+            <div class="flex items-center justify-between">
+                <span class="text-sm text-gray-300">Channel Status</span>
+                <div class="flex items-center">
+                    <div class="w-2 h-2 bg-green-400 rounded-full mr-2"></div>
+                    <span class="text-sm text-green-400">Active</span>
+                </div>
+            </div>
+            
+            <div class="flex items-center justify-between">
+                <span class="text-sm text-gray-300">Daily Messages</span>
+                <span class="text-sm text-white">3-5</span>
+            </div>
+            
+            <div class="flex items-center justify-between">
+                <span class="text-sm text-gray-300">Engagement Rate</span>
+                <span class="text-sm text-green-400">12.4%</span>
+            </div>
+            
+            <div class="flex items-center justify-between">
+                <span class="text-sm text-gray-300">Auto-Posts</span>
+                <span class="text-sm text-green-400">Enabled</span>
+            </div>
+        </div>
+        
+        <div class="flex space-x-2 mt-4">
+            <button class="flex-1 px-3 py-2 bg-cyan-600 hover:bg-cyan-700 rounded font-medium text-sm">
+                <i class="fas fa-paper-plane mr-1"></i>
+                Send Message
+            </button>
+            <button class="flex-1 px-3 py-2 bg-blue-600 hover:bg-blue-700 rounded font-medium text-sm">
+                <i class="fas fa-robot mr-1"></i>
+                Bot Settings
+            </button>
+        </div>
+    </div>
+</div>
+
+<!-- Recent Activity & Scheduled Content -->
+<div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+    <!-- Recent Communication Activity -->
+    <div class="bg-gray-800 rounded-lg p-6 border border-gray-700">
+        <div class="flex items-center justify-between mb-4">
+            <h3 class="text-lg font-semibold text-white">Recent Activity</h3>
+            <button class="text-blue-400 hover:text-blue-300 text-sm">
+                <i class="fas fa-sync-alt mr-1"></i> Refresh
+            </button>
+        </div>
+        
+        <div class="space-y-3 max-h-96 overflow-y-auto">
+            <div class="flex items-start space-x-3 p-3 bg-gray-700 rounded">
+                <div class="flex-shrink-0">
+                    <i class="fas fa-envelope text-blue-400 mt-1"></i>
+                </div>
+                <div class="flex-1">
+                    <p class="text-sm text-white">Newsletter "Weekly Update #47" sent to 15,247 subscribers</p>
+                    <p class="text-xs text-gray-400">2 minutes ago • 94.2% delivered</p>
+                </div>
+            </div>
+            
+            <div class="flex items-start space-x-3 p-3 bg-gray-700 rounded">
+                <div class="flex-shrink-0">
+                    <i class="fab fa-discord text-purple-400 mt-1"></i>
+                </div>
+                <div class="flex-1">
+                    <p class="text-sm text-white">Tournament announcement posted in #announcements</p>
+                    <p class="text-xs text-gray-400">15 minutes ago • 247 reactions</p>
+                </div>
+            </div>
+            
+            <div class="flex items-start space-x-3 p-3 bg-gray-700 rounded">
+                <div class="flex-shrink-0">
+                    <i class="fab fa-telegram text-cyan-400 mt-1"></i>
+                </div>
+                <div class="flex-1">
+                    <p class="text-sm text-white">Card reveal video shared on Telegram channel</p>
+                    <p class="text-xs text-gray-400">1 hour ago • 89 views</p>
+                </div>
+            </div>
+            
+            <div class="flex items-start space-x-3 p-3 bg-gray-700 rounded">
+                <div class="flex-shrink-0">
+                    <i class="fab fa-twitter text-blue-300 mt-1"></i>
+                </div>
+                <div class="flex-1">
+                    <p class="text-sm text-white">Tournament results tweeted with highlights</p>
+                    <p class="text-xs text-gray-400">3 hours ago • 156 retweets, 423 likes</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Scheduled Content -->
+    <div class="bg-gray-800 rounded-lg p-6 border border-gray-700">
+        <div class="flex items-center justify-between mb-4">
+            <h3 class="text-lg font-semibold text-white">Scheduled Content</h3>
+            <button class="text-green-400 hover:text-green-300 text-sm" onclick="scheduleContent()">
+                <i class="fas fa-plus mr-1"></i> Schedule
+            </button>
+        </div>
+        
+        <div class="space-y-3">
+            <div class="flex items-center justify-between p-3 bg-gray-700 rounded">
+                <div class="flex items-center">
+                    <i class="fas fa-envelope text-blue-400 mr-3"></i>
+                    <div>
+                        <div class="text-sm font-medium text-white">Tournament Reminder</div>
+                        <div class="text-xs text-gray-400">Email • Tomorrow 2:00 PM</div>
+                    </div>
+                </div>
+                <div class="flex space-x-2">
+                    <button class="text-blue-400 hover:text-blue-300">
+                        <i class="fas fa-edit"></i>
+                    </button>
+                    <button class="text-red-400 hover:text-red-300">
+                        <i class="fas fa-trash"></i>
+                    </button>
+                </div>
+            </div>
+            
+            <div class="flex items-center justify-between p-3 bg-gray-700 rounded">
+                <div class="flex items-center">
+                    <i class="fab fa-discord text-purple-400 mr-3"></i>
+                    <div>
+                        <div class="text-sm font-medium text-white">Weekly Community Event</div>
+                        <div class="text-xs text-gray-400">Discord • Friday 7:00 PM</div>
+                    </div>
+                </div>
+                <div class="flex space-x-2">
+                    <button class="text-blue-400 hover:text-blue-300">
+                        <i class="fas fa-edit"></i>
+                    </button>
+                    <button class="text-red-400 hover:text-red-300">
+                        <i class="fas fa-trash"></i>
+                    </button>
+                </div>
+            </div>
+            
+            <div class="flex items-center justify-between p-3 bg-gray-700 rounded">
+                <div class="flex items-center">
+                    <i class="fab fa-telegram text-cyan-400 mr-3"></i>
+                    <div>
+                        <div class="text-sm font-medium text-white">Balance Update Notes</div>
+                        <div class="text-xs text-gray-400">Telegram • Next Monday 10:00 AM</div>
+                    </div>
+                </div>
+                <div class="flex space-x-2">
+                    <button class="text-blue-400 hover:text-blue-300">
+                        <i class="fas fa-edit"></i>
+                    </button>
+                    <button class="text-red-400 hover:text-red-300">
+                        <i class="fas fa-trash"></i>
+                    </button>
+                </div>
+            </div>
+        </div>
+        
+        <div class="mt-4 p-3 bg-blue-900 bg-opacity-30 border border-blue-700 rounded">
+            <div class="flex items-center">
+                <i class="fas fa-info-circle text-blue-400 mr-2"></i>
+                <span class="text-sm text-blue-300">3 items scheduled for this week</span>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Content Creation Modal -->
+<div id="contentModal" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 hidden">
+    <div class="bg-gray-800 rounded-lg p-6 w-full max-w-4xl mx-4 max-h-screen overflow-y-auto">
+        <div class="flex items-center justify-between mb-6">
+            <h3 class="text-xl font-semibold text-white">Create Content</h3>
+            <button class="text-gray-400 hover:text-white" onclick="closeContentModal()">
+                <i class="fas fa-times text-xl"></i>
+            </button>
+        </div>
+        
+        <div id="contentModalBody">
+            <!-- Dynamic content creation form will be loaded here -->
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script src="{{ url_for('static', filename='admin/js/communications.js') }}"></script>
+<script>
+// Initialize communications hub
+document.addEventListener('DOMContentLoaded', function() {
+    initializeCommunications();
+    startRealTimeActivityFeed();
+});
+
+// Quick action functions
+function emergencyAlert() {
+    const message = prompt('Enter emergency alert message:');
+    if (message) {
+        if (confirm(`Send emergency alert to ALL channels?\n\n"${message}"`)) {
+            // Send emergency alert to all channels
+            fetch('/admin/api/communications/emergency-alert', {
+                method: 'POST',
+                headers: {'Content-Type': 'application/json'},
+                body: JSON.stringify({message: message})
+            }).then(response => response.json())
+              .then(data => showAlert(data.message, data.success ? 'success' : 'error'));
+        }
+    }
+}
+
+function scheduleAnnouncement() {
+    document.getElementById('contentModal').classList.remove('hidden');
+    loadContentForm('announcement');
+}
+
+function newCampaign() {
+    document.getElementById('contentModal').classList.remove('hidden');
+    loadContentForm('campaign');
+}
+
+function scheduleContent() {
+    document.getElementById('contentModal').classList.remove('hidden');
+    loadContentForm('schedule');
+}
+
+function closeContentModal() {
+    document.getElementById('contentModal').classList.add('hidden');
+}
+
+function loadContentForm(type) {
+    fetch(`/admin/api/communications/content-form/${type}`)
+        .then(response => response.text())
+        .then(html => {
+            document.getElementById('contentModalBody').innerHTML = html;
+        });
+}
+</script>
+{% endblock %}

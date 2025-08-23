@@ -1,0 +1,112 @@
+{% extends "admin/base.html" %}
+
+{% block title %}NFC Card Tracking{% endblock %}
+
+{% block content %}
+<div class="space-y-6">
+    <!-- Header -->
+    <div class="flex justify-between items-center">
+        <div>
+            <h1 class="text-3xl font-bold text-gray-900">NFC Card Tracking</h1>
+            <p class="text-gray-600 mt-1">Monitor NFC card ownership, evolution, and match participation</p>
+        </div>
+        <a href="{{ url_for('admin.nfc_card_index') }}" class="bg-gray-600 text-white px-4 py-2 rounded-lg hover:bg-gray-700 flex items-center">
+            <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18"/>
+            </svg>
+            Back to NFC Dashboard
+        </a>
+    </div>
+
+    <!-- Search and Filters -->
+    <div class="bg-white rounded-lg shadow-md p-6">
+        <div class="grid grid-cols-1 md:grid-cols-4 gap-4">
+            <div>
+                <label for="search" class="block text-sm font-medium text-gray-700 mb-2">Search</label>
+                <input type="text" id="search" name="search" placeholder="NFC UID, Serial, or Template name..."
+                       class="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500">
+            </div>
+            
+            <div>
+                <label for="status" class="block text-sm font-medium text-gray-700 mb-2">Status</label>
+                <select id="status" name="status"
+                        class="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500">
+                    <option value="">All Statuses</option>
+                    <option value="provisioned">Provisioned</option>
+                    <option value="sold">Sold</option>
+                    <option value="activated">Activated</option>
+                    <option value="revoked">Revoked</option>
+                </select>
+            </div>
+            
+            <div>
+                <label for="template" class="block text-sm font-medium text-gray-700 mb-2">Template</label>
+                <select id="template" name="template"
+                        class="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500">
+                    <option value="">All Templates</option>
+                    <!-- Templates would be populated from backend -->
+                </select>
+            </div>
+            
+            <div class="flex items-end">
+                <button type="button" 
+                        class="w-full px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500">
+                    Search
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- NFC Cards Table -->
+    <div class="bg-white rounded-lg shadow-md">
+        <div class="px-6 py-4 border-b border-gray-200">
+            <h3 class="text-lg font-semibold text-gray-900">NFC Card Instances</h3>
+        </div>
+        <div class="overflow-x-auto">
+            <table class="min-w-full divide-y divide-gray-200">
+                <thead class="bg-gray-50">
+                    <tr>
+                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">NFC UID</th>
+                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Template</th>
+                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Status</th>
+                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Level</th>
+                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Owner</th>
+                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Created</th>
+                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
+                    </tr>
+                </thead>
+                <tbody class="bg-white divide-y divide-gray-200">
+                    <!-- Empty state -->
+                    <tr>
+                        <td colspan="7" class="px-6 py-12 text-center">
+                            <div class="text-gray-500">
+                                <svg class="mx-auto h-12 w-12 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 9l3 3-3 3m5 0h3M5 20h14a2 2 0 002-2V6a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"/>
+                                </svg>
+                                <p class="mt-2">No NFC cards found</p>
+                                <p class="text-sm">Create NFC card instances from the production page</p>
+                            </div>
+                        </td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <!-- Evolution History -->
+    <div class="bg-white rounded-lg shadow-md">
+        <div class="px-6 py-4 border-b border-gray-200">
+            <h3 class="text-lg font-semibold text-gray-900">Recent Evolution Events</h3>
+        </div>
+        <div class="p-6">
+            <div class="text-center py-8 text-gray-500">
+                <svg class="mx-auto h-12 w-12 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"/>
+                </svg>
+                <p class="mt-2">No evolution events yet</p>
+                <p class="text-sm">Card evolution will be tracked here as cards are used in matches</p>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

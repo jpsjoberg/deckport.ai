@@ -1,0 +1,336 @@
+{% extends "admin/base.html" %}
+
+{% block title %}Console Registration Queue - Deckport Admin{% endblock %}
+{% block page_title %}Console Registration Queue{% endblock %}
+{% block page_subtitle %}Review and approve pending console registrations{% endblock %}
+
+{% block content %}
+<!-- Registration Statistics -->
+<div class="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-8">
+    <div class="bg-gray-800 rounded-lg p-6 border border-gray-700">
+        <div class="flex items-center justify-between">
+            <div>
+                <h3 class="text-lg font-semibold text-white">Pending Registrations</h3>
+                <span class="text-3xl font-bold text-yellow-400">{{ pending_consoles|length }}</span>
+            </div>
+            <i class="fas fa-clock text-2xl text-yellow-400"></i>
+        </div>
+    </div>
+    
+    <div class="bg-gray-800 rounded-lg p-6 border border-gray-700">
+        <div class="flex items-center justify-between">
+            <div>
+                <h3 class="text-lg font-semibold text-white">Approved Today</h3>
+                <span class="text-3xl font-bold text-green-400">0</span>
+            </div>
+            <i class="fas fa-check-circle text-2xl text-green-400"></i>
+        </div>
+    </div>
+    
+    <div class="bg-gray-800 rounded-lg p-6 border border-gray-700">
+        <div class="flex items-center justify-between">
+            <div>
+                <h3 class="text-lg font-semibold text-white">Rejected Today</h3>
+                <span class="text-3xl font-bold text-red-400">0</span>
+            </div>
+            <i class="fas fa-times-circle text-2xl text-red-400"></i>
+        </div>
+    </div>
+</div>
+
+<!-- Pending Registrations List -->
+<div class="bg-gray-800 rounded-lg border border-gray-700">
+    <div class="p-6 border-b border-gray-700">
+        <div class="flex items-center justify-between">
+            <h3 class="text-lg font-semibold text-white">Pending Console Registrations</h3>
+            <div class="flex items-center space-x-4">
+                <button class="px-4 py-2 bg-green-600 hover:bg-green-700 rounded font-medium text-sm" onclick="approveAll()">
+                    <i class="fas fa-check-double mr-2"></i>
+                    Approve All
+                </button>
+                <button class="px-4 py-2 bg-red-600 hover:bg-red-700 rounded font-medium text-sm" onclick="rejectAll()">
+                    <i class="fas fa-times mr-2"></i>
+                    Reject All
+                </button>
+            </div>
+        </div>
+    </div>
+    
+    {% if pending_consoles %}
+    <div class="overflow-x-auto">
+        <table class="w-full">
+            <thead class="bg-gray-700">
+                <tr>
+                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-300 uppercase tracking-wider">
+                        <input type="checkbox" class="rounded border-gray-600 bg-gray-700" id="selectAll">
+                    </th>
+                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-300 uppercase tracking-wider">Device UID</th>
+                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-300 uppercase tracking-wider">Registration Date</th>
+                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-300 uppercase tracking-wider">Public Key</th>
+                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-300 uppercase tracking-wider">Status</th>
+                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-300 uppercase tracking-wider">Actions</th>
+                </tr>
+            </thead>
+            <tbody class="divide-y divide-gray-700">
+                {% for console in pending_consoles %}
+                <tr class="hover:bg-gray-700" id="console-{{ console.device_uid }}">
+                    <td class="px-6 py-4 whitespace-nowrap">
+                        <input type="checkbox" class="rounded border-gray-600 bg-gray-700 console-checkbox" value="{{ console.device_uid }}">
+                    </td>
+                    <td class="px-6 py-4 whitespace-nowrap">
+                        <div class="flex items-center">
+                            <i class="fas fa-desktop text-blue-400 mr-3"></i>
+                            <div>
+                                <div class="text-sm font-medium text-white">{{ console.device_uid }}</div>
+                                <div class="text-sm text-gray-400">ID: {{ console.id }}</div>
+                            </div>
+                        </div>
+                    </td>
+                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-300">
+                        {{ console.registered_at.strftime('%Y-%m-%d %H:%M') if console.registered_at else 'Unknown' }}
+                    </td>
+                    <td class="px-6 py-4 whitespace-nowrap">
+                        <div class="text-sm text-gray-300">
+                            {% if console.public_key_pem %}
+                            <button class="text-blue-400 hover:text-blue-300" onclick="showPublicKey('{{ console.device_uid }}')">
+                                <i class="fas fa-key mr-1"></i>
+                                View Key
+                            </button>
+                            {% else %}
+                            <span class="text-red-400">No Key</span>
+                            {% endif %}
+                        </div>
+                    </td>
+                    <td class="px-6 py-4 whitespace-nowrap">
+                        <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-yellow-900 text-yellow-300">
+                            <div class="w-1.5 h-1.5 bg-yellow-400 rounded-full mr-1.5"></div>
+                            Pending Approval
+                        </span>
+                    </td>
+                    <td class="px-6 py-4 whitespace-nowrap text-sm font-medium">
+                        <div class="flex space-x-2">
+                            <button class="px-3 py-1 bg-green-600 hover:bg-green-700 rounded text-xs font-medium" 
+                                    onclick="approveConsole('{{ console.device_uid }}')">
+                                <i class="fas fa-check mr-1"></i>
+                                Approve
+                            </button>
+                            <button class="px-3 py-1 bg-red-600 hover:bg-red-700 rounded text-xs font-medium" 
+                                    onclick="rejectConsole('{{ console.device_uid }}')">
+                                <i class="fas fa-times mr-1"></i>
+                                Reject
+                            </button>
+                            <button class="px-3 py-1 bg-blue-600 hover:bg-blue-700 rounded text-xs font-medium" 
+                                    onclick="viewConsoleDetails('{{ console.device_uid }}')">
+                                <i class="fas fa-info mr-1"></i>
+                                Details
+                            </button>
+                        </div>
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+    {% else %}
+    <div class="p-12 text-center">
+        <i class="fas fa-check-circle text-6xl text-green-400 mb-4"></i>
+        <h3 class="text-xl font-semibold text-white mb-2">All Caught Up!</h3>
+        <p class="text-gray-400">No pending console registrations at this time.</p>
+        <a href="{{ url_for('admin.console_management') }}" class="inline-block mt-4 px-4 py-2 bg-blue-600 hover:bg-blue-700 rounded font-medium text-sm">
+            <i class="fas fa-arrow-left mr-2"></i>
+            Back to Console Management
+        </a>
+    </div>
+    {% endif %}
+</div>
+
+<!-- Public Key Modal -->
+<div id="publicKeyModal" class="fixed inset-0 bg-black bg-opacity-50 hidden z-50">
+    <div class="flex items-center justify-center min-h-screen p-4">
+        <div class="bg-gray-800 rounded-lg max-w-2xl w-full max-h-96 overflow-hidden">
+            <div class="p-6 border-b border-gray-700">
+                <div class="flex items-center justify-between">
+                    <h3 class="text-lg font-semibold text-white">Public Key</h3>
+                    <button onclick="closePublicKeyModal()" class="text-gray-400 hover:text-white">
+                        <i class="fas fa-times"></i>
+                    </button>
+                </div>
+            </div>
+            <div class="p-6">
+                <div class="mb-4">
+                    <label class="block text-sm font-medium text-gray-300 mb-2">Device UID:</label>
+                    <div id="modalDeviceUid" class="text-white font-mono"></div>
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-gray-300 mb-2">RSA Public Key:</label>
+                    <textarea id="modalPublicKey" class="w-full h-32 bg-gray-700 border border-gray-600 rounded text-white font-mono text-xs p-3" readonly></textarea>
+                </div>
+                <div class="mt-4 flex justify-end space-x-2">
+                    <button onclick="copyPublicKey()" class="px-4 py-2 bg-blue-600 hover:bg-blue-700 rounded text-sm">
+                        <i class="fas fa-copy mr-2"></i>
+                        Copy Key
+                    </button>
+                    <button onclick="closePublicKeyModal()" class="px-4 py-2 bg-gray-600 hover:bg-gray-700 rounded text-sm">
+                        Close
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+// Console data for modal
+const consoleData = {
+    {% for console in pending_consoles %}
+    '{{ console.device_uid }}': {
+        device_uid: '{{ console.device_uid }}',
+        public_key: {{ console.public_key_pem|tojson if console.public_key_pem else '""' }}
+    },
+    {% endfor %}
+};
+
+// Select all functionality
+document.getElementById('selectAll').addEventListener('change', function() {
+    const checkboxes = document.querySelectorAll('.console-checkbox');
+    checkboxes.forEach(checkbox => {
+        checkbox.checked = this.checked;
+    });
+});
+
+// Individual console actions
+function approveConsole(deviceUid) {
+    if (confirm(`Are you sure you want to approve console ${deviceUid}?`)) {
+        fetch(`/admin/api/console/${deviceUid}/approve`, {method: 'POST'})
+            .then(response => response.json())
+            .then(data => {
+                showAlert(data.message, data.success ? 'success' : 'error');
+                if (data.success) {
+                    // Remove the row from the table
+                    document.getElementById(`console-${deviceUid}`).remove();
+                    updateStatistics();
+                }
+            })
+            .catch(error => {
+                showAlert('Error approving console', 'error');
+            });
+    }
+}
+
+function rejectConsole(deviceUid) {
+    if (confirm(`Are you sure you want to reject console ${deviceUid}?`)) {
+        fetch(`/admin/api/console/${deviceUid}/reject`, {method: 'POST'})
+            .then(response => response.json())
+            .then(data => {
+                showAlert(data.message, data.success ? 'success' : 'error');
+                if (data.success) {
+                    // Remove the row from the table
+                    document.getElementById(`console-${deviceUid}`).remove();
+                    updateStatistics();
+                }
+            })
+            .catch(error => {
+                showAlert('Error rejecting console', 'error');
+            });
+    }
+}
+
+function viewConsoleDetails(deviceUid) {
+    window.location.href = `/admin/consoles/${deviceUid}`;
+}
+
+// Bulk actions
+function approveAll() {
+    const selectedConsoles = getSelectedConsoles();
+    if (selectedConsoles.length === 0) {
+        showAlert('Please select consoles to approve', 'warning');
+        return;
+    }
+    
+    if (confirm(`Are you sure you want to approve ${selectedConsoles.length} console(s)?`)) {
+        selectedConsoles.forEach(deviceUid => {
+            approveConsole(deviceUid);
+        });
+    }
+}
+
+function rejectAll() {
+    const selectedConsoles = getSelectedConsoles();
+    if (selectedConsoles.length === 0) {
+        showAlert('Please select consoles to reject', 'warning');
+        return;
+    }
+    
+    if (confirm(`Are you sure you want to reject ${selectedConsoles.length} console(s)?`)) {
+        selectedConsoles.forEach(deviceUid => {
+            rejectConsole(deviceUid);
+        });
+    }
+}
+
+function getSelectedConsoles() {
+    const checkboxes = document.querySelectorAll('.console-checkbox:checked');
+    return Array.from(checkboxes).map(cb => cb.value);
+}
+
+// Public key modal
+function showPublicKey(deviceUid) {
+    const console = consoleData[deviceUid];
+    if (console) {
+        document.getElementById('modalDeviceUid').textContent = console.device_uid;
+        document.getElementById('modalPublicKey').value = console.public_key;
+        document.getElementById('publicKeyModal').classList.remove('hidden');
+    }
+}
+
+function closePublicKeyModal() {
+    document.getElementById('publicKeyModal').classList.add('hidden');
+}
+
+function copyPublicKey() {
+    const textarea = document.getElementById('modalPublicKey');
+    textarea.select();
+    document.execCommand('copy');
+    showAlert('Public key copied to clipboard', 'success');
+}
+
+// Update statistics
+function updateStatistics() {
+    const remainingRows = document.querySelectorAll('tbody tr').length;
+    document.querySelector('.text-yellow-400').textContent = remainingRows;
+    
+    // If no more pending registrations, show the empty state
+    if (remainingRows === 0) {
+        setTimeout(() => location.reload(), 1000);
+    }
+}
+
+// Alert system
+function showAlert(message, type = 'info') {
+    const alertDiv = document.createElement('div');
+    alertDiv.className = `fixed top-4 right-4 z-50 px-4 py-3 rounded-lg shadow-lg ${
+        type === 'success' ? 'bg-green-600 text-white' :
+        type === 'error' ? 'bg-red-600 text-white' :
+        type === 'warning' ? 'bg-yellow-600 text-black' :
+        'bg-blue-600 text-white'
+    }`;
+    alertDiv.textContent = message;
+    
+    document.body.appendChild(alertDiv);
+    
+    // Auto-remove after 5 seconds
+    setTimeout(() => {
+        alertDiv.remove();
+    }, 5000);
+}
+
+// Close modal when clicking outside
+document.getElementById('publicKeyModal').addEventListener('click', function(e) {
+    if (e.target === this) {
+        closePublicKeyModal();
+    }
+});
+</script>
+{% endblock %}
