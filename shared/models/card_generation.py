@@ -7,18 +7,34 @@ from datetime import datetime, timezone
 from typing import Optional, List
 from enum import Enum
 from sqlalchemy import (
-    Integer, String, Text, Boolean, DateTime, ForeignKey, 
-    UniqueConstraint, Index, JSON
+    Boolean,
+    CheckConstraint,
+    DateTime,
+    Enum as SAEnum,
+    Float,
+    ForeignKey,
+    Index,
+    Integer,
+    JSON,
+    String,
+    Text,
+    UniqueConstraint
 )
-from sqlalchemy.orm import Mapped, mapped_column, relationship
+from sqlalchemy.orm import DeclarativeBase, Mapped, mapped_column, relationship
 from sqlalchemy.dialects.postgresql import UUID, JSONB
-from sqlalchemy import Enum as SAEnum
-import uuid
-
-from .base import Base
-
-
-def utcnow() -> datetime:
+    Boolean,
+    CheckConstraint,
+    DateTime,
+    Enum as SAEnum,
+    Float,
+    ForeignKey,
+    Index,
+    Integer,
+    JSON,
+    String,
+    Text,
+    UniqueConstraint
+) -> datetime:
     return datetime.now(timezone.utc)
 
 
@@ -67,9 +83,9 @@ class ArtGenerationStatus(str, Enum):
 
 
 # Raw card template models (for card sets and designs)
-class CardTemplate(Base):
-    """Raw card templates - the base designs for card sets"""
-    __tablename__ = "card_templates"
+class GeneratedCardTemplate(Base):
+    """AI-generated card templates - the base designs for card sets"""
+    __tablename__ = "generated_card_templates"
     __table_args__ = (
         UniqueConstraint("slug", name="uq_generated_cards_slug"),
         Index("ix_generated_cards_category", "category"),
@@ -78,8 +94,8 @@ class CardTemplate(Base):
     )
 
     id: Mapped[int] = mapped_column(Integer, primary_key=True)
-    slug: Mapped[str] = mapped_column(String(100), nullable=False)
-    name: Mapped[str] = mapped_column(String(120), nullable=False)
+    slug: Mapped[Optional[str]] = mapped_column(String(100), nullable=False)
+    name: Mapped[Optional[str]] = mapped_column(String(120), nullable=False)
     category: Mapped[GeneratedCardCategory] = mapped_column(SAEnum(GeneratedCardCategory), nullable=False)
     rarity: Mapped[GeneratedCardRarity] = mapped_column(SAEnum(GeneratedCardRarity), nullable=False)
     legendary: Mapped[bool] = mapped_column(Boolean, default=False, nullable=False)
@@ -90,31 +106,31 @@ class CardTemplate(Base):
     is_active: Mapped[bool] = mapped_column(Boolean, default=True, nullable=False)
     
     # Metadata
-    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=utcnow, nullable=False)
-    updated_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=utcnow, onupdate=utcnow, nullable=False)
+    created_at: Mapped[Optional[datetime]] = mapped_column(DateTime(timezone=True), default=utcnow, nullable=False)
+    updated_at: Mapped[Optional[datetime]] = mapped_column(DateTime(timezone=True), default=utcnow, onupdate=utcnow, nullable=False)
     created_by_admin: Mapped[Optional[str]] = mapped_column(String(100))  # Admin username who created it
 
     # Relationships
-    stats: Mapped[Optional["GeneratedCardStats"]] = relationship(back_populates="card", cascade="all, delete-orphan")
-    mana_costs: Mapped[List["GeneratedCardManaCost"]] = relationship(back_populates="card", cascade="all, delete-orphan")
-    targeting: Mapped[Optional["GeneratedCardTargeting"]] = relationship(back_populates="card", cascade="all, delete-orphan")
-    limits: Mapped[Optional["GeneratedCardLimits"]] = relationship(back_populates="card", cascade="all, delete-orphan")
-    effects: Mapped[List["GeneratedCardEffect"]] = relationship(back_populates="card", cascade="all, delete-orphan")
-    abilities: Mapped[List["GeneratedCardAbility"]] = relationship(back_populates="card", cascade="all, delete-orphan")
-    art_generations: Mapped[List["CardArtGeneration"]] = relationship(back_populates="card", cascade="all, delete-orphan")
+    stats: Mapped[List["ArenaClip"]] = relationship(back_populates="card")
+    mana_costs: Mapped[List["ArenaClip"]] = relationship(back_populates="card")
+    targeting: Mapped[List["ArenaClip"]] = relationship(back_populates="card")
+    limits: Mapped[List["ArenaClip"]] = relationship(back_populates="card")
+    effects: Mapped[List["ArenaClip"]] = relationship(back_populates="card")
+    abilities: Mapped[List["ArenaClip"]] = relationship(back_populates="card")
+    art_generations: Mapped[List["ArenaClip"]] = relationship(back_populates="card")
 
 
 class GeneratedCardStats(Base):
     """Combat and gameplay stats for creatures/structures"""
     __tablename__ = "generated_card_stats"
 
-    card_id: Mapped[int] = mapped_column(ForeignKey("generated_cards.id", ondelete="CASCADE"), primary_key=True)
+    card_id: Mapped[Optional[int]] = mapped_column(ForeignKey("generated_cards.id", ondelete="CASCADE"), primary_key=True)
     attack: Mapped[int] = mapped_column(Integer, default=0, nullable=False)
     defense: Mapped[int] = mapped_column(Integer, default=0, nullable=False)
     health: Mapped[int] = mapped_column(Integer, default=0, nullable=False)
     base_energy_per_turn: Mapped[int] = mapped_column(Integer, default=0, nullable=False)
 
-    card: Mapped[GeneratedCard] = relationship(back_populates="stats")
+    card: Mapped["back_populates="stats"stats")
 
 
 class GeneratedCardManaCost(Base):
@@ -125,35 +141,35 @@ class GeneratedCardManaCost(Base):
     )
 
     id: Mapped[int] = mapped_column(Integer, primary_key=True)
-    card_id: Mapped[int] = mapped_column(ForeignKey("generated_cards.id", ondelete="CASCADE"), nullable=False)
+    card_id: Mapped[Optional[int]] = mapped_column(ForeignKey("generated_cards.id", ondelete="CASCADE"), nullable=False)
     color: Mapped[ManaColor] = mapped_column(SAEnum(ManaColor), nullable=False)
     amount: Mapped[int] = mapped_column(Integer, nullable=False)
 
-    card: Mapped[GeneratedCard] = relationship(back_populates="mana_costs")
+    card: Mapped["back_populates="mana_costs"mana_costs")
 
 
 class GeneratedCardTargeting(Base):
     """Targeting rules for cards"""
     __tablename__ = "generated_card_targeting"
 
-    card_id: Mapped[int] = mapped_column(ForeignKey("generated_cards.id", ondelete="CASCADE"), primary_key=True)
+    card_id: Mapped[Optional[int]] = mapped_column(ForeignKey("generated_cards.id", ondelete="CASCADE"), primary_key=True)
     target_friendly: Mapped[bool] = mapped_column(Boolean, default=False, nullable=False)
     target_enemy: Mapped[bool] = mapped_column(Boolean, default=True, nullable=False)
     target_self: Mapped[bool] = mapped_column(Boolean, default=False, nullable=False)
 
-    card: Mapped[GeneratedCard] = relationship(back_populates="targeting")
+    card: Mapped["back_populates="targeting"targeting")
 
 
 class GeneratedCardLimits(Base):
     """Usage limits and charge rules"""
     __tablename__ = "generated_card_limits"
 
-    card_id: Mapped[int] = mapped_column(ForeignKey("generated_cards.id", ondelete="CASCADE"), primary_key=True)
+    card_id: Mapped[Optional[int]] = mapped_column(ForeignKey("generated_cards.id", ondelete="CASCADE"), primary_key=True)
     max_uses_per_match: Mapped[Optional[int]] = mapped_column(Integer)
     charges_max: Mapped[Optional[int]] = mapped_column(Integer)
     charge_rule: Mapped[Optional[dict]] = mapped_column(JSONB)
 
-    card: Mapped[GeneratedCard] = relationship(back_populates="limits")
+    card: Mapped["back_populates="limits"limits")
 
 
 class GeneratedCardEffect(Base):
@@ -164,14 +180,14 @@ class GeneratedCardEffect(Base):
     )
 
     id: Mapped[int] = mapped_column(Integer, primary_key=True)
-    card_id: Mapped[int] = mapped_column(ForeignKey("generated_cards.id", ondelete="CASCADE"), nullable=False)
+    card_id: Mapped[Optional[int]] = mapped_column(ForeignKey("generated_cards.id", ondelete="CASCADE"), nullable=False)
     trigger: Mapped[EffectTrigger] = mapped_column(SAEnum(EffectTrigger), nullable=False)
     speed: Mapped[ActionSpeed] = mapped_column(SAEnum(ActionSpeed), default=ActionSpeed.SLOW, nullable=False)
     order_index: Mapped[int] = mapped_column(Integer, default=0, nullable=False)
 
-    card: Mapped[GeneratedCard] = relationship(back_populates="effects")
-    conditions: Mapped[List["GeneratedCardEffectCondition"]] = relationship(back_populates="effect", cascade="all, delete-orphan")
-    actions: Mapped[List["GeneratedCardEffectAction"]] = relationship(back_populates="effect", cascade="all, delete-orphan")
+    card: Mapped["back_populates="effects"effects")
+    conditions: Mapped[List["ArenaClip"]] = relationship(back_populates="effect")
+    actions: Mapped[List["ArenaClip"]] = relationship(back_populates="effect")
 
 
 class GeneratedCardEffectCondition(Base):
@@ -179,11 +195,11 @@ class GeneratedCardEffectCondition(Base):
     __tablename__ = "generated_card_effect_conditions"
 
     id: Mapped[int] = mapped_column(Integer, primary_key=True)
-    effect_id: Mapped[int] = mapped_column(ForeignKey("generated_card_effects.id", ondelete="CASCADE"), nullable=False)
-    condition_type: Mapped[str] = mapped_column(String(100), nullable=False)
+    effect_id: Mapped[Optional[int]] = mapped_column(ForeignKey("generated_card_effects.id", ondelete="CASCADE"), nullable=False)
+    condition_type: Mapped[Optional[str]] = mapped_column(String(100), nullable=False)
     payload: Mapped[dict] = mapped_column(JSONB, nullable=False)
 
-    effect: Mapped[GeneratedCardEffect] = relationship(back_populates="conditions")
+    effect: Mapped["back_populates="conditions"conditions")
 
 
 class GeneratedCardEffectAction(Base):
@@ -194,12 +210,12 @@ class GeneratedCardEffectAction(Base):
     )
 
     id: Mapped[int] = mapped_column(Integer, primary_key=True)
-    effect_id: Mapped[int] = mapped_column(ForeignKey("generated_card_effects.id", ondelete="CASCADE"), nullable=False)
-    action_type: Mapped[str] = mapped_column(String(100), nullable=False)
+    effect_id: Mapped[Optional[int]] = mapped_column(ForeignKey("generated_card_effects.id", ondelete="CASCADE"), nullable=False)
+    action_type: Mapped[Optional[str]] = mapped_column(String(100), nullable=False)
     payload: Mapped[dict] = mapped_column(JSONB, nullable=False)
     order_index: Mapped[int] = mapped_column(Integer, default=0, nullable=False)
 
-    effect: Mapped[GeneratedCardEffect] = relationship(back_populates="actions")
+    effect: Mapped["back_populates="actions"actions")
 
 
 class GeneratedCardAbility(Base):
@@ -210,16 +226,16 @@ class GeneratedCardAbility(Base):
     )
 
     id: Mapped[int] = mapped_column(Integer, primary_key=True)
-    card_id: Mapped[int] = mapped_column(ForeignKey("generated_cards.id", ondelete="CASCADE"), nullable=False)
-    name: Mapped[str] = mapped_column(String(120), nullable=False)
+    card_id: Mapped[Optional[int]] = mapped_column(ForeignKey("generated_cards.id", ondelete="CASCADE"), nullable=False)
+    name: Mapped[Optional[str]] = mapped_column(String(120), nullable=False)
     is_ultimate: Mapped[bool] = mapped_column(Boolean, default=False, nullable=False)
     charges_max: Mapped[int] = mapped_column(Integer, default=1, nullable=False)
     charge_rule: Mapped[Optional[dict]] = mapped_column(JSONB)
     trigger: Mapped[Optional[EffectTrigger]] = mapped_column(SAEnum(EffectTrigger))
     speed: Mapped[ActionSpeed] = mapped_column(SAEnum(ActionSpeed), default=ActionSpeed.FAST, nullable=False)
 
-    card: Mapped[GeneratedCard] = relationship(back_populates="abilities")
-    actions: Mapped[List["GeneratedCardAbilityAction"]] = relationship(back_populates="ability", cascade="all, delete-orphan")
+    card: Mapped["back_populates="abilities"abilities")
+    actions: Mapped[List["ArenaClip"]] = relationship(back_populates="ability")
 
 
 class GeneratedCardAbilityAction(Base):
@@ -227,12 +243,12 @@ class GeneratedCardAbilityAction(Base):
     __tablename__ = "generated_card_ability_actions"
 
     id: Mapped[int] = mapped_column(Integer, primary_key=True)
-    ability_id: Mapped[int] = mapped_column(ForeignKey("generated_card_abilities.id", ondelete="CASCADE"), nullable=False)
-    action_type: Mapped[str] = mapped_column(String(100), nullable=False)
+    ability_id: Mapped[Optional[int]] = mapped_column(ForeignKey("generated_card_abilities.id", ondelete="CASCADE"), nullable=False)
+    action_type: Mapped[Optional[str]] = mapped_column(String(100), nullable=False)
     payload: Mapped[dict] = mapped_column(JSONB, nullable=False)
     order_index: Mapped[int] = mapped_column(Integer, default=0, nullable=False)
 
-    ability: Mapped[GeneratedCardAbility] = relationship(back_populates="actions")
+    ability: Mapped["back_populates="actions"actions")
 
 
 class CardArtGeneration(Base):
@@ -244,7 +260,7 @@ class CardArtGeneration(Base):
     )
 
     id: Mapped[int] = mapped_column(Integer, primary_key=True)
-    card_id: Mapped[int] = mapped_column(ForeignKey("generated_cards.id", ondelete="CASCADE"), nullable=False)
+    card_id: Mapped[Optional[int]] = mapped_column(ForeignKey("generated_cards.id", ondelete="CASCADE"), nullable=False)
     prompt: Mapped[str] = mapped_column(Text, nullable=False)
     comfyui_prompt_id: Mapped[Optional[str]] = mapped_column(String(100))
     seed: Mapped[Optional[int]] = mapped_column(Integer)
@@ -255,7 +271,7 @@ class CardArtGeneration(Base):
     final_card_path: Mapped[Optional[str]] = mapped_column(String(500))  # Path to composed card
     
     # Timestamps
-    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=utcnow, nullable=False)
+    created_at: Mapped[Optional[datetime]] = mapped_column(DateTime(timezone=True), default=utcnow, nullable=False)
     started_at: Mapped[Optional[datetime]] = mapped_column(DateTime(timezone=True))
     completed_at: Mapped[Optional[datetime]] = mapped_column(DateTime(timezone=True))
     
@@ -263,4 +279,4 @@ class CardArtGeneration(Base):
     error_message: Mapped[Optional[str]] = mapped_column(Text)
     retry_count: Mapped[int] = mapped_column(Integer, default=0, nullable=False)
 
-    card: Mapped[GeneratedCard] = relationship(back_populates="art_generations")
+    card: Mapped["back_populates="art_generations"art_generations")

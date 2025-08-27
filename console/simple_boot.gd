@@ -35,10 +35,15 @@ func _ready():
 	device_connection_manager = preload("res://device_connection_manager.gd").new()
 	add_child(device_connection_manager)
 	
+	# Update server logger with device UID once it's available
+	await get_tree().process_frame  # Wait for device connection manager to initialize
+	if device_connection_manager.get_device_uid() != "":
+		server_logger.set_device_id(device_connection_manager.get_device_uid())
+	
 	# Connect signals for device connection events
 	device_connection_manager.device_registered.connect(_on_device_registered)
 	device_connection_manager.device_authenticated.connect(_on_device_authenticated)
-	device_connection_manager.connection_tested.connect(_on_connection_tested)
+	device_connection_manager.connection_verified.connect(_on_connection_verified)
 	device_connection_manager.error_occurred.connect(_on_connection_error)
 	
 	# Enable fullscreen mode
@@ -232,39 +237,33 @@ func start_boot_sequence():
 	show_simple_menu()
 
 func show_simple_menu():
-	"""Show boot complete message"""
-	status_label.text = "Boot Complete!\n\nPress SPACE for QR Login\nPress ESC to quit"
+	"""Auto-transition to QR Login after boot complete"""
+	status_label.text = "Boot Complete!\n\nLoading QR Login..."
 	
 	# Keep logo as is (image or text)
 	if logo_label.visible:
 		logo_label.text = "DECKPORT CONSOLE"
 	
 	progress_bar.visible = false
+	
+	# Auto-transition to QR login after brief delay
+	await get_tree().create_timer(1.0).timeout
+	load_qr_login_directly()
 
 func _input(event):
-	"""Handle input"""
+	"""Handle input - minimal controls during boot"""
 	if event is InputEventKey and event.pressed:
-		if event.keycode == KEY_SPACE:
-			print("📱 Loading QR login...")
-			load_main_menu()
-		elif event.keycode == KEY_R:
+		if event.keycode == KEY_R:
 			print("🔄 Retrying device connection...")
 			connection_established = false
 			progress_bar.value = 0
 			device_connection_manager.force_reconnect()
-		elif event.keycode == KEY_ESCAPE:
-			print("👋 Exiting console")
-			get_tree().quit()
 
-func load_main_menu():
-	"""Load QR login scene directly after boot"""
-	if device_connection_manager.is_connected():
-		print("📱 Transitioning to QR login (device authenticated)")
-		server_logger.log_scene_change("boot", "qr_login")
-		get_tree().change_scene_to_file("res://qr_login_scene.tscn")
-	else:
-		print("⚠️ Device not authenticated - showing connection status")
-		show_connection_status()
+func load_qr_login_directly():
+	"""Load QR login scene directly after boot (no menu in between)"""
+	print("📱 Auto-transitioning to QR login after boot")
+	server_logger.log_scene_change("boot", "qr_login")
+	get_tree().change_scene_to_file("res://qr_login_scene.tscn")
 
 func show_connection_status():
 	"""Show detailed connection status to help debug issues"""
@@ -278,9 +277,31 @@ func show_connection_status():
 	
 	status_label.text = status_text
 
+func _show_pending_approval_screen():
+	"""Show screen indicating device is pending admin approval"""
+	print("📋 Showing pending approval screen")
+	
+	# Update the status display
+	status_label.text = """⏳ Device Registration Complete
+	
+🔄 Waiting for Admin Approval
+
+Your console has been registered successfully but requires admin approval before it can be used.
+
+🆔 Device ID: """ + device_connection_manager.device_uid + """
+
+💡 An administrator can approve this device in the admin panel.
+
+Press ESC to exit"""
+	
+	# Set progress to show partial completion
+	progress_bar.value = 60
+	
+	# The console will stay in this state until manually restarted after approval
+
 # Device Connection Signal Handlers
-func _on_connection_tested(success: bool, response: Dictionary):
-	"""Handle server connection test result"""
+func _on_connection_verified(success: bool, response: Dictionary):
+	"""Handle server connection verification result"""
 	if success:
 		print("✅ Server connection established")
 		status_label.text = "✅ Server connected - Registering device..."
@@ -309,6 +330,13 @@ func _on_device_authenticated(success: bool, token: String):
 		progress_bar.value = 80
 		connection_established = true
 		server_logger.log_system_event("device_authenticated", {"token_length": token.length()})
+	elif token == "pending_approval":
+		print("⏳ Device pending admin approval")
+		status_label.text = "⏳ Pending Admin Approval"
+		progress_bar.value = 60
+		# Show pending approval message but don't exit
+		server_logger.log_system_event("device_pending_approval", {"device_uid": device_connection_manager.device_uid})
+		_show_pending_approval_screen()
 	else:
 		print("❌ Device authentication failed")
 		server_logger.log_system_event("device_authentication_failed", {})

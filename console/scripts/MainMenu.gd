@@ -38,18 +38,22 @@ var last_scanned_card: Dictionary = {}
 # Managers
 var network_client: NetworkClient
 var nfc_manager: NFCManager
-var auth_manager: AuthManager
+var auth_manager
+var server_logger
 
 # Queue polling timer
 var queue_poll_timer: Timer
 
 func _ready():
-	Logger.log_info("MainMenu", "Main menu initialized")
+	# Initialize server logger
+	server_logger = preload("res://server_logger.gd").new()
+	add_child(server_logger)
+	server_logger.log_system_event("main_menu_initialized", {})
 	
 	# Get manager references
 	network_client = get_node("/root/NetworkClient")
 	nfc_manager = get_node("/root/NFCManager")
-	auth_manager = get_node("/root/AuthManager")
+	# auth_manager = get_node("/root/AuthManager")  # Disabled - not implemented
 	
 	# Connect signals
 	_connect_signals()
@@ -113,7 +117,7 @@ func _setup_background_video():
 		background_video.stream = video_stream
 		background_video.loop = true
 		background_video.play()
-		Logger.log_info("MainMenu", "Background video started")
+		server_logger.log_system_event("mainmenu_background_video_started", {})
 
 func set_player_data(data: Dictionary):
 	"""Set player information"""
@@ -127,8 +131,8 @@ func set_player_data(data: Dictionary):
 	# Set player info in network client
 	network_client.set_player_info(data.get("id", 0))
 	
-	Logger.log_info("MainMenu", "Player data set", {
-		"name": data.get("display_name", "Unknown"),
+	server_logger.log_system_event("mainmenu_player_data_set", {
+		"name": data.get("display_name", "unknown"),
 		"elo": data.get("elo_rating", 1000)
 	})
 
@@ -136,7 +140,7 @@ func set_player_data(data: Dictionary):
 
 func _on_match_game_pressed():
 	"""Handle match game button press"""
-	Logger.log_info("MainMenu", "Match game requested")
+	server_logger.log_system_event("mainmenu_match_game_requested", {})
 	
 	if is_in_queue:
 		_show_message("Already in matchmaking queue!")
@@ -152,22 +156,22 @@ func _on_match_game_pressed():
 
 func _on_practice_pressed():
 	"""Handle practice button press"""
-	Logger.log_info("MainMenu", "Practice mode requested")
+	server_logger.log_system_event("mainmenu_practice_mode_requested", {})
 	_show_message("Practice mode coming soon!")
 
 func _on_collection_pressed():
 	"""Handle collection button press"""
-	Logger.log_info("MainMenu", "Collection requested")
+	server_logger.log_system_event("mainmenu_collection_requested", {})
 	_show_message("Collection viewer coming soon!")
 
 func _on_settings_pressed():
 	"""Handle settings button press"""
-	Logger.log_info("MainMenu", "Settings requested")
+	server_logger.log_system_event("mainmenu_settings_requested", {})
 	_show_message("Settings coming soon!")
 
 func _on_logout_pressed():
 	"""Handle logout button press"""
-	Logger.log_info("MainMenu", "Logout requested")
+	server_logger.log_system_event("mainmenu_logout_requested", {})
 	
 	# Leave queue if in one
 	if is_in_queue:
@@ -187,7 +191,7 @@ func _on_leave_queue_pressed():
 
 func _join_matchmaking_queue():
 	"""Join the matchmaking queue"""
-	Logger.log_info("MainMenu", "Joining matchmaking queue", {"mode": current_queue_mode})
+	server_logger.log_system_event("mainmenu_joining_matchmaking_queue", {"mode": current_queue_mode})
 	
 	# Disable match button
 	match_game_button.disabled = true
@@ -206,7 +210,7 @@ func _join_matchmaking_queue():
 
 func _leave_matchmaking_queue():
 	"""Leave the matchmaking queue"""
-	Logger.log_info("MainMenu", "Leaving matchmaking queue")
+	server_logger.log_system_event("mainmenu_leaving_matchmaking_queue", {})
 	
 	# Leave queue via network client
 	network_client.leave_matchmaking_queue(current_queue_mode)
@@ -237,7 +241,7 @@ func _has_valid_hero() -> bool:
 
 func _on_connected_to_server():
 	"""Handle connection to server"""
-	Logger.log_info("MainMenu", "Connected to server")
+	server_logger.log_system_event("mainmenu_connected_to_server", {})
 	_show_message("Connected to server!")
 	
 	# Enable network-dependent buttons
@@ -245,7 +249,7 @@ func _on_connected_to_server():
 
 func _on_disconnected_from_server():
 	"""Handle disconnection from server"""
-	Logger.log_info("MainMenu", "Disconnected from server")
+	server_logger.log_system_event("mainmenu_disconnected_from_server", {})
 	_show_message("Disconnected from server!")
 	
 	# Disable network-dependent buttons
@@ -262,9 +266,10 @@ func _on_match_found(match_data: Dictionary):
 	var match_id = match_data.get("match_id", "")
 	var opponent = match_data.get("opponent", {})
 	
-	Logger.log_info("MainMenu", "Match found", {
+	server_logger.log_system_event("mainmenu_match_found", {
 		"match_id": match_id,
-		"opponent": opponent.get("display_name", "Unknown")
+		"opponent": opponent.get("display_name", "unknown")
+	})
 	})
 	
 	# Update UI
@@ -286,7 +291,7 @@ func _on_match_started(match_data: Dictionary):
 	var match_id = str(match_data.get("match_id", ""))
 	var your_team = match_data.get("your_team", 0)
 	
-	Logger.log_info("MainMenu", "Match started", {
+	server_logger.log_system_event("mainmenu_match_started", {
 		"match_id": match_id,
 		"team": your_team
 	})
@@ -296,7 +301,7 @@ func _on_match_started(match_data: Dictionary):
 
 func _on_network_error(error_message: String):
 	"""Handle network error"""
-	Logger.log_error("MainMenu", "Network error", {"message": error_message})
+	server_logger.log_error("MainMenu", "Network error", {"message": error_message})
 	_show_message("Network Error: " + error_message)
 	
 	# Reset queue state if error during matchmaking
@@ -316,7 +321,7 @@ func _on_card_scanned(card_data: Dictionary):
 	var card_name = card_data.get("name", "Unknown Card")
 	var card_category = card_data.get("category", "Unknown")
 	
-	Logger.log_info("MainMenu", "Card scanned", {
+	server_logger.log_system_event("mainmenu_card_scanned", {
 		"name": card_name,
 		"category": card_category
 	})
@@ -340,7 +345,7 @@ func _on_card_scanned(card_data: Dictionary):
 
 func _on_scan_failed(error: String):
 	"""Handle NFC scan failure"""
-	Logger.log_warning("MainMenu", "Card scan failed", {"error": error})
+	server_logger.log_error("MainMenu", "Card scan failed", {"error": error})
 	
 	nfc_status_label.text = "Scan Failed!"
 	nfc_status_label.modulate = Color.RED
@@ -354,10 +359,10 @@ func _on_scan_failed(error: String):
 
 func _transition_to_game_board(match_id: String, team: int, match_data: Dictionary):
 	"""Transition to game board scene"""
-	Logger.log_info("MainMenu", "Transitioning to game board")
+	server_logger.log_system_event("mainmenu_transitioning_to_game_board", {})
 	
 	# Load game board scene
-	var game_board_scene = preload("res://scenes/GameBoard.tscn")
+	var game_board_scene = preload("res://scenes_backup/GameBoard.tscn")
 	var game_board = game_board_scene.instantiate()
 	
 	# Connect completion signal
@@ -373,14 +378,14 @@ func _transition_to_game_board(match_id: String, team: int, match_data: Dictiona
 
 func _on_match_completed(result: Dictionary):
 	"""Handle match completion"""
-	Logger.log_info("MainMenu", "Match completed", result)
+	server_logger.log_system_event("mainmenu_match_completed", result)
 	
 	# Return to main menu
 	_return_to_main_menu()
 
 func _return_to_main_menu():
 	"""Return to main menu from game"""
-	Logger.log_info("MainMenu", "Returning to main menu")
+	server_logger.log_system_event("mainmenu_returning_to_main_menu", {})
 	
 	# Reset button state
 	match_game_button.disabled = false
@@ -395,7 +400,7 @@ func _return_to_main_menu():
 
 func _show_message(message: String):
 	"""Show a temporary message to the user"""
-	Logger.log_info("MainMenu", "Showing message", {"message": message})
+	server_logger.log_system_event("mainmenu_showing_message", {"message": message})
 	
 	# Create temporary label for message
 	var message_label = Label.new()
@@ -429,24 +434,15 @@ func _input(event):
 				if not is_in_queue:
 					_join_matchmaking_queue()
 			KEY_T:
-				# Create test match
-				_create_test_match()
+				# Test functionality removed
+				pass
 
 func _simulate_card_scan(card_sku: String):
 	"""Simulate NFC card scan for testing"""
-	Logger.log_info("MainMenu", "Simulating card scan", {"sku": card_sku})
+	server_logger.log_system_event("mainmenu_simulating_card_scan", {"sku": card_sku})
 	network_client.simulate_card_scan(card_sku)
 
-func _create_test_match():
-	"""Create a test match for development"""
-	Logger.log_info("MainMenu", "Creating test match")
-	
-	var players = [
-		{"player_id": player_data.get("id", 1), "console_id": network_client.device_uid},
-		{"player_id": 2, "console_id": "test_console_2"}  # Mock opponent
-	]
-	
-	network_client.create_test_match(players)
+# Test match function removed
 
 # === CLEANUP ===
 

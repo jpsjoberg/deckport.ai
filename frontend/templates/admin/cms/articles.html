@@ -1,0 +1,521 @@
+{% extends "admin/base.html" %}
+
+{% block title %}Articles Management - Deckport Admin{% endblock %}
+{% block page_title %}Articles Management{% endblock %}
+{% block page_subtitle %}Create and manage news articles and blog posts{% endblock %}
+
+{% block content %}
+<!-- Header Actions -->
+<div class="flex justify-between items-center mb-8">
+    <div class="flex items-center space-x-4">
+        <a href="{{ url_for('admin.cms_dashboard') }}" class="text-gray-400 hover:text-white">
+            <i class="fas fa-arrow-left mr-2"></i>Back to CMS
+        </a>
+        
+        <!-- Filters -->
+        <div class="flex items-center space-x-3">
+            <select id="status-filter" class="bg-gray-700 border border-gray-600 text-white rounded-lg px-3 py-2 text-sm">
+                <option value="">All Status</option>
+                <option value="published">Published</option>
+                <option value="draft">Draft</option>
+                <option value="archived">Archived</option>
+            </select>
+            
+            <select id="type-filter" class="bg-gray-700 border border-gray-600 text-white rounded-lg px-3 py-2 text-sm">
+                <option value="">All Types</option>
+                <option value="news">News</option>
+                <option value="update">Update</option>
+                <option value="tournament">Tournament</option>
+                <option value="card_reveal">Card Reveal</option>
+                <option value="community">Community</option>
+                <option value="developer">Developer</option>
+            </select>
+            
+            <input type="text" id="search-input" placeholder="Search articles..." 
+                   class="bg-gray-700 border border-gray-600 text-white rounded-lg px-3 py-2 text-sm w-64">
+        </div>
+    </div>
+    
+    <button onclick="openCreateModal()" class="bg-blue-600 hover:bg-blue-700 text-white px-6 py-3 rounded-lg font-medium transition-colors">
+        <i class="fas fa-plus mr-2"></i>New Article
+    </button>
+</div>
+
+<!-- Articles Table -->
+<div class="bg-gray-800 rounded-lg border border-gray-700 overflow-hidden">
+    <div class="overflow-x-auto">
+        <table class="w-full">
+            <thead class="bg-gray-700">
+                <tr>
+                    <th class="px-6 py-4 text-left text-xs font-medium text-gray-300 uppercase tracking-wider">Article</th>
+                    <th class="px-6 py-4 text-left text-xs font-medium text-gray-300 uppercase tracking-wider">Type</th>
+                    <th class="px-6 py-4 text-left text-xs font-medium text-gray-300 uppercase tracking-wider">Status</th>
+                    <th class="px-6 py-4 text-left text-xs font-medium text-gray-300 uppercase tracking-wider">Views</th>
+                    <th class="px-6 py-4 text-left text-xs font-medium text-gray-300 uppercase tracking-wider">Published</th>
+                    <th class="px-6 py-4 text-left text-xs font-medium text-gray-300 uppercase tracking-wider">Actions</th>
+                </tr>
+            </thead>
+            <tbody id="articles-table-body" class="bg-gray-800 divide-y divide-gray-700">
+                <tr>
+                    <td colspan="6" class="px-6 py-8 text-center">
+                        <div class="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-400 mx-auto"></div>
+                        <p class="text-gray-400 mt-2">Loading articles...</p>
+                    </td>
+                </tr>
+            </tbody>
+        </table>
+    </div>
+</div>
+
+<!-- Pagination -->
+<div class="flex items-center justify-between mt-6">
+    <div class="text-sm text-gray-400">
+        Showing <span id="showing-start">0</span> to <span id="showing-end">0</span> of <span id="total-articles">0</span> articles
+    </div>
+    <div class="flex items-center space-x-2" id="pagination-controls">
+        <!-- Pagination buttons will be inserted here -->
+    </div>
+</div>
+
+<!-- Create/Edit Article Modal -->
+<div id="article-modal" class="fixed inset-0 bg-black bg-opacity-50 hidden z-50">
+    <div class="flex items-center justify-center min-h-screen p-4">
+        <div class="bg-gray-800 rounded-lg shadow-xl w-full max-w-4xl max-h-screen overflow-y-auto">
+            <div class="p-6 border-b border-gray-700">
+                <div class="flex items-center justify-between">
+                    <h3 class="text-xl font-bold text-white" id="modal-title">Create New Article</h3>
+                    <button onclick="closeModal()" class="text-gray-400 hover:text-white">
+                        <i class="fas fa-times text-xl"></i>
+                    </button>
+                </div>
+            </div>
+            
+            <form id="article-form" class="p-6 space-y-6">
+                <input type="hidden" id="article-id">
+                
+                <!-- Title -->
+                <div>
+                    <label class="block text-sm font-medium text-gray-300 mb-2">Title *</label>
+                    <input type="text" id="article-title" required
+                           class="w-full bg-gray-700 border border-gray-600 text-white rounded-lg px-4 py-3">
+                </div>
+                
+                <!-- Slug -->
+                <div>
+                    <label class="block text-sm font-medium text-gray-300 mb-2">Slug</label>
+                    <input type="text" id="article-slug"
+                           class="w-full bg-gray-700 border border-gray-600 text-white rounded-lg px-4 py-3">
+                    <p class="text-xs text-gray-400 mt-1">Leave empty to auto-generate from title</p>
+                </div>
+                
+                <!-- Excerpt -->
+                <div>
+                    <label class="block text-sm font-medium text-gray-300 mb-2">Excerpt</label>
+                    <textarea id="article-excerpt" rows="3"
+                              class="w-full bg-gray-700 border border-gray-600 text-white rounded-lg px-4 py-3"></textarea>
+                </div>
+                
+                <!-- Content -->
+                <div>
+                    <label class="block text-sm font-medium text-gray-300 mb-2">Content *</label>
+                    <textarea id="article-content" rows="12" required
+                              class="w-full bg-gray-700 border border-gray-600 text-white rounded-lg px-4 py-3"></textarea>
+                </div>
+                
+                <!-- Settings Row -->
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <!-- Type -->
+                    <div>
+                        <label class="block text-sm font-medium text-gray-300 mb-2">Type</label>
+                        <select id="article-type" class="w-full bg-gray-700 border border-gray-600 text-white rounded-lg px-4 py-3">
+                            <option value="news">News</option>
+                            <option value="update">Update</option>
+                            <option value="tournament">Tournament</option>
+                            <option value="card_reveal">Card Reveal</option>
+                            <option value="community">Community</option>
+                            <option value="developer">Developer</option>
+                        </select>
+                    </div>
+                    
+                    <!-- Status -->
+                    <div>
+                        <label class="block text-sm font-medium text-gray-300 mb-2">Status</label>
+                        <select id="article-status" class="w-full bg-gray-700 border border-gray-600 text-white rounded-lg px-4 py-3">
+                            <option value="draft">Draft</option>
+                            <option value="published">Published</option>
+                            <option value="archived">Archived</option>
+                        </select>
+                    </div>
+                </div>
+                
+                <!-- Media -->
+                <div>
+                    <label class="block text-sm font-medium text-gray-300 mb-2">Featured Image URL</label>
+                    <input type="url" id="article-image"
+                           class="w-full bg-gray-700 border border-gray-600 text-white rounded-lg px-4 py-3">
+                </div>
+                
+                <!-- Flags -->
+                <div class="flex items-center space-x-6">
+                    <label class="flex items-center">
+                        <input type="checkbox" id="article-featured" class="rounded bg-gray-700 border-gray-600 text-blue-600">
+                        <span class="ml-2 text-sm text-gray-300">Featured Article</span>
+                    </label>
+                    <label class="flex items-center">
+                        <input type="checkbox" id="article-pinned" class="rounded bg-gray-700 border-gray-600 text-blue-600">
+                        <span class="ml-2 text-sm text-gray-300">Pinned</span>
+                    </label>
+                </div>
+                
+                <!-- Tags -->
+                <div>
+                    <label class="block text-sm font-medium text-gray-300 mb-2">Tags</label>
+                    <input type="text" id="article-tags" placeholder="tournament, championship, featured"
+                           class="w-full bg-gray-700 border border-gray-600 text-white rounded-lg px-4 py-3">
+                    <p class="text-xs text-gray-400 mt-1">Separate tags with commas</p>
+                </div>
+                
+                <!-- SEO -->
+                <div class="border-t border-gray-700 pt-6">
+                    <h4 class="text-lg font-medium text-white mb-4">SEO Settings</h4>
+                    <div class="space-y-4">
+                        <div>
+                            <label class="block text-sm font-medium text-gray-300 mb-2">Meta Title</label>
+                            <input type="text" id="article-meta-title"
+                                   class="w-full bg-gray-700 border border-gray-600 text-white rounded-lg px-4 py-3">
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium text-gray-300 mb-2">Meta Description</label>
+                            <textarea id="article-meta-description" rows="2"
+                                      class="w-full bg-gray-700 border border-gray-600 text-white rounded-lg px-4 py-3"></textarea>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Actions -->
+                <div class="flex items-center justify-end space-x-4 border-t border-gray-700 pt-6">
+                    <button type="button" onclick="closeModal()" 
+                            class="px-6 py-3 border border-gray-600 text-gray-300 rounded-lg hover:bg-gray-700 transition-colors">
+                        Cancel
+                    </button>
+                    <button type="submit" 
+                            class="px-6 py-3 bg-blue-600 hover:bg-blue-700 text-white rounded-lg font-medium transition-colors">
+                        <i class="fas fa-save mr-2"></i>Save Article
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<script>
+let currentPage = 1;
+let currentFilters = {};
+
+document.addEventListener('DOMContentLoaded', function() {
+    loadArticles();
+    
+    // Filter event listeners
+    document.getElementById('status-filter').addEventListener('change', applyFilters);
+    document.getElementById('type-filter').addEventListener('change', applyFilters);
+    document.getElementById('search-input').addEventListener('input', debounce(applyFilters, 500));
+    
+    // Form submission
+    document.getElementById('article-form').addEventListener('submit', handleSubmit);
+});
+
+function applyFilters() {
+    currentFilters = {
+        status: document.getElementById('status-filter').value,
+        type: document.getElementById('type-filter').value,
+        search: document.getElementById('search-input').value
+    };
+    currentPage = 1;
+    loadArticles();
+}
+
+async function loadArticles() {
+    try {
+        const params = new URLSearchParams({
+            page: currentPage,
+            page_size: 20,
+            ...currentFilters
+        });
+        
+        const response = await fetch(`/v1/admin/cms/articles?${params}`, {
+            headers: {
+                'Authorization': 'Bearer ' + getAdminToken()
+            }
+        });
+        
+        if (response.ok) {
+            const data = await response.json();
+            renderArticlesTable(data.articles);
+            renderPagination(data);
+        } else {
+            throw new Error('Failed to load articles');
+        }
+    } catch (error) {
+        console.error('Error loading articles:', error);
+        document.getElementById('articles-table-body').innerHTML = `
+            <tr><td colspan="6" class="px-6 py-8 text-center text-red-400">
+                <i class="fas fa-exclamation-triangle mr-2"></i>Failed to load articles
+            </td></tr>
+        `;
+    }
+}
+
+function renderArticlesTable(articles) {
+    const tbody = document.getElementById('articles-table-body');
+    
+    if (articles.length === 0) {
+        tbody.innerHTML = `
+            <tr><td colspan="6" class="px-6 py-8 text-center text-gray-400">
+                <i class="fas fa-newspaper text-4xl mb-2"></i><br>
+                No articles found
+            </td></tr>
+        `;
+        return;
+    }
+    
+    tbody.innerHTML = articles.map(article => {
+        const statusColors = {
+            published: 'bg-green-600 text-white',
+            draft: 'bg-yellow-600 text-white',
+            archived: 'bg-gray-600 text-white'
+        };
+        
+        const typeColors = {
+            news: 'bg-blue-600',
+            update: 'bg-green-600',
+            tournament: 'bg-purple-600',
+            card_reveal: 'bg-red-600',
+            community: 'bg-yellow-600',
+            developer: 'bg-gray-600'
+        };
+        
+        const publishedDate = article.published_at ? 
+            new Date(article.published_at).toLocaleDateString() : '-';
+            
+        return `
+            <tr class="hover:bg-gray-700">
+                <td class="px-6 py-4">
+                    <div class="flex items-center">
+                        ${article.featured_image_url ? 
+                            `<img src="${article.featured_image_url}" alt="" class="w-12 h-12 rounded-lg object-cover mr-4">` : 
+                            `<div class="w-12 h-12 bg-gray-600 rounded-lg mr-4 flex items-center justify-center">
+                                <i class="fas fa-newspaper text-gray-400"></i>
+                            </div>`
+                        }
+                        <div>
+                            <div class="font-medium text-white">${article.title}</div>
+                            <div class="text-sm text-gray-400">${article.excerpt || 'No excerpt'}</div>
+                            ${article.is_featured ? '<span class="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-red-600 text-white mt-1"><i class="fas fa-star mr-1"></i>Featured</span>' : ''}
+                        </div>
+                    </div>
+                </td>
+                <td class="px-6 py-4">
+                    <span class="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium text-white ${typeColors[article.content_type] || 'bg-gray-600'}">
+                        ${article.content_type.replace('_', ' ')}
+                    </span>
+                </td>
+                <td class="px-6 py-4">
+                    <span class="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium ${statusColors[article.status]}">
+                        ${article.status}
+                    </span>
+                </td>
+                <td class="px-6 py-4 text-sm text-gray-300">
+                    <i class="fas fa-eye mr-1"></i>${article.view_count}
+                </td>
+                <td class="px-6 py-4 text-sm text-gray-300">${publishedDate}</td>
+                <td class="px-6 py-4 text-sm font-medium">
+                    <div class="flex items-center space-x-2">
+                        <button onclick="editArticle(${article.id})" class="text-blue-400 hover:text-blue-300">
+                            <i class="fas fa-edit"></i>
+                        </button>
+                        <a href="/news/${article.slug}" target="_blank" class="text-green-400 hover:text-green-300">
+                            <i class="fas fa-external-link-alt"></i>
+                        </a>
+                        <button onclick="deleteArticle(${article.id})" class="text-red-400 hover:text-red-300">
+                            <i class="fas fa-trash"></i>
+                        </button>
+                    </div>
+                </td>
+            </tr>
+        `;
+    }).join('');
+}
+
+function renderPagination(data) {
+    document.getElementById('showing-start').textContent = ((data.page - 1) * data.page_size) + 1;
+    document.getElementById('showing-end').textContent = Math.min(data.page * data.page_size, data.total);
+    document.getElementById('total-articles').textContent = data.total;
+    
+    const paginationControls = document.getElementById('pagination-controls');
+    let html = '';
+    
+    // Previous button
+    if (data.page > 1) {
+        html += `<button onclick="changePage(${data.page - 1})" class="px-3 py-2 text-sm bg-gray-700 text-gray-300 rounded-lg hover:bg-gray-600">Previous</button>`;
+    }
+    
+    // Page numbers
+    for (let i = Math.max(1, data.page - 2); i <= Math.min(data.total_pages, data.page + 2); i++) {
+        const isActive = i === data.page;
+        html += `<button onclick="changePage(${i})" class="px-3 py-2 text-sm rounded-lg ${isActive ? 'bg-blue-600 text-white' : 'bg-gray-700 text-gray-300 hover:bg-gray-600'}">${i}</button>`;
+    }
+    
+    // Next button
+    if (data.page < data.total_pages) {
+        html += `<button onclick="changePage(${data.page + 1})" class="px-3 py-2 text-sm bg-gray-700 text-gray-300 rounded-lg hover:bg-gray-600">Next</button>`;
+    }
+    
+    paginationControls.innerHTML = html;
+}
+
+function changePage(page) {
+    currentPage = page;
+    loadArticles();
+}
+
+function openCreateModal() {
+    document.getElementById('modal-title').textContent = 'Create New Article';
+    document.getElementById('article-form').reset();
+    document.getElementById('article-id').value = '';
+    document.getElementById('article-modal').classList.remove('hidden');
+}
+
+async function editArticle(id) {
+    try {
+        const response = await fetch(`/v1/admin/cms/articles/${id}`, {
+            headers: {
+                'Authorization': 'Bearer ' + getAdminToken()
+            }
+        });
+        
+        if (response.ok) {
+            const article = await response.json();
+            
+            document.getElementById('modal-title').textContent = 'Edit Article';
+            document.getElementById('article-id').value = article.id;
+            document.getElementById('article-title').value = article.title;
+            document.getElementById('article-slug').value = article.slug;
+            document.getElementById('article-excerpt').value = article.excerpt || '';
+            document.getElementById('article-content').value = article.content;
+            document.getElementById('article-type').value = article.content_type;
+            document.getElementById('article-status').value = article.status;
+            document.getElementById('article-image').value = article.featured_image_url || '';
+            document.getElementById('article-featured').checked = article.is_featured;
+            document.getElementById('article-pinned').checked = article.is_pinned;
+            document.getElementById('article-tags').value = (article.tags || []).join(', ');
+            document.getElementById('article-meta-title').value = article.meta_title || '';
+            document.getElementById('article-meta-description').value = article.meta_description || '';
+            
+            document.getElementById('article-modal').classList.remove('hidden');
+        }
+    } catch (error) {
+        console.error('Error loading article:', error);
+        alert('Failed to load article');
+    }
+}
+
+async function handleSubmit(e) {
+    e.preventDefault();
+    
+    const id = document.getElementById('article-id').value;
+    const isEdit = !!id;
+    
+    const data = {
+        title: document.getElementById('article-title').value,
+        slug: document.getElementById('article-slug').value,
+        excerpt: document.getElementById('article-excerpt').value,
+        content: document.getElementById('article-content').value,
+        content_type: document.getElementById('article-type').value,
+        status: document.getElementById('article-status').value,
+        featured_image_url: document.getElementById('article-image').value,
+        is_featured: document.getElementById('article-featured').checked,
+        is_pinned: document.getElementById('article-pinned').checked,
+        tags: document.getElementById('article-tags').value.split(',').map(t => t.trim()).filter(t => t),
+        meta_title: document.getElementById('article-meta-title').value,
+        meta_description: document.getElementById('article-meta-description').value
+    };
+    
+    try {
+        const url = isEdit ? `/v1/admin/cms/articles/${id}` : '/v1/admin/cms/articles';
+        const method = isEdit ? 'PUT' : 'POST';
+        
+        const response = await fetch(url, {
+            method: method,
+            headers: {
+                'Content-Type': 'application/json',
+                'Authorization': 'Bearer ' + getAdminToken()
+            },
+            body: JSON.stringify(data)
+        });
+        
+        if (response.ok) {
+            closeModal();
+            loadArticles();
+            alert(isEdit ? 'Article updated successfully!' : 'Article created successfully!');
+        } else {
+            const error = await response.json();
+            alert('Error: ' + (error.error || 'Failed to save article'));
+        }
+    } catch (error) {
+        console.error('Error saving article:', error);
+        alert('Failed to save article');
+    }
+}
+
+async function deleteArticle(id) {
+    if (!confirm('Are you sure you want to delete this article? This action cannot be undone.')) {
+        return;
+    }
+    
+    try {
+        const response = await fetch(`/v1/admin/cms/articles/${id}`, {
+            method: 'DELETE',
+            headers: {
+                'Authorization': 'Bearer ' + getAdminToken()
+            }
+        });
+        
+        if (response.ok) {
+            loadArticles();
+            alert('Article deleted successfully!');
+        } else {
+            alert('Failed to delete article');
+        }
+    } catch (error) {
+        console.error('Error deleting article:', error);
+        alert('Failed to delete article');
+    }
+}
+
+function closeModal() {
+    document.getElementById('article-modal').classList.add('hidden');
+}
+
+function getAdminToken() {
+    return getCookie('admin_jwt') || localStorage.getItem('admin_token') || '';
+}
+
+function getCookie(name) {
+    const value = `; ${document.cookie}`;
+    const parts = value.split(`; ${name}=`);
+    if (parts.length === 2) return parts.pop().split(';').shift();
+}
+
+function debounce(func, wait) {
+    let timeout;
+    return function executedFunction(...args) {
+        const later = () => {
+            clearTimeout(timeout);
+            func(...args);
+        };
+        clearTimeout(timeout);
+        timeout = setTimeout(later, wait);
+    };
+}
+</script>
+{% endblock %}

@@ -68,9 +68,9 @@
         <!-- Placeholder for interactive map -->
         <div class="h-96 bg-gray-700 rounded-lg flex items-center justify-center">
             <div class="text-center">
-                <i class="fas fa-map-marked-alt text-4xl text-gray-500 mb-4"></i>
+                <i class="fas fa-map-marked-alt text-4xl text-gray-400 mb-4"></i>
                 <p class="text-gray-400">Interactive Console Map</p>
-                <p class="text-sm text-gray-500">Real-time console status visualization</p>
+                <p class="text-sm text-gray-400">Real-time console status visualization</p>
             </div>
         </div>
     </div>
@@ -260,10 +260,10 @@
                                 <i class="fas fa-power-off"></i>
                             </button>
                             {% else %}
-                            <button class="text-gray-600 cursor-not-allowed" disabled title="Remote Control (Offline)">
+                            <button class="text-gray-400 cursor-not-allowed" disabled title="Remote Control (Offline)">
                                 <i class="fas fa-mouse-pointer"></i>
                             </button>
-                            <button class="text-gray-600 cursor-not-allowed" disabled title="Reboot (Offline)">
+                            <button class="text-gray-400 cursor-not-allowed" disabled title="Reboot (Offline)">
                                 <i class="fas fa-redo"></i>
                             </button>
                             <button class="text-orange-400 hover:text-orange-300" onclick="pingConsole('{{ console.device_uid }}')" title="Ping">
@@ -279,6 +279,7 @@
                         <i class="fas fa-desktop text-4xl mb-4"></i>
                         <p class="text-lg">No consoles registered</p>
                         <p class="text-sm">Consoles will appear here once they register with the system</p>
+                        <!-- DEBUG: consoles={{ consoles|length }}, type={{ consoles.__class__.__name__ }} -->
                     </td>
                 </tr>
                 {% endfor %}

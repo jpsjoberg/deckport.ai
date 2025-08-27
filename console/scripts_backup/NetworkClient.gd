@@ -11,7 +11,7 @@ signal connection_error(error: String)
 
 var websocket: WebSocketPeer
 var connection_url: String = ""
-var is_connected: bool = false
+var is_network_connected: bool = false
 var is_connecting: bool = false
 var reconnect_attempts: int = 0
 var max_reconnect_attempts: int = 5
@@ -26,7 +26,7 @@ func _ready():
 
 func connect_to_server():
 	"""Connect to the real-time server"""
-	if is_connecting or is_connected:
+	if is_connecting or is_network_connected:
 		Logger.log_warning("NetworkClient", "Already connected or connecting")
 		return
 	
@@ -65,7 +65,7 @@ func connect_to_server():
 
 func _start_connection_monitoring():
 	"""Monitor WebSocket connection status"""
-	while is_connecting or is_connected:
+	while is_connecting or is_network_connected:
 		websocket.poll()
 		
 		var state = websocket.get_ready_state()
@@ -76,14 +76,14 @@ func _start_connection_monitoring():
 				pass
 			
 			WebSocketPeer.STATE_OPEN:
-				if not is_connected:
+				if not is_network_connected:
 					_on_connection_established()
 			
 			WebSocketPeer.STATE_CLOSING:
 				Logger.log_info("NetworkClient", "Connection closing")
 				
 			WebSocketPeer.STATE_CLOSED:
-				if is_connected or is_connecting:
+				if is_network_connected or is_connecting:
 					_on_connection_lost()
 		
 		# Process incoming messages
@@ -98,7 +98,7 @@ func _on_connection_established():
 	"""Handle successful WebSocket connection"""
 	Logger.log_info("NetworkClient", "WebSocket connection established")
 	is_connecting = false
-	is_connected = true
+	is_network_connected = true
 	reconnect_attempts = 0
 	
 	Global.server_connected = true
@@ -113,7 +113,7 @@ func _on_connection_lost():
 	"""Handle WebSocket connection loss"""
 	Logger.log_warning("NetworkClient", "WebSocket connection lost")
 	is_connecting = false
-	is_connected = false
+	is_network_connected = false
 	
 	Global.server_connected = false
 	Global.connection_status = "disconnected"
@@ -181,7 +181,7 @@ func _handle_global_message(message: Dictionary):
 
 func send_message(message: Dictionary):
 	"""Send message to server"""
-	if not is_connected:
+	if not is_network_connected:
 		Logger.log_warning("NetworkClient", "Not connected, queuing message")
 		_queue_message(message)
 		return
@@ -226,7 +226,7 @@ func disconnect_from_server():
 	"""Disconnect from server"""
 	Logger.log_info("NetworkClient", "Disconnecting from server")
 	is_connecting = false
-	is_connected = false
+	is_network_connected = false
 	
 	if websocket:
 		websocket.close()
@@ -306,7 +306,7 @@ func send_state_update(delta: Dictionary):
 
 func get_connection_status() -> String:
 	"""Get current connection status"""
-	if is_connected:
+	if is_network_connected:
 		return "Connected"
 	elif is_connecting:
 		return "Connecting"

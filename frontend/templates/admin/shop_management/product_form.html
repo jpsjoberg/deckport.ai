@@ -1,0 +1,292 @@
+{% extends "admin/base.html" %}
+
+{% block title %}{{ 'Edit Product' if product else 'New Product' }} - Admin Panel{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <!-- Page Header -->
+    <div class="d-flex justify-content-between flex-wrap flex-md-nowrap align-items-center pt-3 pb-2 mb-3 border-bottom">
+        <h1 class="h2">{{ 'Edit Product' if product else 'New Product' }}</h1>
+        <div class="btn-toolbar mb-2 mb-md-0">
+            <a href="{{ url_for('admin.shop_products') }}" class="btn btn-outline-secondary">
+                <i class="fas fa-arrow-left"></i> Back to Products
+            </a>
+        </div>
+    </div>
+
+    <div class="row">
+        <div class="col-lg-8">
+            <div class="card border border-gray-700">
+                <div class="card-header py-3">
+                    <h6 class="m-0 font-weight-bold text-primary">Product Details</h6>
+                </div>
+                <div class="card-body">
+                    <form method="POST" action="{{ form_action }}" enctype="multipart/form-data">
+                        <!-- Basic Information -->
+                        <div class="row mb-3">
+                            <div class="col-md-8">
+                                <label for="name" class="form-label">Product Name *</label>
+                                <input type="text" class="form-control" id="name" name="name" 
+                                       value="{{ product.name if product else '' }}" required>
+                            </div>
+                            <div class="col-md-4">
+                                <label for="sku" class="form-label">SKU</label>
+                                <input type="text" class="form-control" id="sku" name="sku" 
+                                       value="{{ product.sku if product else '' }}"
+                                       placeholder="Auto-generated if empty">
+                            </div>
+                        </div>
+
+                        <div class="mb-3">
+                            <label for="description" class="form-label">Description</label>
+                            <textarea class="form-control" id="description" name="description" rows="4">{{ product.description if product else '' }}</textarea>
+                        </div>
+
+                        <!-- Pricing -->
+                        <div class="row mb-3">
+                            <div class="col-md-6">
+                                <label for="price" class="form-label">Price *</label>
+                                <div class="input-group">
+                                    <span class="input-group-text">$</span>
+                                    <input type="number" class="form-control" id="price" name="price" 
+                                           step="0.01" min="0" value="{{ product.price if product else '' }}" required>
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <label for="currency" class="form-label">Currency</label>
+                                <select class="form-select" id="currency" name="currency">
+                                    <option value="USD" {{ 'selected' if product and product.currency == 'USD' else '' }}>USD</option>
+                                    <option value="EUR" {{ 'selected' if product and product.currency == 'EUR' else '' }}>EUR</option>
+                                    <option value="GBP" {{ 'selected' if product and product.currency == 'GBP' else '' }}>GBP</option>
+                                </select>
+                            </div>
+                        </div>
+
+                        <!-- Category and Type -->
+                        <div class="row mb-3">
+                            <div class="col-md-6">
+                                <label for="category" class="form-label">Category</label>
+                                <select class="form-select" id="category" name="category">
+                                    <option value="">Select Category</option>
+                                    {% for cat in categories %}
+                                    <option value="{{ cat.id }}" {{ 'selected' if product and product.category_id == cat.id else '' }}>
+                                        {{ cat.name }}
+                                    </option>
+                                    {% endfor %}
+                                </select>
+                            </div>
+                            <div class="col-md-6">
+                                <label for="product_type" class="form-label">Product Type</label>
+                                <select class="form-select" id="product_type" name="product_type">
+                                    <option value="single_card" {{ 'selected' if product and product.product_type == 'single_card' else '' }}>Single Card</option>
+                                    <option value="bundle" {{ 'selected' if product and product.product_type == 'bundle' else '' }}>Bundle</option>
+                                    <option value="booster_pack" {{ 'selected' if product and product.product_type == 'booster_pack' else '' }}>Booster Pack</option>
+                                    <option value="starter_deck" {{ 'selected' if product and product.product_type == 'starter_deck' else '' }}>Starter Deck</option>
+                                </select>
+                            </div>
+                        </div>
+
+                        <!-- Card Selection -->
+                        <div class="mb-3">
+                            <label class="form-label">Included Cards</label>
+                            <div class="card">
+                                <div class="card-body">
+                                    <div class="row">
+                                        {% for card in cards %}
+                                        <div class="col-md-4 mb-2">
+                                            <div class="form-check">
+                                                <input class="form-check-input" type="checkbox" 
+                                                       id="card_{{ card.product_sku }}" name="card_skus" 
+                                                       value="{{ card.product_sku }}"
+                                                       {{ 'checked' if product and card.product_sku in (product.card_skus or []) else '' }}>
+                                                <label class="form-check-label" for="card_{{ card.product_sku }}">
+                                                    <strong>{{ card.name }}</strong><br>
+                                                    <small class="text-muted">{{ card.product_sku }} - {{ card.rarity }}</small>
+                                                </label>
+                                            </div>
+                                        </div>
+                                        {% endfor %}
+                                    </div>
+                                    {% if not cards %}
+                                    <p class="text-muted mb-0">No cards available. <a href="{{ url_for('admin.card_management_index') }}">Create cards first</a>.</p>
+                                    {% endif %}
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Inventory -->
+                        <div class="row mb-3">
+                            <div class="col-md-6">
+                                <label for="quantity" class="form-label">Initial Stock Quantity</label>
+                                <input type="number" class="form-control" id="quantity" name="quantity" 
+                                       min="0" value="{{ product.stock_quantity if product else 1 }}">
+                            </div>
+                            <div class="col-md-6">
+                                <label for="low_stock_threshold" class="form-label">Low Stock Alert Threshold</label>
+                                <input type="number" class="form-control" id="low_stock_threshold" name="low_stock_threshold" 
+                                       min="0" value="{{ product.low_stock_threshold if product else 5 }}">
+                            </div>
+                        </div>
+
+                        <!-- Status Options -->
+                        <div class="row mb-4">
+                            <div class="col-md-6">
+                                <div class="form-check form-switch">
+                                    <input class="form-check-input" type="checkbox" id="is_active" name="is_active"
+                                           {{ 'checked' if not product or product.is_active else '' }}>
+                                    <label class="form-check-label" for="is_active">
+                                        Active (visible in shop)
+                                    </label>
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="form-check form-switch">
+                                    <input class="form-check-input" type="checkbox" id="is_featured" name="is_featured"
+                                           {{ 'checked' if product and product.is_featured else '' }}>
+                                    <label class="form-check-label" for="is_featured">
+                                        Featured Product
+                                    </label>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Form Actions -->
+                        <div class="d-flex justify-content-between">
+                            <a href="{{ url_for('admin.shop_products') }}" class="btn btn-secondary">
+                                <i class="fas fa-times"></i> Cancel
+                            </a>
+                            <button type="submit" class="btn btn-primary">
+                                <i class="fas fa-save"></i> {{ 'Update Product' if product else 'Create Product' }}
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+
+        <!-- Sidebar -->
+        <div class="col-lg-4">
+            <!-- Product Image -->
+            <div class="card border border-gray-700 mb-4">
+                <div class="card-header py-3">
+                    <h6 class="m-0 font-weight-bold text-primary">Product Image</h6>
+                </div>
+                <div class="card-body text-center">
+                    {% if product and product.image_url %}
+                    <img src="{{ product.image_url }}" alt="{{ product.name }}" 
+                         class="img-fluid mb-3" style="max-height: 200px;">
+                    {% else %}
+                    <div class="bg-light d-flex align-items-center justify-content-center mb-3" 
+                         style="height: 200px;">
+                        <i class="fas fa-image fa-3x text-muted"></i>
+                    </div>
+                    {% endif %}
+                    <input type="file" class="form-control" name="image" accept="image/*">
+                    <small class="form-text text-muted">Recommended: 400x400px, JPG or PNG</small>
+                </div>
+            </div>
+
+            <!-- SEO Settings -->
+            <div class="card border border-gray-700 mb-4">
+                <div class="card-header py-3">
+                    <h6 class="m-0 font-weight-bold text-primary">SEO & Meta</h6>
+                </div>
+                <div class="card-body">
+                    <div class="mb-3">
+                        <label for="meta_title" class="form-label">Meta Title</label>
+                        <input type="text" class="form-control" id="meta_title" name="meta_title" 
+                               value="{{ product.meta_title if product else '' }}">
+                    </div>
+                    <div class="mb-3">
+                        <label for="meta_description" class="form-label">Meta Description</label>
+                        <textarea class="form-control" id="meta_description" name="meta_description" 
+                                  rows="3">{{ product.meta_description if product else '' }}</textarea>
+                    </div>
+                    <div class="mb-3">
+                        <label for="tags" class="form-label">Tags</label>
+                        <input type="text" class="form-control" id="tags" name="tags" 
+                               value="{{ product.tags|join(', ') if product and product.tags else '' }}"
+                               placeholder="tag1, tag2, tag3">
+                        <small class="form-text text-muted">Comma-separated tags</small>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Help -->
+            <div class="card border border-gray-700">
+                <div class="card-header py-3">
+                    <h6 class="m-0 font-weight-bold text-info">Help</h6>
+                </div>
+                <div class="card-body">
+                    <ul class="list-unstyled mb-0">
+                        <li class="mb-2">
+                            <i class="fas fa-info-circle text-info"></i>
+                            <strong>Product Types:</strong>
+                            <ul class="mt-1">
+                                <li><strong>Single Card:</strong> Individual card purchase</li>
+                                <li><strong>Bundle:</strong> Multiple cards/items together</li>
+                                <li><strong>Booster Pack:</strong> Random card pack</li>
+                                <li><strong>Starter Deck:</strong> Pre-built deck for beginners</li>
+                            </ul>
+                        </li>
+                        <li class="mb-2">
+                            <i class="fas fa-lightbulb text-warning"></i>
+                            <strong>Tips:</strong>
+                            <ul class="mt-1">
+                                <li>Use clear, descriptive names</li>
+                                <li>Set competitive pricing</li>
+                                <li>Include high-quality images</li>
+                                <li>Write compelling descriptions</li>
+                            </ul>
+                        </li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+// Auto-generate SKU from product name
+document.getElementById('name').addEventListener('input', function() {
+    const skuField = document.getElementById('sku');
+    if (!skuField.value) {
+        const name = this.value.toUpperCase().replace(/[^A-Z0-9]/g, '-').replace(/-+/g, '-').replace(/^-|-$/g, '');
+        skuField.value = name ? 'PROD-' + name : '';
+    }
+});
+
+// Card selection helper
+document.addEventListener('DOMContentLoaded', function() {
+    const productType = document.getElementById('product_type');
+    const cardSection = document.querySelector('.mb-3:has([name="card_skus"])');
+    
+    function toggleCardSection() {
+        if (productType.value === 'single_card') {
+            cardSection.style.display = 'block';
+            // For single card, allow only one selection
+            const checkboxes = document.querySelectorAll('[name="card_skus"]');
+            checkboxes.forEach(cb => {
+                cb.addEventListener('change', function() {
+                    if (this.checked) {
+                        checkboxes.forEach(other => {
+                            if (other !== this) other.checked = false;
+                        });
+                    }
+                });
+            });
+        } else {
+            cardSection.style.display = 'block';
+        }
+    }
+    
+    productType.addEventListener('change', toggleCardSection);
+    toggleCardSection();
+});
+</script>
+{% endblock %}
+
+
+
+
+

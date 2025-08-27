@@ -52,11 +52,11 @@ func setup_menu():
 
 func show_login_menu():
 	"""Show login options"""
-	status_label.text = "Press 1 for QR Login\nPress 2 for Guest Mode\nPress F11 to toggle fullscreen\nPress ESC to exit"
+	status_label.text = "Press 1 for QR Login\nPress 2 for Guest Mode\nPress ESC to exit"
 	
 func show_game_menu():
 	"""Show game options"""
-	status_label.text = "Press 1 for Match Game\nPress 2 for Collection\nPress F11 to toggle fullscreen\nPress ESC to logout"
+	status_label.text = "Press 1 for Match Game\nPress 2 for Collection\nPress ESC to logout"
 
 func _input(event):
 	"""Handle menu input"""
@@ -67,14 +67,7 @@ func _input(event):
 			else:
 				print("👋 Exiting console")
 				get_tree().quit()
-		elif event.keycode == KEY_F11:
-			# Toggle fullscreen
-			if DisplayServer.window_get_mode() == DisplayServer.WINDOW_MODE_FULLSCREEN:
-				DisplayServer.window_set_mode(DisplayServer.WINDOW_MODE_WINDOWED)
-				print("🖥️ Windowed mode")
-			else:
-				DisplayServer.window_set_mode(DisplayServer.WINDOW_MODE_FULLSCREEN)
-				print("🖥️ Fullscreen mode")
+
 		elif event.keycode == KEY_1:
 			if player_logged_in:
 				server_logger.log_button_press("match_game", "main_menu")

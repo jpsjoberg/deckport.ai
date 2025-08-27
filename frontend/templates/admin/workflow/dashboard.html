@@ -1,0 +1,287 @@
+{% extends "admin/base.html" %}
+
+{% block title %}Card Production Workflow{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="row">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-header">
+                    <h3 class="mb-0">🏭 Card Production Workflow Dashboard</h3>
+                    <p class="mb-0 text-muted">Manage the 3-tier card system: Templates → Products → NFC Cards</p>
+                </div>
+                <div class="card-body">
+                    
+                    <!-- Workflow Overview -->
+                    <div class="row mb-4">
+                        <div class="col-12">
+                            <h5>📊 Production Pipeline Status</h5>
+                            <div class="workflow-pipeline">
+                                
+                                <!-- Tier 1: Templates -->
+                                <div class="workflow-stage">
+                                    <div class="stage-header">
+                                        <h6>🎨 TIER 1: TEMPLATES</h6>
+                                        <small>LLM-generated card designs</small>
+                                    </div>
+                                    <div class="stage-stats">
+                                        <div class="stat-item">
+                                            <span class="stat-number">{{ stats.templates_in_design }}</span>
+                                            <span class="stat-label">In Design</span>
+                                        </div>
+                                        <div class="stat-item">
+                                            <span class="stat-number">{{ stats.templates_ready_for_balance }}</span>
+                                            <span class="stat-label">Need Balance Review</span>
+                                        </div>
+                                        <div class="stat-item">
+                                            <span class="stat-number">{{ stats.templates_ready_for_production }}</span>
+                                            <span class="stat-label">Need Production Approval</span>
+                                        </div>
+                                    </div>
+                                    <div class="stage-actions">
+                                        <a href="{{ url_for('card_workflow.manage_templates') }}" class="btn btn-sm btn-primary">
+                                            Manage Templates
+                                        </a>
+                                    </div>
+                                </div>
+
+                                <!-- Arrow -->
+                                <div class="workflow-arrow">→</div>
+
+                                <!-- Tier 2: Products -->
+                                <div class="workflow-stage">
+                                    <div class="stage-header">
+                                        <h6>🏭 TIER 2: PRODUCTS</h6>
+                                        <small>Card catalog with generated images</small>
+                                    </div>
+                                    <div class="stage-stats">
+                                        <div class="stat-item">
+                                            <span class="stat-number">{{ stats.ready_for_image_generation }}</span>
+                                            <span class="stat-label">Ready for Images</span>
+                                        </div>
+                                        <div class="stat-item">
+                                            <span class="stat-number">{{ stats.products_awaiting_publication }}</span>
+                                            <span class="stat-label">Awaiting Publication</span>
+                                        </div>
+                                        <div class="stat-item">
+                                            <span class="stat-number">{{ stats.published_products }}</span>
+                                            <span class="stat-label">Published</span>
+                                        </div>
+                                    </div>
+                                    <div class="stage-actions">
+                                        <a href="{{ url_for('card_workflow.generate_images') }}" class="btn btn-sm btn-success">
+                                            Generate Images
+                                        </a>
+                                        <a href="{{ url_for('card_workflow.manage_products') }}" class="btn btn-sm btn-primary">
+                                            Manage Products
+                                        </a>
+                                    </div>
+                                </div>
+
+                                <!-- Arrow -->
+                                <div class="workflow-arrow">→</div>
+
+                                <!-- Tier 3: NFC Cards -->
+                                <div class="workflow-stage">
+                                    <div class="stage-header">
+                                        <h6>💳 TIER 3: NFC CARDS</h6>
+                                        <small>Physical playable cards</small>
+                                    </div>
+                                    <div class="stage-stats">
+                                        <div class="stat-item">
+                                            <span class="stat-number">{{ stats.nfc_cards_active }}</span>
+                                            <span class="stat-label">Active Cards</span>
+                                        </div>
+                                    </div>
+                                    <div class="stage-actions">
+                                        <a href="/admin/nfc" class="btn btn-sm btn-primary">
+                                            Manage NFC Cards
+                                        </a>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Quick Actions -->
+                    <div class="row mb-4">
+                        <div class="col-12">
+                            <h5>⚡ Quick Actions</h5>
+                            <div class="btn-group" role="group">
+                                <a href="/admin/cards/generate" class="btn btn-outline-primary">
+                                    🤖 Generate New Templates
+                                </a>
+                                <a href="{{ url_for('card_workflow.manage_templates', stage='balance') }}" class="btn btn-outline-warning">
+                                    ⚖️ Review Balance Queue
+                                </a>
+                                <a href="{{ url_for('card_workflow.generate_images') }}" class="btn btn-outline-success">
+                                    🎨 Generate Images
+                                </a>
+                                <a href="{{ url_for('card_workflow.manage_products', status='unpublished') }}" class="btn btn-outline-info">
+                                    📋 Review Products
+                                </a>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Recent Activity -->
+                    <div class="row">
+                        <div class="col-md-6">
+                            <h5>📝 Recent Templates</h5>
+                            <div class="table-responsive">
+                                <table class="table table-sm">
+                                    <thead>
+                                        <tr>
+                                            <th>Name</th>
+                                            <th>Status</th>
+                                            <th>Created</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        {% for template in recent_templates %}
+                                        <tr>
+                                            <td>{{ template.name }}</td>
+                                            <td>
+                                                {% if template.is_ready_for_production %}
+                                                    <span class="badge bg-success">Ready for Production</span>
+                                                {% elif template.is_balanced %}
+                                                    <span class="badge bg-info">Balanced</span>
+                                                {% elif template.is_design_complete %}
+                                                    <span class="badge bg-warning">Needs Balance Review</span>
+                                                {% else %}
+                                                    <span class="badge bg-secondary">In Design</span>
+                                                {% endif %}
+                                            </td>
+                                            <td>{{ template.created_at.strftime('%m/%d %H:%M') }}</td>
+                                        </tr>
+                                        {% endfor %}
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                        
+                        <div class="col-md-6">
+                            <h5>🎴 Recent Products</h5>
+                            <div class="table-responsive">
+                                <table class="table table-sm">
+                                    <thead>
+                                        <tr>
+                                            <th>Name</th>
+                                            <th>SKU</th>
+                                            <th>Status</th>
+                                            <th>Created</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        {% for product in recent_products %}
+                                        <tr>
+                                            <td>{{ product.name }}</td>
+                                            <td><code>{{ product.product_sku }}</code></td>
+                                            <td>
+                                                {% if product.is_published %}
+                                                    <span class="badge bg-success">Published</span>
+                                                {% else %}
+                                                    <span class="badge bg-warning">Awaiting Publication</span>
+                                                {% endif %}
+                                            </td>
+                                            <td>{{ product.created_at.strftime('%m/%d %H:%M') }}</td>
+                                        </tr>
+                                        {% endfor %}
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+.workflow-pipeline {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 20px;
+    background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
+    border-radius: 10px;
+    margin-bottom: 20px;
+}
+
+.workflow-stage {
+    flex: 1;
+    text-align: center;
+    padding: 15px;
+    background: white;
+    border-radius: 8px;
+    box-border border-gray-700: 0 2px 4px rgba(0,0,0,0.1);
+    margin: 0 10px;
+}
+
+.workflow-arrow {
+    font-size: 24px;
+    font-weight: bold;
+    color: #6c757d;
+    margin: 0 10px;
+}
+
+.stage-header h6 {
+    margin: 0;
+    color: #495057;
+    font-weight: bold;
+}
+
+.stage-header small {
+    color: #6c757d;
+}
+
+.stage-stats {
+    margin: 15px 0;
+}
+
+.stat-item {
+    display: inline-block;
+    margin: 5px;
+    text-align: center;
+}
+
+.stat-number {
+    display: block;
+    font-size: 24px;
+    font-weight: bold;
+    color: #007bff;
+}
+
+.stat-label {
+    display: block;
+    font-size: 12px;
+    color: #6c757d;
+}
+
+.stage-actions {
+    margin-top: 15px;
+}
+
+.stage-actions .btn {
+    margin: 2px;
+}
+
+@media (max-width: 768px) {
+    .workflow-pipeline {
+        flex-direction: column;
+    }
+    
+    .workflow-arrow {
+        transform: rotate(90deg);
+        margin: 10px 0;
+    }
+    
+    .workflow-stage {
+        margin: 10px 0;
+        width: 100%;
+    }
+}
+</style>
+{% endblock %}

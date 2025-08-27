@@ -3,25 +3,173 @@
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <title>My Cards</title>
+    <title>My Cards - Deckport</title>
     <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet" />
   </head>
   <body class="bg-gray-900 text-white">
-    <main class="container mx-auto p-6">
-      <h1 class="text-2xl font-semibold mb-4">My Cards</h1>
-      <form method="get" class="flex gap-2 mb-4">
-        <input name="q" value="{{ q }}" placeholder="Search" class="px-3 py-2 rounded bg-gray-800" />
-        <button class="px-3 py-2 bg-indigo-600 rounded">Filter</button>
-      </form>
-      <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
-        {% for c in items %}
-        <div class="p-4 bg-gray-800 rounded">
-          <div class="text-sm text-gray-400">{{ c.product_sku }}</div>
-          <div class="font-semibold">{{ c.name }}</div>
-          <div class="text-xs text-gray-400">{{ c.rarity }}</div>
+    <!-- Navigation -->
+    <nav class="bg-gray-800 border-b border-gray-700">
+      <div class="container mx-auto px-4">
+        <div class="flex justify-between items-center py-4">
+          <div class="flex items-center space-x-8">
+            <a href="/" class="text-xl font-bold text-indigo-400">Deckport</a>
+            <div class="hidden md:flex space-x-6">
+              <a href="/cards" class="text-gray-300 hover:text-white">Browse Cards</a>
+              <a href="/shop" class="text-gray-300 hover:text-white">Shop</a>
+              <a href="/me" class="text-gray-300 hover:text-white">Dashboard</a>
+              <a href="/me/cards" class="text-indigo-400 font-medium">My Cards</a>
+            </div>
+          </div>
+          <div class="flex items-center space-x-4">
+            <a href="/me/cards/activate" class="bg-indigo-600 hover:bg-indigo-700 px-4 py-2 rounded text-sm font-medium">Activate Card</a>
+            <a href="/logout" class="text-gray-400 hover:text-white">Logout</a>
+          </div>
+        </div>
+      </div>
+    </nav>
+
+    <div class="container mx-auto px-4 py-8">
+      <!-- Header -->
+      <div class="flex justify-between items-center mb-8">
+        <div>
+          <h1 class="text-3xl font-bold mb-2">My Card Collection</h1>
+          <p class="text-gray-400">{{ total }} cards in your collection</p>
+        </div>
+        <div class="flex items-center space-x-4">
+          <select onchange="updateSort(this.value)" class="bg-gray-800 border border-gray-600 rounded px-3 py-2">
+            <option value="activated_at" {{ 'selected' if sort_by == 'activated_at' }}>Recently Activated</option>
+            <option value="tap_counter" {{ 'selected' if sort_by == 'tap_counter' }}>Most Used</option>
+            <option value="level" {{ 'selected' if sort_by == 'level' }}>Highest Level</option>
+          </select>
+        </div>
+      </div>
+
+      <!-- Search -->
+      <div class="mb-6">
+        <form method="get" class="flex gap-4">
+          <input type="text" name="q" value="{{ q }}" placeholder="Search cards..." 
+                 class="flex-1 px-4 py-2 bg-gray-800 border border-gray-600 rounded focus:outline-none focus:border-indigo-500" />
+          <input type="hidden" name="sort_by" value="{{ sort_by }}" />
+          <button type="submit" class="bg-indigo-600 hover:bg-indigo-700 px-6 py-2 rounded font-medium">Search</button>
+        </form>
+      </div>
+
+      <!-- Cards Grid -->
+      {% if cards %}
+      <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6 mb-8">
+        {% for card in cards %}
+        <div class="bg-gray-800 rounded-lg p-6 hover:bg-gray-700 transition-colors">
+          <div class="flex justify-between items-start mb-4">
+            <div>
+              <h3 class="font-bold text-lg">{{ card.product_sku }}</h3>
+              {% if card.serial_number %}
+              <p class="text-sm text-gray-400">#{{ card.serial_number }}</p>
+              {% endif %}
+            </div>
+            <div class="text-right">
+              <div class="bg-indigo-600 text-xs px-2 py-1 rounded">Level {{ card.current_level }}</div>
+            </div>
+          </div>
+
+          <div class="space-y-2 mb-4">
+            <div class="flex justify-between text-sm">
+              <span class="text-gray-400">XP:</span>
+              <span>{{ card.current_xp }}</span>
+            </div>
+            <div class="flex justify-between text-sm">
+              <span class="text-gray-400">Taps:</span>
+              <span>{{ card.tap_counter }}</span>
+            </div>
+            <div class="flex justify-between text-sm">
+              <span class="text-gray-400">Activated:</span>
+              <span>{{ card.activated_at[:10] if card.activated_at }}</span>
+            </div>
+          </div>
+
+          <!-- Recent Upgrades -->
+          {% if card.recent_upgrades %}
+          <div class="mb-4">
+            <p class="text-xs text-gray-400 mb-2">Recent Upgrades:</p>
+            <div class="space-y-1">
+              {% for upgrade in card.recent_upgrades[:2] %}
+              <div class="text-xs bg-gray-700 px-2 py-1 rounded">
+                {{ upgrade.type }} → Level {{ upgrade.new_level }}
+              </div>
+              {% endfor %}
+            </div>
+          </div>
+          {% endif %}
+
+          <div class="flex gap-2">
+            {% if card.public_url %}
+            <a href="{{ card.public_url }}" target="_blank" 
+               class="flex-1 bg-gray-700 hover:bg-gray-600 text-center py-2 rounded text-sm font-medium">
+              View Public
+            </a>
+            {% endif %}
+            <button onclick="showCardDetails({{ card.id }})" 
+                    class="flex-1 bg-indigo-600 hover:bg-indigo-700 text-center py-2 rounded text-sm font-medium">
+              Details
+            </button>
+          </div>
         </div>
         {% endfor %}
       </div>
-    </main>
+
+      <!-- Pagination -->
+      {% if total_pages > 1 %}
+      <div class="flex justify-center space-x-2">
+        {% if page > 1 %}
+        <a href="?page={{ page - 1 }}&q={{ q }}&sort_by={{ sort_by }}" 
+           class="bg-gray-800 hover:bg-gray-700 px-4 py-2 rounded">Previous</a>
+        {% endif %}
+        
+        {% for p in range(1, total_pages + 1) %}
+          {% if p == page %}
+          <span class="bg-indigo-600 px-4 py-2 rounded">{{ p }}</span>
+          {% elif p <= 3 or p >= total_pages - 2 or (p >= page - 1 and p <= page + 1) %}
+          <a href="?page={{ p }}&q={{ q }}&sort_by={{ sort_by }}" 
+             class="bg-gray-800 hover:bg-gray-700 px-4 py-2 rounded">{{ p }}</a>
+          {% elif p == 4 and page > 6 %}
+          <span class="px-4 py-2">...</span>
+          {% elif p == total_pages - 3 and page < total_pages - 5 %}
+          <span class="px-4 py-2">...</span>
+          {% endif %}
+        {% endfor %}
+        
+        {% if page < total_pages %}
+        <a href="?page={{ page + 1 }}&q={{ q }}&sort_by={{ sort_by }}" 
+           class="bg-gray-800 hover:bg-gray-700 px-4 py-2 rounded">Next</a>
+        {% endif %}
+      </div>
+      {% endif %}
+
+      {% else %}
+      <!-- Empty State -->
+      <div class="text-center py-16">
+        <div class="text-6xl mb-4">🃏</div>
+        <h2 class="text-2xl font-semibold mb-4">No Cards Yet</h2>
+        <p class="text-gray-400 mb-8">Start building your collection by purchasing cards or activating new ones.</p>
+        <div class="space-x-4">
+          <a href="/shop" class="bg-indigo-600 hover:bg-indigo-700 px-6 py-3 rounded font-medium">Browse Shop</a>
+          <a href="/me/cards/activate" class="bg-gray-700 hover:bg-gray-600 px-6 py-3 rounded font-medium">Activate Card</a>
+        </div>
+      </div>
+      {% endif %}
+    </div>
+
+    <script>
+      function updateSort(value) {
+        const url = new URL(window.location);
+        url.searchParams.set('sort_by', value);
+        url.searchParams.set('page', '1'); // Reset to first page
+        window.location.href = url.toString();
+      }
+
+      function showCardDetails(cardId) {
+        // TODO: Implement card details modal
+        alert('Card details modal - TODO: Implement');
+      }
+    </script>
   </body>
-  </html>
+</html>

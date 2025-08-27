@@ -1,0 +1,50 @@
+{
+  "total_tests": 7,
+  "passed": 6,
+  "failed": 1,
+  "success_rate": 85.71428571428571,
+  "results": [
+    {
+      "test": "File Structure",
+      "success": true,
+      "message": "All 4 RBAC files exist",
+      "timestamp": "2025-08-26T14:24:44.669661+00:00"
+    },
+    {
+      "test": "AdminRole Enum",
+      "success": true,
+      "message": "All 5 roles defined",
+      "timestamp": "2025-08-26T14:24:44.731246+00:00"
+    },
+    {
+      "test": "Permission Enum",
+      "success": true,
+      "message": "42 permissions across 10 categories",
+      "timestamp": "2025-08-26T14:24:44.731389+00:00"
+    },
+    {
+      "test": "Role Definitions",
+      "success": true,
+      "message": "All role definitions valid",
+      "timestamp": "2025-08-26T14:24:44.731434+00:00"
+    },
+    {
+      "test": "Permission Mapping",
+      "success": true,
+      "message": "73 endpoint mappings defined",
+      "timestamp": "2025-08-26T14:24:44.731740+00:00"
+    },
+    {
+      "test": "RBAC Decorators",
+      "success": false,
+      "message": "Error: No module named 'flask'",
+      "timestamp": "2025-08-26T14:24:44.733841+00:00"
+    },
+    {
+      "test": "Role Hierarchy",
+      "success": true,
+      "message": "Role hierarchy properly structured",
+      "timestamp": "2025-08-26T14:24:44.733884+00:00"
+    }
+  ]
+}

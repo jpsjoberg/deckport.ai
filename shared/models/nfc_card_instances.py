@@ -7,18 +7,34 @@ from datetime import datetime, timezone
 from typing import Optional, List
 from enum import Enum
 from sqlalchemy import (
-    Integer, String, Text, Boolean, DateTime, ForeignKey, 
-    UniqueConstraint, Index, JSON, Float
+    Boolean,
+    CheckConstraint,
+    DateTime,
+    Enum as SAEnum,
+    Float,
+    ForeignKey,
+    Index,
+    Integer,
+    JSON,
+    String,
+    Text,
+    UniqueConstraint
 )
-from sqlalchemy.orm import Mapped, mapped_column, relationship
+from sqlalchemy.orm import DeclarativeBase, Mapped, mapped_column, relationship
 from sqlalchemy.dialects.postgresql import UUID, JSONB
-from sqlalchemy import Enum as SAEnum
-
-from .base import Base
-from .card_templates import ManaColor, EffectTrigger, ActionSpeed
-
-
-def utcnow() -> datetime:
+    Boolean,
+    CheckConstraint,
+    DateTime,
+    Enum as SAEnum,
+    Float,
+    ForeignKey,
+    Index,
+    Integer,
+    JSON,
+    String,
+    Text,
+    UniqueConstraint
+) -> datetime:
     return datetime.now(timezone.utc)
 
 
@@ -57,15 +73,15 @@ class NFCCardInstance(Base):
     id: Mapped[int] = mapped_column(Integer, primary_key=True)
     
     # Link to base template (the "raw card design")
-    template_id: Mapped[int] = mapped_column(ForeignKey("card_templates.id", ondelete="RESTRICT"), nullable=False)
+    template_id: Mapped[Optional[int]] = mapped_column(ForeignKey("card_templates.id", ondelete="RESTRICT"), nullable=False)
     
     # Physical NFC data
-    ntag_uid: Mapped[str] = mapped_column(String(32), nullable=False)  # Unique NFC identifier
+    ntag_uid: Mapped[Optional[str]] = mapped_column(String(32), nullable=False)  # Unique NFC identifier
     batch_id: Mapped[Optional[int]] = mapped_column(ForeignKey("card_batches.id", ondelete="SET NULL"))
     
     # Instance-specific properties
     instance_name: Mapped[Optional[str]] = mapped_column(String(120))  # Custom name (e.g., "Lightning Phoenix Alpha")
-    serial_number: Mapped[str] = mapped_column(String(50), nullable=False)  # Human-readable serial
+    serial_number: Mapped[Optional[str]] = mapped_column(String(50), nullable=False)  # Human-readable serial
     
     # Ownership and status
     current_owner_id: Mapped[Optional[int]] = mapped_column(ForeignKey("players.id", ondelete="SET NULL"))
@@ -84,7 +100,7 @@ class NFCCardInstance(Base):
     custom_keywords: Mapped[Optional[str]] = mapped_column(String(500))  # Additional keywords
     
     # Instance metadata
-    mint_date: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=utcnow, nullable=False)
+    mint_date: Mapped[Optional[datetime]] = mapped_column(DateTime(timezone=True), default=utcnow, nullable=False)
     first_activation: Mapped[Optional[datetime]] = mapped_column(DateTime(timezone=True))
     last_used: Mapped[Optional[datetime]] = mapped_column(DateTime(timezone=True))
     
@@ -93,11 +109,11 @@ class NFCCardInstance(Base):
     issuer_key_ref: Mapped[Optional[str]] = mapped_column(String(128))
 
     # Relationships
-    template: Mapped["CardTemplate"] = relationship("CardTemplate")  # Base template
-    current_owner: Mapped[Optional["Player"]] = relationship("Player")
-    batch: Mapped[Optional["CardBatch"]] = relationship("CardBatch")
-    evolutions: Mapped[List["CardEvolution"]] = relationship(back_populates="card_instance", cascade="all, delete-orphan")
-    match_participations: Mapped[List["CardMatchParticipation"]] = relationship(back_populates="card_instance")
+    template: Mapped[""CardTemplate""] = relationship("CardTemplate")  # Base template
+    current_owner: Mapped[""Player""] = relationship("Player")
+    batch: Mapped[""CardBatch""] = relationship("CardBatch")
+    evolutions: Mapped[List["ArenaClip"]] = relationship(back_populates="card_instance")
+    match_participations: Mapped["back_populates="card_instance"card_instance")
 
 
 class CardEvolution(Base):
@@ -112,7 +128,7 @@ class CardEvolution(Base):
     )
 
     id: Mapped[int] = mapped_column(Integer, primary_key=True)
-    card_instance_id: Mapped[int] = mapped_column(ForeignKey("nfc_card_instances.id", ondelete="CASCADE"), nullable=False)
+    card_instance_id: Mapped[Optional[int]] = mapped_column(ForeignKey("nfc_card_instances.id", ondelete="CASCADE"), nullable=False)
     
     # Evolution details
     evolution_trigger: Mapped[EvolutionTrigger] = mapped_column(SAEnum(EvolutionTrigger), nullable=False)
@@ -129,11 +145,11 @@ class CardEvolution(Base):
     evolution_description: Mapped[Optional[str]] = mapped_column(Text)  # Human-readable description
     
     # Metadata
-    evolution_date: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=utcnow, nullable=False)
+    evolution_date: Mapped[Optional[datetime]] = mapped_column(DateTime(timezone=True), default=utcnow, nullable=False)
     triggered_by_admin: Mapped[Optional[str]] = mapped_column(String(100))  # Admin who triggered manual evolution
 
     # Relationships
-    card_instance: Mapped[NFCCardInstance] = relationship(back_populates="evolutions")
+    card_instance: Mapped["back_populates="evolutions"evolutions")
 
 
 class CardMatchParticipation(Base):
@@ -149,8 +165,8 @@ class CardMatchParticipation(Base):
     )
 
     id: Mapped[int] = mapped_column(Integer, primary_key=True)
-    card_instance_id: Mapped[int] = mapped_column(ForeignKey("nfc_card_instances.id", ondelete="CASCADE"), nullable=False)
-    match_id: Mapped[int] = mapped_column(ForeignKey("matches.id", ondelete="CASCADE"), nullable=False)
+    card_instance_id: Mapped[Optional[int]] = mapped_column(ForeignKey("nfc_card_instances.id", ondelete="CASCADE"), nullable=False)
+    match_id: Mapped[Optional[int]] = mapped_column(ForeignKey("matches.id", ondelete="CASCADE"), nullable=False)
     
     # Performance in this match
     damage_dealt: Mapped[int] = mapped_column(Integer, default=0, nullable=False)
@@ -162,11 +178,11 @@ class CardMatchParticipation(Base):
     experience_gained: Mapped[int] = mapped_column(Integer, default=0, nullable=False)
     
     # Match context
-    played_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=utcnow, nullable=False)
+    played_at: Mapped[Optional[datetime]] = mapped_column(DateTime(timezone=True), default=utcnow, nullable=False)
 
     # Relationships
-    card_instance: Mapped[NFCCardInstance] = relationship(back_populates="match_participations")
-    match: Mapped["Match"] = relationship("Match")
+    card_instance: Mapped["back_populates="match_participations"match_participations")
+    match: Mapped[""Match""] = relationship("Match")
 
 
 class CardFusion(Base):
@@ -185,17 +201,17 @@ class CardFusion(Base):
     source_card_ids: Mapped[List[int]] = mapped_column(JSONB, nullable=False)
     
     # The resulting card
-    result_card_id: Mapped[int] = mapped_column(ForeignKey("nfc_card_instances.id", ondelete="CASCADE"), nullable=False)
+    result_card_id: Mapped[Optional[int]] = mapped_column(ForeignKey("nfc_card_instances.id", ondelete="CASCADE"), nullable=False)
     
     # Fusion details
-    fusion_type: Mapped[str] = mapped_column(String(100), nullable=False)  # e.g., "elemental_fusion", "power_merge"
+    fusion_type: Mapped[Optional[str]] = mapped_column(String(100), nullable=False)  # e.g., "elemental_fusion", "power_merge"
     fusion_recipe: Mapped[dict] = mapped_column(JSONB, nullable=False)  # Rules used for fusion
     
     # Metadata
-    fusion_date: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=utcnow, nullable=False)
-    performed_by_player: Mapped[int] = mapped_column(ForeignKey("players.id", ondelete="CASCADE"), nullable=False)
+    fusion_date: Mapped[Optional[datetime]] = mapped_column(DateTime(timezone=True), default=utcnow, nullable=False)
+    performed_by_player: Mapped[Optional[int]] = mapped_column(ForeignKey("players.id", ondelete="CASCADE"), nullable=False)
     
     # Relationships
-    result_card: Mapped[NFCCardInstance] = relationship("NFCCardInstance")
-    player: Mapped["Player"] = relationship("Player")
+    result_card: Mapped[""NFCCardInstance""] = relationship("NFCCardInstance")
+    player: Mapped[""Player""] = relationship("Player")
 

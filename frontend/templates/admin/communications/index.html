@@ -102,34 +102,20 @@
                 <i class="fas fa-envelope text-blue-400 mr-2"></i>
                 Email Marketing
             </h3>
-            <a href="{{ url_for('admin.email_campaigns') }}" class="text-blue-400 hover:text-blue-300 text-sm">
-                Manage →
+            {# Temporarily disabled - route not implemented yet
+            <a href="#" class="text-gray-400 text-sm cursor-not-allowed">
+                Coming Soon
             </a>
+            #}
         </div>
         
         <div class="space-y-3">
-            <div class="flex items-center justify-between p-3 bg-gray-700 rounded">
-                <div>
-                    <div class="text-sm font-medium text-white">Weekly Newsletter</div>
-                    <div class="text-xs text-gray-400">Scheduled for Friday 10 AM</div>
+            <div id="email-campaigns-list">
+                <!-- Email campaigns will be loaded dynamically -->
+                <div class="text-center py-4">
+                    <i class="fas fa-spinner fa-spin text-gray-400 text-xl mb-2"></i>
+                    <p class="text-gray-400 text-sm">Loading campaigns...</p>
                 </div>
-                <span class="px-2 py-1 bg-green-600 text-xs font-medium rounded">Active</span>
-            </div>
-            
-            <div class="flex items-center justify-between p-3 bg-gray-700 rounded">
-                <div>
-                    <div class="text-sm font-medium text-white">Tournament Announcement</div>
-                    <div class="text-xs text-gray-400">Draft saved</div>
-                </div>
-                <span class="px-2 py-1 bg-yellow-600 text-xs font-medium rounded">Draft</span>
-            </div>
-            
-            <div class="flex items-center justify-between p-3 bg-gray-700 rounded">
-                <div>
-                    <div class="text-sm font-medium text-white">New Card Reveal</div>
-                    <div class="text-xs text-gray-400">Sent 2 days ago</div>
-                </div>
-                <span class="px-2 py-1 bg-gray-600 text-xs font-medium rounded">Sent</span>
             </div>
         </div>
         
@@ -146,8 +132,8 @@
                 <i class="fab fa-discord text-purple-400 mr-2"></i>
                 Discord Server
             </h3>
-            <a href="{{ url_for('admin.discord_management') }}" class="text-purple-400 hover:text-purple-300 text-sm">
-                Manage →
+            <a href="#" class="text-gray-400 text-sm cursor-not-allowed">
+                Coming Soon
             </a>
         </div>
         
@@ -195,8 +181,8 @@
                 <i class="fab fa-telegram text-cyan-400 mr-2"></i>
                 Telegram Channel
             </h3>
-            <a href="{{ url_for('admin.telegram_channel') }}" class="text-cyan-400 hover:text-cyan-300 text-sm">
-                Manage →
+            <a href="#" class="text-gray-400 text-sm cursor-not-allowed">
+                Coming Soon
             </a>
         </div>
         
@@ -384,7 +370,7 @@
 {% endblock %}
 
 {% block scripts %}
-<script src="{{ url_for('static', filename='admin/js/communications.js') }}"></script>
+{# <script src="{{ url_for('static', filename='admin/js/communications.js') }}"></script> #}
 <script>
 // Initialize communications hub
 document.addEventListener('DOMContentLoaded', function() {

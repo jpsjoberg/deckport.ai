@@ -7,14 +7,14 @@
     <!-- Header -->
     <div class="flex justify-between items-center">
         <div>
-            <h1 class="text-3xl font-bold text-gray-900">{{ card.name }}</h1>
-            <p class="text-gray-600 mt-1">{{ card.category.title() }} • {{ card.rarity.title() }}</p>
+            <h1 class="text-3xl font-bold text-white">{{ card.name }}</h1>
+            <p class="text-gray-400 mt-1">{{ card.category.title() }} • {{ card.rarity.title() }}</p>
         </div>
         <div class="flex space-x-3">
             <button onclick="toggleEdit()" class="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700">
                 <span id="edit-btn-text">Edit Card</span>
             </button>
-            <a href="{{ url_for('admin.card_review') }}" class="text-gray-600 hover:text-gray-900">
+            <a href="{{ url_for('admin.card_review') }}" class="text-gray-400 hover:text-white">
                 ← Back to Review
             </a>
         </div>
@@ -23,13 +23,13 @@
     <!-- Card Display -->
     <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
         <!-- Card Art Preview -->
-        <div class="bg-white rounded-lg shadow-md p-6">
-            <h3 class="text-lg font-semibold text-gray-900 mb-4">Card Preview</h3>
-            <div class="aspect-w-3 aspect-h-4 bg-gray-100 rounded-lg flex items-center justify-center">
+        <div class="bg-gray-800 rounded-lg shadow-md p-6">
+            <h3 class="text-lg font-semibold text-white mb-4">Card Preview</h3>
+            <div class="aspect-w-3 aspect-h-4 bg-gray-700 rounded-lg flex items-center justify-center">
                 {% if card.has_art %}
                 <img src="{{ card.art_url }}" alt="{{ card.name }}" class="max-w-full max-h-96 rounded-lg shadow-md">
                 {% else %}
-                <div class="text-center text-gray-500">
+                <div class="text-center text-gray-400">
                     <svg class="w-16 h-16 mx-auto mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"/>
                     </svg>
@@ -41,34 +41,34 @@
         </div>
 
         <!-- Card Details -->
-        <div class="bg-white rounded-lg shadow-md p-6">
-            <h3 class="text-lg font-semibold text-gray-900 mb-4">Card Details</h3>
+        <div class="bg-gray-800 rounded-lg shadow-md p-6">
+            <h3 class="text-lg font-semibold text-white mb-4">Card Details</h3>
             
             <!-- View Mode -->
             <div id="view-mode">
                 <dl class="grid grid-cols-1 gap-4">
                     <div>
-                        <dt class="text-sm font-medium text-gray-500">Name</dt>
-                        <dd class="mt-1 text-sm text-gray-900">{{ card.name }}</dd>
+                        <dt class="text-sm font-medium text-gray-400">Name</dt>
+                        <dd class="mt-1 text-sm text-white">{{ card.name }}</dd>
                     </div>
                     
                     <div class="grid grid-cols-2 gap-4">
                         <div>
-                            <dt class="text-sm font-medium text-gray-500">Category</dt>
+                            <dt class="text-sm font-medium text-gray-400">Category</dt>
                             <dd class="mt-1">
-                                <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-gray-100 text-gray-800">
+                                <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-gray-700 text-gray-200">
                                     {{ card.category }}
                                 </span>
                             </dd>
                         </div>
                         <div>
-                            <dt class="text-sm font-medium text-gray-500">Rarity</dt>
+                            <dt class="text-sm font-medium text-gray-400">Rarity</dt>
                             <dd class="mt-1">
                                 <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full 
-                                    {% if card.rarity == 'COMMON' %}bg-gray-100 text-gray-800
-                                    {% elif card.rarity == 'RARE' %}bg-blue-100 text-blue-800
-                                    {% elif card.rarity == 'EPIC' %}bg-purple-100 text-purple-800
-                                    {% else %}bg-yellow-100 text-yellow-800{% endif %}">
+                                    {% if card.rarity == 'COMMON' %}bg-gray-700 text-gray-200
+                                    {% elif card.rarity == 'RARE' %}bg-blue-900 text-blue-800
+                                    {% elif card.rarity == 'EPIC' %}bg-purple-900 text-purple-800
+                                    {% else %}bg-yellow-900 text-yellow-800{% endif %}">
                                     {{ card.rarity }}
                                 </span>
                             </dd>
@@ -76,56 +76,56 @@
                     </div>
 
                     <div>
-                        <dt class="text-sm font-medium text-gray-500">Mana Color</dt>
+                        <dt class="text-sm font-medium text-gray-400">Mana Color</dt>
                         <dd class="mt-1 flex items-center">
                             <div class="w-4 h-4 rounded-full mr-2" style="background-color: {{ mana_colors[card.color_code].color }}"></div>
-                            <span class="text-sm text-gray-900">{{ mana_colors[card.color_code].name }}</span>
+                            <span class="text-sm text-white">{{ mana_colors[card.color_code].name }}</span>
                         </dd>
                     </div>
 
                     <div class="grid grid-cols-2 gap-4">
                         <div>
-                            <dt class="text-sm font-medium text-gray-500">Mana Cost</dt>
-                            <dd class="mt-1 text-sm text-gray-900">{{ card.mana_cost or 0 }}</dd>
+                            <dt class="text-sm font-medium text-gray-400">Mana Cost</dt>
+                            <dd class="mt-1 text-sm text-white">{{ card.mana_cost or 0 }}</dd>
                         </div>
                         <div>
-                            <dt class="text-sm font-medium text-gray-500">Energy Cost</dt>
-                            <dd class="mt-1 text-sm text-gray-900">{{ card.energy_cost or 0 }}</dd>
+                            <dt class="text-sm font-medium text-gray-400">Energy Cost</dt>
+                            <dd class="mt-1 text-sm text-white">{{ card.energy_cost or 0 }}</dd>
                         </div>
                     </div>
 
                     {% if card.category in ['CREATURE', 'STRUCTURE'] %}
                     <div class="grid grid-cols-2 gap-4">
                         <div>
-                            <dt class="text-sm font-medium text-gray-500">Attack</dt>
-                            <dd class="mt-1 text-sm text-gray-900">{{ card.attack or 0 }}</dd>
+                            <dt class="text-sm font-medium text-gray-400">Attack</dt>
+                            <dd class="mt-1 text-sm text-white">{{ card.attack or 0 }}</dd>
                         </div>
                         <div>
-                            <dt class="text-sm font-medium text-gray-500">Defense</dt>
-                            <dd class="mt-1 text-sm text-gray-900">{{ card.defense or 0 }}</dd>
+                            <dt class="text-sm font-medium text-gray-400">Defense</dt>
+                            <dd class="mt-1 text-sm text-white">{{ card.defense or 0 }}</dd>
                         </div>
                     </div>
 
                     <div class="grid grid-cols-2 gap-4">
                         <div>
-                            <dt class="text-sm font-medium text-gray-500">Health</dt>
-                            <dd class="mt-1 text-sm text-gray-900">{{ card.health or 0 }}</dd>
+                            <dt class="text-sm font-medium text-gray-400">Health</dt>
+                            <dd class="mt-1 text-sm text-white">{{ card.health or 0 }}</dd>
                         </div>
                         <div>
-                            <dt class="text-sm font-medium text-gray-500">Energy per Turn</dt>
-                            <dd class="mt-1 text-sm text-gray-900">{{ card.base_energy_per_turn or 0 }}</dd>
+                            <dt class="text-sm font-medium text-gray-400">Energy per Turn</dt>
+                            <dd class="mt-1 text-sm text-white">{{ card.base_energy_per_turn or 0 }}</dd>
                         </div>
                     </div>
                     {% endif %}
 
                     <div>
-                        <dt class="text-sm font-medium text-gray-500">Equipment Slots</dt>
-                        <dd class="mt-1 text-sm text-gray-900">{{ card.equipment_slots or 0 }}</dd>
+                        <dt class="text-sm font-medium text-gray-400">Equipment Slots</dt>
+                        <dd class="mt-1 text-sm text-white">{{ card.equipment_slots or 0 }}</dd>
                     </div>
 
                     <div>
-                        <dt class="text-sm font-medium text-gray-500">Targeting</dt>
-                        <dd class="mt-1 text-sm text-gray-900">
+                        <dt class="text-sm font-medium text-gray-400">Targeting</dt>
+                        <dd class="mt-1 text-sm text-white">
                             {% if card.target_friendly %}Friendly {% endif %}
                             {% if card.target_enemy %}Enemy {% endif %}
                             {% if card.target_self %}Self {% endif %}
@@ -134,8 +134,8 @@
                     </div>
 
                     <div>
-                        <dt class="text-sm font-medium text-gray-500">Created</dt>
-                        <dd class="mt-1 text-sm text-gray-900">{{ card.created_at.split('T')[0] if card.created_at else 'Unknown' }}</dd>
+                        <dt class="text-sm font-medium text-gray-400">Created</dt>
+                        <dd class="mt-1 text-sm text-white">{{ card.created_at.split('T')[0] if card.created_at else 'Unknown' }}</dd>
                     </div>
                 </dl>
             </div>
@@ -144,16 +144,16 @@
             <div id="edit-mode" style="display: none;">
                 <form method="POST" action="{{ url_for('admin.edit_card', card_id=card.id) }}" class="space-y-4">
                     <div>
-                        <label class="block text-sm font-medium text-gray-700">Name</label>
+                        <label class="block text-sm font-medium text-gray-300">Name</label>
                         <input type="text" name="name" value="{{ card.name }}" required
-                               class="mt-1 w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500">
+                               class="mt-1 w-full px-3 py-2 border border-gray-600 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500">
                     </div>
 
                     <div class="grid grid-cols-2 gap-4">
                         <div>
-                            <label class="block text-sm font-medium text-gray-700">Category</label>
+                            <label class="block text-sm font-medium text-gray-300">Category</label>
                             <select name="category" required
-                                    class="mt-1 w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500">
+                                    class="mt-1 w-full px-3 py-2 border border-gray-600 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500">
                                 {% for category in categories %}
                                 <option value="{{ category }}" {% if card.category == category %}selected{% endif %}>
                                     {{ category.title() }}
@@ -162,9 +162,9 @@
                             </select>
                         </div>
                         <div>
-                            <label class="block text-sm font-medium text-gray-700">Rarity</label>
+                            <label class="block text-sm font-medium text-gray-300">Rarity</label>
                             <select name="rarity"
-                                    class="mt-1 w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500">
+                                    class="mt-1 w-full px-3 py-2 border border-gray-600 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500">
                                 {% for rarity in rarities %}
                                 <option value="{{ rarity }}" {% if card.rarity == rarity %}selected{% endif %}>
                                     {{ rarity.title() }}
@@ -175,9 +175,9 @@
                     </div>
 
                     <div>
-                        <label class="block text-sm font-medium text-gray-700">Mana Color</label>
+                        <label class="block text-sm font-medium text-gray-300">Mana Color</label>
                         <select name="color_code" required
-                                class="mt-1 w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500">
+                                class="mt-1 w-full px-3 py-2 border border-gray-600 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500">
                             {% for color, info in mana_colors.items() %}
                             <option value="{{ color }}" {% if card.color_code == color %}selected{% endif %}>
                                 {{ info.name }}
@@ -188,54 +188,54 @@
 
                     <div class="grid grid-cols-2 gap-4">
                         <div>
-                            <label class="block text-sm font-medium text-gray-700">Mana Cost</label>
+                            <label class="block text-sm font-medium text-gray-300">Mana Cost</label>
                             <input type="number" name="mana_cost" value="{{ card.mana_cost or 0 }}" min="0" max="20"
-                                   class="mt-1 w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500">
+                                   class="mt-1 w-full px-3 py-2 border border-gray-600 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500">
                         </div>
                         <div>
-                            <label class="block text-sm font-medium text-gray-700">Energy Cost</label>
+                            <label class="block text-sm font-medium text-gray-300">Energy Cost</label>
                             <input type="number" name="energy_cost" value="{{ card.energy_cost or 0 }}" min="0" max="10"
-                                   class="mt-1 w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500">
+                                   class="mt-1 w-full px-3 py-2 border border-gray-600 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500">
                         </div>
                     </div>
 
                     {% if card.category in ['CREATURE', 'STRUCTURE'] %}
                     <div class="grid grid-cols-2 gap-4">
                         <div>
-                            <label class="block text-sm font-medium text-gray-700">Attack</label>
+                            <label class="block text-sm font-medium text-gray-300">Attack</label>
                             <input type="number" name="attack" value="{{ card.attack or 0 }}" min="0" max="20"
-                                   class="mt-1 w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500">
+                                   class="mt-1 w-full px-3 py-2 border border-gray-600 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500">
                         </div>
                         <div>
-                            <label class="block text-sm font-medium text-gray-700">Defense</label>
+                            <label class="block text-sm font-medium text-gray-300">Defense</label>
                             <input type="number" name="defense" value="{{ card.defense or 0 }}" min="0" max="20"
-                                   class="mt-1 w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500">
+                                   class="mt-1 w-full px-3 py-2 border border-gray-600 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500">
                         </div>
                     </div>
 
                     <div class="grid grid-cols-2 gap-4">
                         <div>
-                            <label class="block text-sm font-medium text-gray-700">Health</label>
+                            <label class="block text-sm font-medium text-gray-300">Health</label>
                             <input type="number" name="health" value="{{ card.health or 0 }}" min="0" max="50"
-                                   class="mt-1 w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500">
+                                   class="mt-1 w-full px-3 py-2 border border-gray-600 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500">
                         </div>
                         <div>
-                            <label class="block text-sm font-medium text-gray-700">Energy per Turn</label>
+                            <label class="block text-sm font-medium text-gray-300">Energy per Turn</label>
                             <input type="number" name="base_energy_per_turn" value="{{ card.base_energy_per_turn or 0 }}" min="0" max="10"
-                                   class="mt-1 w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500">
+                                   class="mt-1 w-full px-3 py-2 border border-gray-600 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500">
                         </div>
                     </div>
                     {% endif %}
 
                     <div>
-                        <label class="block text-sm font-medium text-gray-700">Equipment Slots</label>
+                        <label class="block text-sm font-medium text-gray-300">Equipment Slots</label>
                         <input type="number" name="equipment_slots" value="{{ card.equipment_slots or 0 }}" min="0" max="3"
-                               class="mt-1 w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500">
+                               class="mt-1 w-full px-3 py-2 border border-gray-600 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500">
                     </div>
 
                     <div class="flex justify-end space-x-3 pt-4">
                         <button type="button" onclick="toggleEdit()" 
-                                class="px-4 py-2 text-gray-700 bg-gray-200 rounded-md hover:bg-gray-300">
+                                class="px-4 py-2 text-gray-300 bg-gray-700 rounded-md hover:bg-gray-600">
                             Cancel
                         </button>
                         <button type="submit" 
@@ -249,7 +249,7 @@
     </div>
 
     <!-- Danger Zone -->
-    <div class="bg-white rounded-lg shadow-md border-l-4 border-red-500 p-6">
+    <div class="bg-gray-800 rounded-lg shadow-md border-l-4 border-red-500 p-6">
         <h3 class="text-lg font-semibold text-red-900 mb-4">Danger Zone</h3>
         <p class="text-sm text-red-700 mb-4">
             Permanently delete this card. This action cannot be undone.

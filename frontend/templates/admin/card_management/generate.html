@@ -7,39 +7,39 @@
     <!-- Header -->
     <div class="flex justify-between items-center">
         <div>
-            <h1 class="text-3xl font-bold text-gray-900">Generate New Card</h1>
-            <p class="text-gray-600 mt-1">Create new cards with AI-generated artwork using ComfyUI</p>
+            <h1 class="text-3xl font-bold text-white">Generate New Card</h1>
+            <p class="text-gray-400 mt-1">Create new cards with AI-generated artwork using ComfyUI</p>
         </div>
         <div class="flex items-center space-x-3">
             <!-- ComfyUI Status -->
             <div class="flex items-center">
                 <div class="w-3 h-3 rounded-full mr-2 {% if comfyui_status %}bg-green-500{% else %}bg-red-500{% endif %}"></div>
-                <span class="text-sm text-gray-600">
+                <span class="text-sm text-gray-400">
                     ComfyUI {% if comfyui_status %}Online{% else %}Offline{% endif %}
                 </span>
             </div>
-            <a href="{{ url_for('admin.card_management_index') }}" class="text-gray-600 hover:text-gray-900">
+            <a href="{{ url_for('admin.card_management_index') }}" class="text-gray-400 hover:text-white">
                 ← Back to Dashboard
             </a>
         </div>
     </div>
 
     <!-- Generation Form -->
-    <div class="bg-white rounded-lg shadow-md">
+    <div class="bg-gray-800 rounded-lg shadow-md">
         <form method="POST" class="p-6 space-y-6">
             <!-- Basic Information -->
             <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
                 <div>
-                    <label for="name" class="block text-sm font-medium text-gray-700 mb-2">Card Name *</label>
+                    <label for="name" class="block text-sm font-medium text-gray-300 mb-2">Card Name *</label>
                     <input type="text" id="name" name="name" required
-                           class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                           class="w-full px-3 py-2 border border-gray-600 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
                            placeholder="e.g. Solar Vanguard">
                 </div>
 
                 <div>
-                    <label for="category" class="block text-sm font-medium text-gray-700 mb-2">Category *</label>
+                    <label for="category" class="block text-sm font-medium text-gray-300 mb-2">Category *</label>
                     <select id="category" name="category" required
-                            class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500">
+                            class="w-full px-3 py-2 border border-gray-600 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500">
                         <option value="">Select Category</option>
                         {% for category in categories %}
                         <option value="{{ category }}">{{ category.title() }}</option>
@@ -48,9 +48,9 @@
                 </div>
 
                 <div>
-                    <label for="rarity" class="block text-sm font-medium text-gray-700 mb-2">Rarity</label>
+                    <label for="rarity" class="block text-sm font-medium text-gray-300 mb-2">Rarity</label>
                     <select id="rarity" name="rarity"
-                            class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500">
+                            class="w-full px-3 py-2 border border-gray-600 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500">
                         {% for rarity in rarities %}
                         <option value="{{ rarity }}" {% if rarity == 'COMMON' %}selected{% endif %}>{{ rarity.title() }}</option>
                         {% endfor %}
@@ -58,9 +58,9 @@
                 </div>
 
                 <div>
-                    <label for="color_code" class="block text-sm font-medium text-gray-700 mb-2">Mana Color *</label>
+                    <label for="color_code" class="block text-sm font-medium text-gray-300 mb-2">Mana Color *</label>
                     <select id="color_code" name="color_code" required
-                            class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500">
+                            class="w-full px-3 py-2 border border-gray-600 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500">
                         <option value="">Select Color</option>
                         {% for color, info in mana_colors.items() %}
                         <option value="{{ color }}">{{ info.name }}</option>
@@ -72,67 +72,67 @@
             <!-- Costs -->
             <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
                 <div>
-                    <label for="mana_cost" class="block text-sm font-medium text-gray-700 mb-2">Mana Cost</label>
+                    <label for="mana_cost" class="block text-sm font-medium text-gray-300 mb-2">Mana Cost</label>
                     <input type="number" id="mana_cost" name="mana_cost" min="0" max="20" value="1"
-                           class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500">
+                           class="w-full px-3 py-2 border border-gray-600 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500">
                 </div>
 
                 <div>
-                    <label for="energy_cost" class="block text-sm font-medium text-gray-700 mb-2">Energy Cost</label>
+                    <label for="energy_cost" class="block text-sm font-medium text-gray-300 mb-2">Energy Cost</label>
                     <input type="number" id="energy_cost" name="energy_cost" min="0" max="10" value="1"
-                           class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500">
+                           class="w-full px-3 py-2 border border-gray-600 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500">
                 </div>
             </div>
 
             <!-- Stats (for Creatures/Structures) -->
             <div id="stats-section" class="grid grid-cols-1 md:grid-cols-4 gap-6">
                 <div>
-                    <label for="attack" class="block text-sm font-medium text-gray-700 mb-2">Attack</label>
+                    <label for="attack" class="block text-sm font-medium text-gray-300 mb-2">Attack</label>
                     <input type="number" id="attack" name="attack" min="0" max="20" value="0"
-                           class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500">
+                           class="w-full px-3 py-2 border border-gray-600 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500">
                 </div>
 
                 <div>
-                    <label for="defense" class="block text-sm font-medium text-gray-700 mb-2">Defense</label>
+                    <label for="defense" class="block text-sm font-medium text-gray-300 mb-2">Defense</label>
                     <input type="number" id="defense" name="defense" min="0" max="20" value="0"
-                           class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500">
+                           class="w-full px-3 py-2 border border-gray-600 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500">
                 </div>
 
                 <div>
-                    <label for="health" class="block text-sm font-medium text-gray-700 mb-2">Health</label>
+                    <label for="health" class="block text-sm font-medium text-gray-300 mb-2">Health</label>
                     <input type="number" id="health" name="health" min="0" max="50" value="1"
-                           class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500">
+                           class="w-full px-3 py-2 border border-gray-600 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500">
                 </div>
 
                 <div>
-                    <label for="base_energy_per_turn" class="block text-sm font-medium text-gray-700 mb-2">Energy/Turn</label>
+                    <label for="base_energy_per_turn" class="block text-sm font-medium text-gray-300 mb-2">Energy/Turn</label>
                     <input type="number" id="base_energy_per_turn" name="base_energy_per_turn" min="0" max="10" value="1"
-                           class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500">
+                           class="w-full px-3 py-2 border border-gray-600 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500">
                 </div>
             </div>
 
             <!-- Equipment Slots -->
             <div>
-                <label for="equipment_slots" class="block text-sm font-medium text-gray-700 mb-2">Equipment Slots</label>
+                <label for="equipment_slots" class="block text-sm font-medium text-gray-300 mb-2">Equipment Slots</label>
                 <input type="number" id="equipment_slots" name="equipment_slots" min="0" max="3" value="2"
-                       class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500">
+                       class="w-full px-3 py-2 border border-gray-600 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500">
             </div>
 
             <!-- Keywords -->
             <div>
-                <label for="keywords" class="block text-sm font-medium text-gray-700 mb-2">Keywords</label>
+                <label for="keywords" class="block text-sm font-medium text-gray-300 mb-2">Keywords</label>
                 <input type="text" id="keywords" name="keywords"
-                       class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                       class="w-full px-3 py-2 border border-gray-600 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
                        placeholder="e.g. PIERCING, FLYING (comma-separated)">
             </div>
 
             <!-- Art Generation Prompt -->
             <div>
-                <label for="image_prompt" class="block text-sm font-medium text-gray-700 mb-2">Art Generation Prompt *</label>
+                <label for="image_prompt" class="block text-sm font-medium text-gray-300 mb-2">Art Generation Prompt *</label>
                 <textarea id="image_prompt" name="image_prompt" rows="4" required
-                          class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                          class="w-full px-3 py-2 border border-gray-600 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
                           placeholder="Describe the artwork for this card. Be detailed and specific about the visual style, setting, and character/object appearance."></textarea>
-                <p class="text-sm text-gray-500 mt-1">
+                <p class="text-sm text-gray-400 mt-1">
                     This prompt will be sent to ComfyUI to generate the card artwork. Include style, setting, colors, and mood.
                 </p>
             </div>
@@ -140,7 +140,7 @@
             <!-- Submit Button -->
             <div class="flex justify-end space-x-3">
                 <a href="{{ url_for('admin.card_management_index') }}" 
-                   class="px-4 py-2 text-gray-700 bg-gray-200 rounded-md hover:bg-gray-300 focus:outline-none focus:ring-2 focus:ring-gray-500">
+                   class="px-4 py-2 text-gray-300 bg-gray-700 rounded-md hover:bg-gray-600 focus:outline-none focus:ring-2 focus:ring-gray-500">
                     Cancel
                 </a>
                 <button type="submit" 
@@ -168,7 +168,7 @@
                 <h3 class="text-sm font-medium text-red-800">ComfyUI Server Offline</h3>
                 <div class="mt-2 text-sm text-red-700">
                     <p>The ComfyUI server is currently offline. Card generation requires a running ComfyUI instance.</p>
-                    <p class="mt-1">Please ensure ComfyUI is running at: <code class="bg-red-100 px-1 rounded">{{ comfyui_host }}</code></p>
+                    <p class="mt-1">Please ensure ComfyUI is running at: <code class="bg-red-900 px-1 rounded">{{ comfyui_host }}</code></p>
                 </div>
             </div>
         </div>

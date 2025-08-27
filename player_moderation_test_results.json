@@ -1,0 +1,56 @@
+{
+  "total_tests": 8,
+  "passed": 2,
+  "failed": 6,
+  "success_rate": 25.0,
+  "results": [
+    {
+      "test": "File Structure",
+      "success": true,
+      "message": "All 2 moderation files exist",
+      "timestamp": "2025-08-26T16:36:38.799564+00:00"
+    },
+    {
+      "test": "Player Moderation Models",
+      "success": false,
+      "message": "Error: Python typing annotation is required for attribute \"CardTransfer.from_player\" when primary argument(s) for \"Relationship\" construct are None or not present",
+      "timestamp": "2025-08-26T16:36:39.091514+00:00"
+    },
+    {
+      "test": "Enhanced Player Model",
+      "success": false,
+      "message": "Error: Python typing annotation is required for attribute \"CardTransfer.from_player\" when primary argument(s) for \"Relationship\" construct are None or not present",
+      "timestamp": "2025-08-26T16:36:39.135502+00:00"
+    },
+    {
+      "test": "Moderation Service",
+      "success": false,
+      "message": "Error: Python typing annotation is required for attribute \"CardTransfer.from_player\" when primary argument(s) for \"Relationship\" construct are None or not present",
+      "timestamp": "2025-08-26T16:36:39.179244+00:00"
+    },
+    {
+      "test": "Activity Logging",
+      "success": false,
+      "message": "Error: Python typing annotation is required for attribute \"CardTransfer.from_player\" when primary argument(s) for \"Relationship\" construct are None or not present",
+      "timestamp": "2025-08-26T16:36:39.208641+00:00"
+    },
+    {
+      "test": "Admin Routes Integration",
+      "success": true,
+      "message": "All moderation imports and endpoints present",
+      "timestamp": "2025-08-26T16:36:39.208857+00:00"
+    },
+    {
+      "test": "Database Model Completeness",
+      "success": false,
+      "message": "Error: Python typing annotation is required for attribute \"CardTransfer.from_player\" when primary argument(s) for \"Relationship\" construct are None or not present",
+      "timestamp": "2025-08-26T16:36:39.238070+00:00"
+    },
+    {
+      "test": "Moderation Logic Structure",
+      "success": false,
+      "message": "Error: Python typing annotation is required for attribute \"CardTransfer.from_player\" when primary argument(s) for \"Relationship\" construct are None or not present",
+      "timestamp": "2025-08-26T16:36:39.267909+00:00"
+    }
+  ]
+}

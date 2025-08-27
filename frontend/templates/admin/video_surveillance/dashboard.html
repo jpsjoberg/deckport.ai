@@ -1,0 +1,279 @@
+{% extends "admin/base.html" %}
+
+{% block title %}Video Surveillance Dashboard{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="row">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-header d-flex justify-content-between align-items-center">
+                    <h3 class="card-title">🎥 Video Surveillance Dashboard</h3>
+                    <div>
+                        <button class="btn btn-warning" data-bs-toggle="modal" data-bs-target="#startSurveillanceModal">
+                            <i class="fas fa-video"></i> Start Surveillance
+                        </button>
+                        <a href="{{ url_for('video_surveillance.surveillance_history') }}" class="btn btn-info">
+                            <i class="fas fa-history"></i> History
+                        </a>
+                    </div>
+                </div>
+                <div class="card-body">
+                    {% if error %}
+                        <div class="alert alert-danger">{{ error }}</div>
+                    {% endif %}
+
+                    <!-- Active Streams -->
+                    <h4>🔴 Active Surveillance Streams</h4>
+                    {% if active_streams %}
+                        <div class="table-responsive">
+                            <table class="table table-striped">
+                                <thead>
+                                    <tr>
+                                        <th>Stream ID</th>
+                                        <th>Type</th>
+                                        <th>Title</th>
+                                        <th>Status</th>
+                                        <th>Started</th>
+                                        <th>Participants</th>
+                                        <th>Recording</th>
+                                        <th>Actions</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {% for stream in active_streams %}
+                                    <tr>
+                                        <td>
+                                            <code>{{ stream.stream_id[:16] }}...</code>
+                                        </td>
+                                        <td>
+                                            <span class="badge bg-{% if stream.type == 'admin_surveillance' %}warning{% elif stream.type == 'battle_stream' %}primary{% else %}secondary{% endif %}">
+                                                {{ stream.type.replace('_', ' ').title() }}
+                                            </span>
+                                        </td>
+                                        <td>{{ stream.title or 'N/A' }}</td>
+                                        <td>
+                                            <span class="badge bg-{% if stream.status == 'active' %}success{% elif stream.status == 'starting' %}warning{% else %}secondary{% endif %}">
+                                                {{ stream.status.title() }}
+                                            </span>
+                                        </td>
+                                        <td>
+                                            {% if stream.started_at %}
+                                                {{ moment(stream.started_at).format('YYYY-MM-DD HH:mm:ss') }}
+                                            {% else %}
+                                                Not started
+                                            {% endif %}
+                                        </td>
+                                        <td>
+                                            <span class="badge bg-info">{{ stream.participant_count }} participants</span>
+                                        </td>
+                                        <td>
+                                            {% if stream.recording %}
+                                                <span class="badge bg-danger">🔴 Recording</span>
+                                            {% else %}
+                                                <span class="badge bg-secondary">Not Recording</span>
+                                            {% endif %}
+                                        </td>
+                                        <td>
+                                            {% if stream.type == 'admin_surveillance' %}
+                                                <a href="{{ url_for('video_surveillance.view_surveillance', stream_id=stream.stream_id) }}" 
+                                                   class="btn btn-sm btn-primary">
+                                                    <i class="fas fa-eye"></i> View
+                                                </a>
+                                            {% endif %}
+                                            <button class="btn btn-sm btn-danger" onclick="endStream('{{ stream.stream_id }}')">
+                                                <i class="fas fa-stop"></i> End
+                                            </button>
+                                        </td>
+                                    </tr>
+                                    {% endfor %}
+                                </tbody>
+                            </table>
+                        </div>
+                    {% else %}
+                        <div class="alert alert-info">
+                            <i class="fas fa-info-circle"></i> No active surveillance streams
+                        </div>
+                    {% endif %}
+
+                    <!-- Console List for Surveillance -->
+                    <hr>
+                    <h4>🎮 Available Consoles</h4>
+                    {% if consoles %}
+                        <div class="row">
+                            {% for console in consoles %}
+                            <div class="col-md-6 col-lg-4 mb-3">
+                                <div class="card {% if console.status == 'online' %}border-success{% else %}border-secondary{% endif %}">
+                                    <div class="card-body">
+                                        <h6 class="card-title">
+                                            Console {{ console.id }}
+                                            <span class="badge bg-{% if console.status == 'online' %}success{% else %}secondary{% endif %} ms-2">
+                                                {{ console.status.title() }}
+                                            </span>
+                                        </h6>
+                                        <p class="card-text small">
+                                            <strong>Device UID:</strong> <code>{{ console.device_uid[:20] }}...</code><br>
+                                            <strong>Location:</strong> {{ console.location or 'Unknown' }}<br>
+                                            <strong>Last Seen:</strong> 
+                                            {% if console.last_seen %}
+                                                {{ moment(console.last_seen).fromNow() }}
+                                            {% else %}
+                                                Never
+                                            {% endif %}
+                                        </p>
+                                        {% if console.status == 'online' %}
+                                            <button class="btn btn-sm btn-warning" onclick="startSurveillance({{ console.id }}, '{{ console.device_uid }}')">
+                                                <i class="fas fa-video"></i> Start Surveillance
+                                            </button>
+                                        {% else %}
+                                            <button class="btn btn-sm btn-secondary" disabled>
+                                                <i class="fas fa-video"></i> Offline
+                                            </button>
+                                        {% endif %}
+                                    </div>
+                                </div>
+                            </div>
+                            {% endfor %}
+                        </div>
+                    {% else %}
+                        <div class="alert alert-warning">
+                            <i class="fas fa-exclamation-triangle"></i> No consoles available
+                        </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Start Surveillance Modal -->
+<div class="modal fade" id="startSurveillanceModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">🎥 Start Console Surveillance</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <form id="surveillanceForm">
+                    <div class="mb-3">
+                        <label for="consoleSelect" class="form-label">Select Console</label>
+                        <select class="form-select" id="consoleSelect" name="console_id" required>
+                            <option value="">Choose a console...</option>
+                            {% for console in consoles %}
+                                {% if console.status == 'online' %}
+                                    <option value="{{ console.id }}">Console {{ console.id }} - {{ console.device_uid[:20] }}...</option>
+                                {% endif %}
+                            {% endfor %}
+                        </select>
+                    </div>
+                    <div class="mb-3">
+                        <label for="surveillanceReason" class="form-label">Reason for Surveillance</label>
+                        <textarea class="form-control" id="surveillanceReason" name="reason" rows="3" 
+                                  placeholder="Enter the reason for starting surveillance (required for audit trail)">Security monitoring</textarea>
+                    </div>
+                    <div class="mb-3 form-check">
+                        <input type="checkbox" class="form-check-input" id="enableAudio" name="enable_audio" checked>
+                        <label class="form-check-label" for="enableAudio">
+                            Enable Audio Monitoring
+                        </label>
+                    </div>
+                    <div class="alert alert-warning">
+                        <i class="fas fa-exclamation-triangle"></i>
+                        <strong>Security Notice:</strong> All surveillance activities are logged and recorded for audit purposes.
+                        The console user will be notified that surveillance is active.
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                <button type="button" class="btn btn-warning" onclick="submitSurveillance()">
+                    <i class="fas fa-video"></i> Start Surveillance
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+function startSurveillance(consoleId, deviceUid) {
+    document.getElementById('consoleSelect').value = consoleId;
+    new bootstrap.Modal(document.getElementById('startSurveillanceModal')).show();
+}
+
+function submitSurveillance() {
+    const form = document.getElementById('surveillanceForm');
+    const formData = new FormData(form);
+    
+    const data = {
+        console_id: parseInt(formData.get('console_id')),
+        reason: formData.get('reason'),
+        enable_audio: formData.has('enable_audio')
+    };
+    
+    if (!data.console_id) {
+        alert('Please select a console');
+        return;
+    }
+    
+    if (!data.reason.trim()) {
+        alert('Please provide a reason for surveillance');
+        return;
+    }
+    
+    fetch('/admin/surveillance/start', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(data)
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            alert('Surveillance started successfully');
+            location.reload();
+        } else {
+            alert('Failed to start surveillance: ' + (data.error || 'Unknown error'));
+        }
+    })
+    .catch(error => {
+        console.error('Error:', error);
+        alert('Failed to start surveillance');
+    });
+    
+    bootstrap.Modal.getInstance(document.getElementById('startSurveillanceModal')).hide();
+}
+
+function endStream(streamId) {
+    if (!confirm('Are you sure you want to end this surveillance stream?')) {
+        return;
+    }
+    
+    fetch(`/admin/surveillance/end/${streamId}`, {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+        }
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            alert('Surveillance ended successfully');
+            location.reload();
+        } else {
+            alert('Failed to end surveillance: ' + (data.error || 'Unknown error'));
+        }
+    })
+    .catch(error => {
+        console.error('Error:', error);
+        alert('Failed to end surveillance');
+    });
+}
+
+// Auto-refresh every 30 seconds
+setInterval(() => {
+    location.reload();
+}, 30000);
+</script>
+{% endblock %}

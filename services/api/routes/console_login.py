@@ -35,27 +35,9 @@ def start_console_login():
             
             # Generate login token
             login_token = secrets.token_urlsafe(32)
-            token_hash = hashlib.sha256(login_token.encode()).hexdigest()
             
             # Set expiration (5 minutes)
             expires_at = datetime.now(timezone.utc) + timedelta(minutes=5)
-            
-            # Clean up any existing tokens for this console
-            session.query(ConsoleLoginToken).filter(
-                ConsoleLoginToken.console_id == console.id,
-                ConsoleLoginToken.status == LoginTokenStatus.pending
-            ).update({"status": LoginTokenStatus.cancelled})
-            
-            # Create new login token
-            new_token = ConsoleLoginToken(
-                console_id=console.id,
-                token_hash=token_hash,
-                status=LoginTokenStatus.pending,
-                expires_at=expires_at
-            )
-            
-            session.add(new_token)
-            session.commit()
             
             # Generate QR URL (points to public API service)
             import os
@@ -71,6 +53,24 @@ def start_console_login():
             # QR URL uses public URL (for phones to access)
             qr_url = f"{public_base_url}/v1/console-login/link?token={login_token}"
             
+            # Clean up any existing tokens for this console
+            session.query(ConsoleLoginToken).filter(
+                ConsoleLoginToken.console_id == console.id,
+                ConsoleLoginToken.status == LoginTokenStatus.pending
+            ).update({"status": LoginTokenStatus.cancelled})
+            
+            # Create new login token
+            new_token = ConsoleLoginToken(
+                console_id=console.id,
+                token=login_token,
+                qr_url=qr_url,
+                status=LoginTokenStatus.pending,
+                expires_at=expires_at
+            )
+            
+            session.add(new_token)
+            session.commit()
+            
             # QR Image URL - use console URL (might be same as public in production)
             qr_image_url = f"{console_base_url}/v1/console-login/qr/{login_token}"
             
@@ -83,7 +83,10 @@ def start_console_login():
             })
             
     except Exception as e:
-        return jsonify({"error": "Failed to start login flow"}), 500
+        print(f"Console login start error: {e}")
+        import traceback
+        traceback.print_exc()
+        return jsonify({"error": "Failed to start login flow", "debug": str(e)}), 500
 
 @console_login_bp.route('/confirm', methods=['POST'])
 def confirm_console_login():
@@ -113,12 +116,9 @@ def confirm_console_login():
     
     try:
         with SessionLocal() as session:
-            # Hash the token to find it
-            token_hash = hashlib.sha256(login_token.encode()).hexdigest()
-            
             # Find the login token
             login_token_record = session.query(ConsoleLoginToken).filter(
-                ConsoleLoginToken.token_hash == token_hash,
+                ConsoleLoginToken.token == login_token,
                 ConsoleLoginToken.status == LoginTokenStatus.pending
             ).first()
             
@@ -154,12 +154,9 @@ def poll_console_login():
     
     try:
         with SessionLocal() as session:
-            # Hash the token to find it
-            token_hash = hashlib.sha256(login_token.encode()).hexdigest()
-            
             # Find the login token
             login_token_record = session.query(ConsoleLoginToken).filter(
-                ConsoleLoginToken.token_hash == token_hash
+                ConsoleLoginToken.token == login_token
             ).first()
             
             if not login_token_record:
@@ -214,12 +211,9 @@ def cancel_console_login():
     
     try:
         with SessionLocal() as session:
-            # Hash the token to find it
-            token_hash = hashlib.sha256(login_token.encode()).hexdigest()
-            
             # Find and cancel the login token
             login_token_record = session.query(ConsoleLoginToken).filter(
-                ConsoleLoginToken.token_hash == token_hash,
+                ConsoleLoginToken.token == login_token,
                 ConsoleLoginToken.status == LoginTokenStatus.pending
             ).first()
             
@@ -251,9 +245,8 @@ def console_link_page():
     # Verify token exists and is valid
     try:
         with SessionLocal() as session:
-            token_hash = hashlib.sha256(login_token.encode()).hexdigest()
             login_token_record = session.query(ConsoleLoginToken).filter(
-                ConsoleLoginToken.token_hash == token_hash,
+                ConsoleLoginToken.token == login_token,
                 ConsoleLoginToken.status == LoginTokenStatus.pending
             ).first()
             
@@ -558,9 +551,8 @@ def generate_qr_code(login_token: str):
     try:
         # Verify token exists and is valid
         with SessionLocal() as session:
-            token_hash = hashlib.sha256(login_token.encode()).hexdigest()
             login_token_record = session.query(ConsoleLoginToken).filter(
-                ConsoleLoginToken.token_hash == token_hash,
+                ConsoleLoginToken.token == login_token,
                 ConsoleLoginToken.status == LoginTokenStatus.pending
             ).first()
             

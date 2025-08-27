@@ -13,6 +13,9 @@ import base64
 from cryptography.hazmat.primitives import hashes, serialization
 from cryptography.hazmat.primitives.asymmetric import rsa, padding
 from cryptography.exceptions import InvalidSignature
+import logging
+
+logger = logging.getLogger(__name__)
 
 device_auth_bp = Blueprint('device_auth', __name__, url_prefix='/v1/auth/device')
 
@@ -47,9 +50,24 @@ def register_device():
             
             # Validate public key format
             try:
-                # Try to load the public key to validate format
-                serialization.load_pem_public_key(public_key_pem.encode())
-            except Exception:
+                # Try to load as public key first
+                try:
+                    serialization.load_pem_public_key(public_key_pem.encode())
+                except Exception:
+                    # If that fails, try to load as private key and extract public key
+                    private_key = serialization.load_pem_private_key(
+                        public_key_pem.encode(), 
+                        password=None
+                    )
+                    # Extract public key from private key
+                    public_key = private_key.public_key()
+                    public_key_pem = public_key.public_bytes(
+                        encoding=serialization.Encoding.PEM,
+                        format=serialization.PublicFormat.SubjectPublicKeyInfo
+                    ).decode()
+            except Exception as e:
+                logger.error(f"Invalid key format: {e}")
+                logger.error(f"Key data preview: {public_key_pem[:100]}...")
                 return jsonify({"error": "Invalid public key format"}), 400
             
             # Create new console registration
@@ -71,6 +89,7 @@ def register_device():
     except IntegrityError:
         return jsonify({"error": "Device already registered"}), 409
     except Exception as e:
+        logger.error(f"Device registration error: {e}")
         return jsonify({"error": "Registration failed"}), 500
 
 @device_auth_bp.route('/login', methods=['POST'])

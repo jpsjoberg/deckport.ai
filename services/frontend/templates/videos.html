@@ -1,0 +1,449 @@
+<!doctype html>
+<html>
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Videos & Media - Deckport</title>
+    <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet" />
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" />
+    <style>
+      .gradient-text {
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        -webkit-background-clip: text;
+        -webkit-text-fill-color: transparent;
+        background-clip: text;
+      }
+      .card-hover {
+        transition: all 0.3s ease;
+      }
+      .card-hover:hover {
+        transform: translateY(-5px);
+        box-shadow: 0 20px 40px rgba(0, 0, 0, 0.3);
+      }
+      .video-overlay {
+        background: linear-gradient(45deg, rgba(102, 126, 234, 0.8), rgba(118, 75, 162, 0.8));
+      }
+      .video-card {
+        background: linear-gradient(135deg, rgba(31, 41, 55, 0.8) 0%, rgba(55, 65, 81, 0.8) 100%);
+        backdrop-filter: blur(10px);
+        border: 1px solid rgba(255, 255, 255, 0.1);
+      }
+    </style>
+  </head>
+  <body class="bg-gray-900 text-white">
+    <!-- Navigation -->
+    <nav class="bg-gray-800 border-b border-gray-700 sticky top-0 z-50 backdrop-blur-md bg-opacity-90">
+      <div class="container mx-auto px-4">
+        <div class="flex justify-between items-center py-4">
+          <div class="flex items-center space-x-8">
+            <a href="/" class="text-2xl font-bold gradient-text">Deckport</a>
+            <div class="hidden md:flex space-x-6">
+              <a href="/cards" class="text-gray-300 hover:text-white transition-colors">Browse Cards</a>
+              <a href="/shop" class="text-gray-300 hover:text-white transition-colors">Shop</a>
+              <a href="/news" class="text-gray-300 hover:text-white transition-colors">News</a>
+              <a href="/videos" class="text-indigo-400 font-semibold">Videos</a>
+            </div>
+          </div>
+          <div class="flex items-center space-x-4">
+            <a href="/register" class="bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-700 hover:to-purple-700 px-4 py-2 rounded-lg font-medium transition-all duration-300">Get Started</a>
+            <a href="/login" class="text-gray-300 hover:text-white transition-colors">Login</a>
+          </div>
+        </div>
+      </div>
+    </nav>
+
+    <!-- Header -->
+    <section class="bg-gradient-to-br from-indigo-900 via-gray-900 to-purple-900 py-16">
+      <div class="container mx-auto px-4">
+        <div class="text-center">
+          <h1 class="text-4xl md:text-6xl font-bold mb-4 gradient-text">
+            <i class="fas fa-play-circle mr-4"></i>Videos & Media
+          </h1>
+          <p class="text-xl text-gray-300 mb-8">Watch gameplay tutorials, card reveals, and exclusive behind-the-scenes content</p>
+          
+          <!-- Category Filter -->
+          <div class="flex flex-wrap justify-center gap-4 mb-8">
+            <button class="bg-indigo-600 text-white px-4 py-2 rounded-lg font-medium" data-category="all">All Videos</button>
+            <button class="bg-gray-700 hover:bg-gray-600 text-gray-300 px-4 py-2 rounded-lg font-medium transition-colors" data-category="tutorials">Tutorials</button>
+            <button class="bg-gray-700 hover:bg-gray-600 text-gray-300 px-4 py-2 rounded-lg font-medium transition-colors" data-category="reveals">Card Reveals</button>
+            <button class="bg-gray-700 hover:bg-gray-600 text-gray-300 px-4 py-2 rounded-lg font-medium transition-colors" data-category="gameplay">Gameplay</button>
+            <button class="bg-gray-700 hover:bg-gray-600 text-gray-300 px-4 py-2 rounded-lg font-medium transition-colors" data-category="tournaments">Tournaments</button>
+            <button class="bg-gray-700 hover:bg-gray-600 text-gray-300 px-4 py-2 rounded-lg font-medium transition-colors" data-category="dev">Dev Diaries</button>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Featured Video -->
+    <section class="py-16 bg-gray-900">
+      <div class="container mx-auto px-4">
+        <div class="mb-12">
+          <h2 class="text-2xl font-bold mb-6 gradient-text">
+            <i class="fas fa-star mr-2"></i>Featured Video
+          </h2>
+          <div class="video-card rounded-xl overflow-hidden card-hover">
+            <div class="lg:flex">
+              <div class="lg:w-2/3 relative group cursor-pointer">
+                <img src="https://images.unsplash.com/photo-1511512578047-dfb367046420?w=800&h=450&fit=crop&crop=center" alt="Complete Beginner's Guide" class="w-full h-64 lg:h-80 object-cover" />
+                <div class="absolute inset-0 video-overlay opacity-0 group-hover:opacity-100 transition-opacity duration-300 flex items-center justify-center">
+                  <div class="bg-white bg-opacity-20 rounded-full p-6 backdrop-blur-sm">
+                    <i class="fas fa-play text-5xl text-white"></i>
+                  </div>
+                </div>
+                <div class="absolute top-4 left-4">
+                  <span class="bg-red-600 text-white px-3 py-1 rounded-full text-sm font-semibold">
+                    <i class="fas fa-fire mr-1"></i>Trending
+                  </span>
+                </div>
+                <div class="absolute bottom-4 right-4 bg-black bg-opacity-70 px-3 py-1 rounded text-sm font-semibold">
+                  12:34
+                </div>
+              </div>
+              <div class="lg:w-1/3 p-6 lg:p-8">
+                <div class="flex items-center text-sm text-gray-400 mb-3">
+                  <span class="bg-blue-600 text-white px-2 py-1 rounded text-xs font-semibold mr-3">Tutorial</span>
+                  <i class="fas fa-calendar mr-1"></i>3 days ago
+                </div>
+                <h3 class="text-2xl font-bold mb-4">Complete Beginner's Guide to Deckport</h3>
+                <p class="text-gray-300 mb-6">Learn everything you need to know to start playing Deckport. This comprehensive tutorial covers basic gameplay, card mechanics, deck building, and winning strategies.</p>
+                <div class="flex items-center justify-between text-sm text-gray-400 mb-6">
+                  <span><i class="fas fa-eye mr-1"></i>45.2k views</span>
+                  <span><i class="fas fa-thumbs-up mr-1"></i>2.1k likes</span>
+                  <span><i class="fas fa-comment mr-1"></i>342 comments</span>
+                </div>
+                <button class="w-full bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-700 hover:to-purple-700 px-6 py-3 rounded-lg font-semibold transition-all duration-300 transform hover:scale-105">
+                  <i class="fas fa-play mr-2"></i>Watch Now
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Video Grid -->
+    <section class="py-16 bg-gray-800">
+      <div class="container mx-auto px-4">
+        <div class="grid grid-cols-1 lg:grid-cols-4 gap-8">
+          <!-- Main Video Grid -->
+          <div class="lg:col-span-3">
+            <div class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
+              <!-- Video Card 1 -->
+              <div class="video-card rounded-xl overflow-hidden card-hover">
+                <div class="relative group cursor-pointer">
+                  <img src="https://images.unsplash.com/photo-1493711662062-fa541adb3fc8?w=400&h=225&fit=crop&crop=center" alt="Legendary Card Reveal" class="w-full h-48 object-cover" />
+                  <div class="absolute inset-0 video-overlay opacity-0 group-hover:opacity-100 transition-opacity duration-300 flex items-center justify-center">
+                    <i class="fas fa-play text-3xl text-white"></i>
+                  </div>
+                  <div class="absolute top-3 left-3">
+                    <span class="bg-purple-600 text-white px-2 py-1 rounded text-xs font-semibold">
+                      Card Reveal
+                    </span>
+                  </div>
+                  <div class="absolute bottom-3 right-3 bg-black bg-opacity-70 px-2 py-1 rounded text-sm">
+                    5:42
+                  </div>
+                </div>
+                <div class="p-4">
+                  <h4 class="font-bold mb-2">Legendary Card Reveal: Void Dragon</h4>
+                  <p class="text-gray-400 text-sm mb-3">Discover the most powerful legendary card in the new Elemental series with unique void abilities.</p>
+                  <div class="flex items-center justify-between text-xs text-gray-500">
+                    <span><i class="fas fa-eye mr-1"></i>8.1k views</span>
+                    <span>1 week ago</span>
+                  </div>
+                </div>
+              </div>
+
+              <!-- Video Card 2 -->
+              <div class="video-card rounded-xl overflow-hidden card-hover">
+                <div class="relative group cursor-pointer">
+                  <img src="https://images.unsplash.com/photo-1556438064-2d7646166914?w=400&h=225&fit=crop&crop=center" alt="Tournament Highlights" class="w-full h-48 object-cover" />
+                  <div class="absolute inset-0 video-overlay opacity-0 group-hover:opacity-100 transition-opacity duration-300 flex items-center justify-center">
+                    <i class="fas fa-play text-3xl text-white"></i>
+                  </div>
+                  <div class="absolute top-3 left-3">
+                    <span class="bg-red-600 text-white px-2 py-1 rounded text-xs font-semibold">
+                      Tournament
+                    </span>
+                  </div>
+                  <div class="absolute bottom-3 right-3 bg-black bg-opacity-70 px-2 py-1 rounded text-sm">
+                    15:23
+                  </div>
+                </div>
+                <div class="p-4">
+                  <h4 class="font-bold mb-2">Championship Finals Highlights</h4>
+                  <p class="text-gray-400 text-sm mb-3">The most intense matches from the recent championship tournament with expert commentary.</p>
+                  <div class="flex items-center justify-between text-xs text-gray-500">
+                    <span><i class="fas fa-eye mr-1"></i>12.5k views</span>
+                    <span>2 weeks ago</span>
+                  </div>
+                </div>
+              </div>
+
+              <!-- Video Card 3 -->
+              <div class="video-card rounded-xl overflow-hidden card-hover">
+                <div class="relative group cursor-pointer">
+                  <img src="https://images.unsplash.com/photo-1542751371-adc38448a05e?w=400&h=225&fit=crop&crop=center" alt="Deck Building Guide" class="w-full h-48 object-cover" />
+                  <div class="absolute inset-0 video-overlay opacity-0 group-hover:opacity-100 transition-opacity duration-300 flex items-center justify-center">
+                    <i class="fas fa-play text-3xl text-white"></i>
+                  </div>
+                  <div class="absolute top-3 left-3">
+                    <span class="bg-green-600 text-white px-2 py-1 rounded text-xs font-semibold">
+                      Tutorial
+                    </span>
+                  </div>
+                  <div class="absolute bottom-3 right-3 bg-black bg-opacity-70 px-2 py-1 rounded text-sm">
+                    8:17
+                  </div>
+                </div>
+                <div class="p-4">
+                  <h4 class="font-bold mb-2">Pro Deck Building Tips</h4>
+                  <p class="text-gray-400 text-sm mb-3">Learn advanced deck building strategies from top-ranked players and tournament winners.</p>
+                  <div class="flex items-center justify-between text-xs text-gray-500">
+                    <span><i class="fas fa-eye mr-1"></i>6.8k views</span>
+                    <span>3 weeks ago</span>
+                  </div>
+                </div>
+              </div>
+
+              <!-- Video Card 4 -->
+              <div class="video-card rounded-xl overflow-hidden card-hover">
+                <div class="relative group cursor-pointer">
+                  <img src="https://images.unsplash.com/photo-1551698618-1dfe5d97d256?w=400&h=225&fit=crop&crop=center" alt="Behind the Scenes" class="w-full h-48 object-cover" />
+                  <div class="absolute inset-0 video-overlay opacity-0 group-hover:opacity-100 transition-opacity duration-300 flex items-center justify-center">
+                    <i class="fas fa-play text-3xl text-white"></i>
+                  </div>
+                  <div class="absolute top-3 left-3">
+                    <span class="bg-yellow-600 text-white px-2 py-1 rounded text-xs font-semibold">
+                      Dev Diary
+                    </span>
+                  </div>
+                  <div class="absolute bottom-3 right-3 bg-black bg-opacity-70 px-2 py-1 rounded text-sm">
+                    11:45
+                  </div>
+                </div>
+                <div class="p-4">
+                  <h4 class="font-bold mb-2">Behind the Scenes: Card Design</h4>
+                  <p class="text-gray-400 text-sm mb-3">Go behind the scenes with our art team as they create stunning card artwork and animations.</p>
+                  <div class="flex items-center justify-between text-xs text-gray-500">
+                    <span><i class="fas fa-eye mr-1"></i>4.2k views</span>
+                    <span>1 month ago</span>
+                  </div>
+                </div>
+              </div>
+
+              <!-- Video Card 5 -->
+              <div class="video-card rounded-xl overflow-hidden card-hover">
+                <div class="relative group cursor-pointer">
+                  <img src="https://images.unsplash.com/photo-1518709268805-4e9042af2176?w=400&h=225&fit=crop&crop=center" alt="Meta Analysis" class="w-full h-48 object-cover" />
+                  <div class="absolute inset-0 video-overlay opacity-0 group-hover:opacity-100 transition-opacity duration-300 flex items-center justify-center">
+                    <i class="fas fa-play text-3xl text-white"></i>
+                  </div>
+                  <div class="absolute top-3 left-3">
+                    <span class="bg-blue-600 text-white px-2 py-1 rounded text-xs font-semibold">
+                      Analysis
+                    </span>
+                  </div>
+                  <div class="absolute bottom-3 right-3 bg-black bg-opacity-70 px-2 py-1 rounded text-sm">
+                    14:32
+                  </div>
+                </div>
+                <div class="p-4">
+                  <h4 class="font-bold mb-2">Meta Analysis: Top Decks</h4>
+                  <p class="text-gray-400 text-sm mb-3">Deep dive into the current meta with statistics and analysis of the most successful deck archetypes.</p>
+                  <div class="flex items-center justify-between text-xs text-gray-500">
+                    <span><i class="fas fa-eye mr-1"></i>9.3k views</span>
+                    <span>5 days ago</span>
+                  </div>
+                </div>
+              </div>
+
+              <!-- Video Card 6 -->
+              <div class="video-card rounded-xl overflow-hidden card-hover">
+                <div class="relative group cursor-pointer">
+                  <img src="https://images.unsplash.com/photo-1560472354-b33ff0c44a43?w=400&h=225&fit=crop&crop=center" alt="NFC Technology" class="w-full h-48 object-cover" />
+                  <div class="absolute inset-0 video-overlay opacity-0 group-hover:opacity-100 transition-opacity duration-300 flex items-center justify-center">
+                    <i class="fas fa-play text-3xl text-white"></i>
+                  </div>
+                  <div class="absolute top-3 left-3">
+                    <span class="bg-indigo-600 text-white px-2 py-1 rounded text-xs font-semibold">
+                      Tech
+                    </span>
+                  </div>
+                  <div class="absolute bottom-3 right-3 bg-black bg-opacity-70 px-2 py-1 rounded text-sm">
+                    7:28
+                  </div>
+                </div>
+                <div class="p-4">
+                  <h4 class="font-bold mb-2">How NFC Cards Work</h4>
+                  <p class="text-gray-400 text-sm mb-3">Technical deep dive into the NFC technology that powers Deckport's physical-digital integration.</p>
+                  <div class="flex items-center justify-between text-xs text-gray-500">
+                    <span><i class="fas fa-eye mr-1"></i>3.7k views</span>
+                    <span>2 weeks ago</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <!-- Load More Button -->
+            <div class="text-center mt-12">
+              <button class="bg-gray-700 hover:bg-gray-600 px-8 py-3 rounded-lg font-medium transition-colors">
+                <i class="fas fa-plus mr-2"></i>Load More Videos
+              </button>
+            </div>
+          </div>
+
+          <!-- Sidebar -->
+          <div class="space-y-8">
+            <!-- Popular Videos -->
+            <div class="video-card rounded-xl p-6">
+              <h3 class="text-xl font-bold mb-4">
+                <i class="fas fa-fire mr-2 text-red-400"></i>Trending Now
+              </h3>
+              <div class="space-y-4">
+                <a href="#" class="flex hover:bg-gray-700 p-2 rounded-lg transition-colors">
+                  <img src="https://images.unsplash.com/photo-1511512578047-dfb367046420?w=80&h=60&fit=crop&crop=center" alt="Video thumbnail" class="w-16 h-12 object-cover rounded" />
+                  <div class="ml-3 flex-1">
+                    <h4 class="font-semibold text-sm mb-1">Advanced Combat Strategies</h4>
+                    <p class="text-xs text-gray-400">15.2k views • 1 day ago</p>
+                  </div>
+                </a>
+                <a href="#" class="flex hover:bg-gray-700 p-2 rounded-lg transition-colors">
+                  <img src="https://images.unsplash.com/photo-1493711662062-fa541adb3fc8?w=80&h=60&fit=crop&crop=center" alt="Video thumbnail" class="w-16 h-12 object-cover rounded" />
+                  <div class="ml-3 flex-1">
+                    <h4 class="font-semibold text-sm mb-1">New Player Mistakes</h4>
+                    <p class="text-xs text-gray-400">8.9k views • 3 days ago</p>
+                  </div>
+                </a>
+                <a href="#" class="flex hover:bg-gray-700 p-2 rounded-lg transition-colors">
+                  <img src="https://images.unsplash.com/photo-1542751371-adc38448a05e?w=80&h=60&fit=crop&crop=center" alt="Video thumbnail" class="w-16 h-12 object-cover rounded" />
+                  <div class="ml-3 flex-1">
+                    <h4 class="font-semibold text-sm mb-1">Budget Deck Guide</h4>
+                    <p class="text-xs text-gray-400">12.1k views • 1 week ago</p>
+                  </div>
+                </a>
+              </div>
+            </div>
+
+            <!-- Playlists -->
+            <div class="video-card rounded-xl p-6">
+              <h3 class="text-xl font-bold mb-4">
+                <i class="fas fa-list mr-2 text-green-400"></i>Playlists
+              </h3>
+              <div class="space-y-3">
+                <a href="#" class="block hover:bg-gray-700 p-3 rounded-lg transition-colors">
+                  <div class="flex items-center justify-between mb-1">
+                    <h4 class="font-semibold text-sm">Beginner's Guide Series</h4>
+                    <span class="text-xs text-gray-400">8 videos</span>
+                  </div>
+                  <p class="text-xs text-gray-400">Complete tutorial series for new players</p>
+                </a>
+                <a href="#" class="block hover:bg-gray-700 p-3 rounded-lg transition-colors">
+                  <div class="flex items-center justify-between mb-1">
+                    <h4 class="font-semibold text-sm">Card Reveals</h4>
+                    <span class="text-xs text-gray-400">15 videos</span>
+                  </div>
+                  <p class="text-xs text-gray-400">Latest card reveals and previews</p>
+                </a>
+                <a href="#" class="block hover:bg-gray-700 p-3 rounded-lg transition-colors">
+                  <div class="flex items-center justify-between mb-1">
+                    <h4 class="font-semibold text-sm">Tournament Highlights</h4>
+                    <span class="text-xs text-gray-400">12 videos</span>
+                  </div>
+                  <p class="text-xs text-gray-400">Best moments from competitive play</p>
+                </a>
+              </div>
+            </div>
+
+            <!-- Subscribe -->
+            <div class="video-card rounded-xl p-6">
+              <h3 class="text-xl font-bold mb-4">
+                <i class="fas fa-bell mr-2 text-yellow-400"></i>Stay Updated
+              </h3>
+              <p class="text-gray-400 text-sm mb-4">Subscribe to get notified about new videos and live streams.</p>
+              <button class="w-full bg-gradient-to-r from-red-600 to-red-700 hover:from-red-700 hover:to-red-800 px-4 py-3 rounded-lg font-semibold transition-all duration-300 transform hover:scale-105">
+                <i class="fas fa-youtube mr-2"></i>Subscribe on YouTube
+              </button>
+            </div>
+
+            <!-- Live Stream -->
+            <div class="video-card rounded-xl p-6 border-2 border-red-500">
+              <div class="flex items-center mb-4">
+                <div class="w-3 h-3 bg-red-500 rounded-full animate-pulse mr-2"></div>
+                <h3 class="text-xl font-bold text-red-400">Live Now</h3>
+              </div>
+              <img src="https://images.unsplash.com/photo-1556438064-2d7646166914?w=300&h=150&fit=crop&crop=center" alt="Live stream" class="w-full h-24 object-cover rounded mb-3" />
+              <h4 class="font-semibold mb-2">Weekly Tournament Stream</h4>
+              <p class="text-gray-400 text-sm mb-3">Watch live competitive matches with expert commentary.</p>
+              <button class="w-full bg-red-600 hover:bg-red-700 px-4 py-2 rounded-lg font-medium transition-colors">
+                <i class="fas fa-play mr-2"></i>Watch Live
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Footer -->
+    <footer class="bg-gray-800 border-t border-gray-700 py-12">
+      <div class="container mx-auto px-4">
+        <div class="grid grid-cols-1 md:grid-cols-4 gap-8">
+          <div>
+            <h3 class="text-xl font-bold gradient-text mb-4">Deckport</h3>
+            <p class="text-gray-400 mb-4">The future of trading card games, bridging physical and digital worlds.</p>
+          </div>
+          <div>
+            <h4 class="font-semibold mb-4">Game</h4>
+            <ul class="space-y-2 text-gray-400">
+              <li><a href="/cards" class="hover:text-white transition-colors">Browse Cards</a></li>
+              <li><a href="/shop" class="hover:text-white transition-colors">Shop</a></li>
+            </ul>
+          </div>
+          <div>
+            <h4 class="font-semibold mb-4">Community</h4>
+            <ul class="space-y-2 text-gray-400">
+              <li><a href="/news" class="hover:text-white transition-colors">News</a></li>
+              <li><a href="/videos" class="hover:text-white transition-colors">Videos</a></li>
+            </ul>
+          </div>
+          <div>
+            <h4 class="font-semibold mb-4">Support</h4>
+            <ul class="space-y-2 text-gray-400">
+              <li><a href="#" class="hover:text-white transition-colors">Help Center</a></li>
+              <li><a href="#" class="hover:text-white transition-colors">Contact Us</a></li>
+            </ul>
+          </div>
+        </div>
+        <div class="border-t border-gray-700 mt-8 pt-8 text-center text-gray-400">
+          <p>&copy; 2024 Deckport. All rights reserved.</p>
+        </div>
+      </div>
+    </footer>
+
+    <script>
+      // Category filter functionality
+      document.querySelectorAll('[data-category]').forEach(button => {
+        button.addEventListener('click', function() {
+          // Update active button
+          document.querySelectorAll('[data-category]').forEach(btn => {
+            btn.classList.remove('bg-indigo-600', 'text-white');
+            btn.classList.add('bg-gray-700', 'text-gray-300');
+          });
+          this.classList.remove('bg-gray-700', 'text-gray-300');
+          this.classList.add('bg-indigo-600', 'text-white');
+          
+          // Filter logic would go here
+          console.log('Filter by:', this.dataset.category);
+        });
+      });
+
+      // Video play functionality (placeholder)
+      document.querySelectorAll('.group').forEach(video => {
+        video.addEventListener('click', function() {
+          console.log('Play video:', this.querySelector('img').alt);
+          // Video player logic would go here
+        });
+      });
+    </script>
+  </body>
+</html>

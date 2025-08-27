@@ -1,0 +1,236 @@
+{% extends "admin/base.html" %}
+
+{% block title %}System Administration - Deckport Admin{% endblock %}
+
+{% block content %}
+<div class="p-6">
+    <div class="flex items-center justify-between mb-6">
+        <div>
+            <h1 class="text-2xl font-bold text-white">System Administration</h1>
+            <p class="text-gray-400 mt-1">Infrastructure management, security, and maintenance</p>
+        </div>
+        <div class="flex space-x-3">
+            <button class="px-4 py-2 bg-yellow-600 hover:bg-yellow-700 rounded font-medium text-sm">
+                <i class="fas fa-tools mr-2"></i>Maintenance Mode
+            </button>
+            <button class="px-4 py-2 bg-blue-600 hover:bg-blue-700 rounded font-medium text-sm">
+                <i class="fas fa-sync mr-2"></i>Refresh Status
+            </button>
+        </div>
+    </div>
+
+    <!-- System Health Overview -->
+    <div class="grid grid-cols-1 md:grid-cols-4 gap-6 mb-6">
+        <div class="bg-gray-800 p-6 rounded-lg">
+            <div class="flex items-center">
+                <div class="p-3 bg-green-500 bg-opacity-20 rounded-lg">
+                    <i class="fas fa-heartbeat text-green-400 text-xl"></i>
+                </div>
+                <div class="ml-4">
+                    <p class="text-sm text-gray-400">System Health</p>
+                    <p class="text-2xl font-bold text-green-400">Good</p>
+                    <p class="text-xs text-green-400">99.8% uptime</p>
+                </div>
+            </div>
+        </div>
+        
+        <div class="bg-gray-800 p-6 rounded-lg">
+            <div class="flex items-center">
+                <div class="p-3 bg-blue-500 bg-opacity-20 rounded-lg">
+                    <i class="fas fa-server text-blue-400 text-xl"></i>
+                </div>
+                <div class="ml-4">
+                    <p class="text-sm text-gray-400">Services</p>
+                    <p class="text-2xl font-bold text-white">3/3</p>
+                    <p class="text-xs text-green-400">All running</p>
+                </div>
+            </div>
+        </div>
+        
+        <div class="bg-gray-800 p-6 rounded-lg">
+            <div class="flex items-center">
+                <div class="p-3 bg-purple-500 bg-opacity-20 rounded-lg">
+                    <i class="fas fa-database text-purple-400 text-xl"></i>
+                </div>
+                <div class="ml-4">
+                    <p class="text-sm text-gray-400">Database</p>
+                    <p class="text-2xl font-bold text-green-400">Online</p>
+                    <p class="text-xs text-gray-400">PostgreSQL</p>
+                </div>
+            </div>
+        </div>
+        
+        <div class="bg-gray-800 p-6 rounded-lg">
+            <div class="flex items-center">
+                <div class="p-3 bg-yellow-500 bg-opacity-20 rounded-lg">
+                    <i class="fas fa-memory text-yellow-400 text-xl"></i>
+                </div>
+                <div class="ml-4">
+                    <p class="text-sm text-gray-400">Memory Usage</p>
+                    <p class="text-2xl font-bold text-white">68%</p>
+                    <p class="text-xs text-yellow-400">2.1GB / 3.1GB</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Service Status -->
+    <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
+        <div class="bg-gray-800 rounded-lg overflow-hidden">
+            <div class="p-6 border-b border-gray-700">
+                <h3 class="text-lg font-semibold text-white">Service Status</h3>
+            </div>
+            <div class="p-6">
+                <div class="space-y-4">
+                    <div class="flex items-center justify-between">
+                        <div class="flex items-center">
+                            <div class="w-3 h-3 bg-green-500 rounded-full mr-3"></div>
+                            <div>
+                                <p class="text-white font-medium">API Service</p>
+                                <p class="text-gray-400 text-sm">Port 8002 - Running</p>
+                            </div>
+                        </div>
+                        <span class="text-green-400 text-sm">Active</span>
+                    </div>
+                    
+                    <div class="flex items-center justify-between">
+                        <div class="flex items-center">
+                            <div class="w-3 h-3 bg-green-500 rounded-full mr-3"></div>
+                            <div>
+                                <p class="text-white font-medium">Frontend Service</p>
+                                <p class="text-gray-400 text-sm">Port 8001 - Running</p>
+                            </div>
+                        </div>
+                        <span class="text-green-400 text-sm">Active</span>
+                    </div>
+                    
+                    <div class="flex items-center justify-between">
+                        <div class="flex items-center">
+                            <div class="w-3 h-3 bg-green-500 rounded-full mr-3"></div>
+                            <div>
+                                <p class="text-white font-medium">Database</p>
+                                <p class="text-gray-400 text-sm">PostgreSQL - Connected</p>
+                            </div>
+                        </div>
+                        <span class="text-green-400 text-sm">Online</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- System Resources -->
+        <div class="bg-gray-800 rounded-lg overflow-hidden">
+            <div class="p-6 border-b border-gray-700">
+                <h3 class="text-lg font-semibold text-white">System Resources</h3>
+            </div>
+            <div class="p-6">
+                <div class="space-y-4">
+                    <div>
+                        <div class="flex justify-between mb-2">
+                            <span class="text-gray-400">CPU Usage</span>
+                            <span class="text-white">23%</span>
+                        </div>
+                        <div class="w-full bg-gray-700 rounded-full h-2">
+                            <div class="bg-blue-500 h-2 rounded-full" style="width: 23%"></div>
+                        </div>
+                    </div>
+                    
+                    <div>
+                        <div class="flex justify-between mb-2">
+                            <span class="text-gray-400">Memory Usage</span>
+                            <span class="text-white">68%</span>
+                        </div>
+                        <div class="w-full bg-gray-700 rounded-full h-2">
+                            <div class="bg-yellow-500 h-2 rounded-full" style="width: 68%"></div>
+                        </div>
+                    </div>
+                    
+                    <div>
+                        <div class="flex justify-between mb-2">
+                            <span class="text-gray-400">Disk Usage</span>
+                            <span class="text-white">45%</span>
+                        </div>
+                        <div class="w-full bg-gray-700 rounded-full h-2">
+                            <div class="bg-green-500 h-2 rounded-full" style="width: 45%"></div>
+                        </div>
+                    </div>
+                    
+                    <div>
+                        <div class="flex justify-between mb-2">
+                            <span class="text-gray-400">Network I/O</span>
+                            <span class="text-white">12 MB/s</span>
+                        </div>
+                        <div class="w-full bg-gray-700 rounded-full h-2">
+                            <div class="bg-purple-500 h-2 rounded-full" style="width: 30%"></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Recent System Events -->
+    <div class="bg-gray-800 rounded-lg overflow-hidden">
+        <div class="p-6 border-b border-gray-700">
+            <h3 class="text-lg font-semibold text-white">Recent System Events</h3>
+        </div>
+        <div class="p-6">
+            <div class="space-y-4">
+                <div class="flex items-start">
+                    <div class="w-2 h-2 bg-green-500 rounded-full mt-2 mr-3"></div>
+                    <div class="flex-1">
+                        <p class="text-white">System startup completed successfully</p>
+                        <p class="text-gray-400 text-sm">All services initialized - 2 minutes ago</p>
+                    </div>
+                </div>
+                
+                <div class="flex items-start">
+                    <div class="w-2 h-2 bg-blue-500 rounded-full mt-2 mr-3"></div>
+                    <div class="flex-1">
+                        <p class="text-white">Database connection established</p>
+                        <p class="text-gray-400 text-sm">PostgreSQL connected successfully - 5 minutes ago</p>
+                    </div>
+                </div>
+                
+                <div class="flex items-start">
+                    <div class="w-2 h-2 bg-yellow-500 rounded-full mt-2 mr-3"></div>
+                    <div class="flex-1">
+                        <p class="text-white">Admin login detected</p>
+                        <p class="text-gray-400 text-sm">User admin@deckport.ai logged in - 8 minutes ago</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- System Actions -->
+    <div class="mt-6 bg-gray-800 rounded-lg p-6">
+        <h3 class="text-lg font-semibold text-white mb-4">System Actions</h3>
+        <div class="grid grid-cols-1 md:grid-cols-4 gap-4">
+            <button class="p-4 border border-gray-700 rounded-lg hover:bg-gray-700 transition-colors">
+                <i class="fas fa-sync text-blue-400 text-2xl mb-2"></i>
+                <p class="text-white font-medium">Restart Services</p>
+                <p class="text-gray-400 text-sm">Restart all system services</p>
+            </button>
+            
+            <button class="p-4 border border-gray-700 rounded-lg hover:bg-gray-700 transition-colors">
+                <i class="fas fa-database text-purple-400 text-2xl mb-2"></i>
+                <p class="text-white font-medium">Database Backup</p>
+                <p class="text-gray-400 text-sm">Create system backup</p>
+            </button>
+            
+            <button class="p-4 border border-gray-700 rounded-lg hover:bg-gray-700 transition-colors">
+                <i class="fas fa-broom text-yellow-400 text-2xl mb-2"></i>
+                <p class="text-white font-medium">Clear Cache</p>
+                <p class="text-gray-400 text-sm">Clear system cache</p>
+            </button>
+            
+            <button class="p-4 border border-gray-700 rounded-lg hover:bg-gray-700 transition-colors">
+                <i class="fas fa-download text-green-400 text-2xl mb-2"></i>
+                <p class="text-white font-medium">Export Logs</p>
+                <p class="text-gray-400 text-sm">Download system logs</p>
+            </button>
+        </div>
+    </div>
+</div>
+{% endblock %}

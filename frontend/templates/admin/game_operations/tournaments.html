@@ -265,17 +265,34 @@
                     </div>
                     
                     <div>
+                        <label class="block text-sm font-medium text-gray-300 mb-2">Tournament Type</label>
+                        <select name="fee_type" id="fee_type" onchange="toggleFeeOptions()" class="w-full bg-gray-700 border border-gray-600 rounded px-3 py-2 text-white focus:outline-none focus:border-blue-500">
+                            <option value="free">Free Tournament</option>
+                            <option value="entry_fee">Entry Fee Tournament</option>
+                        </select>
+                    </div>
+                    
+                    <div id="entry_fee_section" class="hidden">
                         <label class="block text-sm font-medium text-gray-300 mb-2">Entry Fee ($)</label>
                         <input type="number" name="entry_fee" min="0" step="0.01"
                                class="w-full bg-gray-700 border border-gray-600 rounded px-3 py-2 text-white focus:outline-none focus:border-blue-500"
-                               placeholder="0.00">
+                               placeholder="10.00">
+                    </div>
+                    
+                    <div id="house_percentage_section" class="hidden">
+                        <label class="block text-sm font-medium text-gray-300 mb-2">House Percentage (%)</label>
+                        <input type="number" name="house_percentage" min="0" max="50" step="0.1" value="10"
+                               class="w-full bg-gray-700 border border-gray-600 rounded px-3 py-2 text-white focus:outline-none focus:border-blue-500"
+                               placeholder="10.0">
+                        <p class="text-xs text-gray-400 mt-1">Percentage of entry fees taken by the house (0-50%)</p>
                     </div>
                     
                     <div>
-                        <label class="block text-sm font-medium text-gray-300 mb-2">Prize Pool ($)</label>
-                        <input type="number" name="prize_pool" min="0" step="0.01" required
+                        <label class="block text-sm font-medium text-gray-300 mb-2">Base Prize Pool ($)</label>
+                        <input type="number" name="base_prize_pool" min="0" step="0.01"
                                class="w-full bg-gray-700 border border-gray-600 rounded px-3 py-2 text-white focus:outline-none focus:border-blue-500"
-                               placeholder="1000.00">
+                               placeholder="0.00">
+                        <p class="text-xs text-gray-400 mt-1">Fixed prize pool (entry fees will be added automatically)</p>
                     </div>
                     
                     <div>
@@ -294,12 +311,12 @@
                 
                 <div class="flex items-center space-x-4">
                     <label class="flex items-center">
-                        <input type="checkbox" name="auto_start" class="rounded border-gray-600 bg-gray-700 text-blue-600">
+                        <input type="checkbox" name="auto_start" class="rounded border-gray-600 bg-gray-700 text-blue-400">
                         <span class="ml-2 text-sm text-gray-300">Auto-start when full</span>
                     </label>
                     
                     <label class="flex items-center">
-                        <input type="checkbox" name="public" checked class="rounded border-gray-600 bg-gray-700 text-blue-600">
+                        <input type="checkbox" name="public" checked class="rounded border-gray-600 bg-gray-700 text-blue-400">
                         <span class="ml-2 text-sm text-gray-300">Public registration</span>
                     </label>
                 </div>
@@ -370,6 +387,21 @@ function switchTab(tabName) {
     document.getElementById(tabName + '-tab').classList.remove('hidden');
 }
 
+// Fee type toggle function
+function toggleFeeOptions() {
+    const feeType = document.getElementById('fee_type').value;
+    const entryFeeSection = document.getElementById('entry_fee_section');
+    const housePercentageSection = document.getElementById('house_percentage_section');
+    
+    if (feeType === 'entry_fee') {
+        entryFeeSection.classList.remove('hidden');
+        housePercentageSection.classList.remove('hidden');
+    } else {
+        entryFeeSection.classList.add('hidden');
+        housePercentageSection.classList.add('hidden');
+    }
+}
+
 // Tournament management functions
 function viewTournament(tournamentId) {
     window.location.href = `/admin/game-operations/tournament/${tournamentId}`;
@@ -404,31 +436,54 @@ function refreshTournaments() {
 }
 
 // Create tournament form
-document.getElementById('createTournamentForm').addEventListener('submit', function(e) {
+document.getElementById('createTournamentForm').addEventListener('submit', async function(e) {
     e.preventDefault();
     
     const formData = new FormData(this);
     const data = Object.fromEntries(formData.entries());
     
     // Convert checkboxes to boolean
-    data.auto_start = formData.has('auto_start');
-    data.public = formData.has('public');
+    data.auto_start_when_full = formData.has('auto_start');
+    data.public_registration = formData.has('public');
     
     // Convert numbers
     data.max_participants = parseInt(data.max_participants);
     data.entry_fee = parseFloat(data.entry_fee) || 0;
-    data.prize_pool = parseFloat(data.prize_pool);
+    data.house_percentage = parseFloat(data.house_percentage) || 0;
+    data.base_prize_pool = parseFloat(data.base_prize_pool) || 0;
     
-    // TODO: Send to API
-    console.log('Creating tournament:', data);
-    showAlert('Tournament created successfully!', 'success');
+    // Format start time for API
+    data.start_time = new Date(data.start_time).toISOString();
     
-    // Reset form and switch to scheduled tab
-    this.reset();
-    setTimeout(() => {
-        switchTab('scheduled');
-        location.reload();
-    }, 1500);
+    try {
+        showAlert('Creating tournament...', 'info');
+        
+        const response = await fetch('https://api.deckport.ai/v1/admin/tournaments/', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                // No authorization header needed - using same-origin cookies
+            },
+            body: JSON.stringify(data)
+        });
+        
+        const result = await response.json();
+        
+        if (result.success) {
+            showAlert('Tournament created successfully!', 'success');
+            this.reset();
+            setTimeout(() => {
+                switchTab('scheduled');
+                location.reload();
+            }, 1500);
+        } else {
+            showAlert(`Error: ${result.error}`, 'error');
+        }
+        
+    } catch (error) {
+        console.error('Error creating tournament:', error);
+        showAlert('Failed to create tournament. Please try again.', 'error');
+    }
 });
 
 function resetForm() {

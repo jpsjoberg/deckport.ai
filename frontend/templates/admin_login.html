@@ -1,0 +1,45 @@
+<!doctype html>
+<html>
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Admin Login - Deckport.ai</title>
+    <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet" />
+  </head>
+  <body class="bg-gray-900 text-white">
+    <main class="min-h-screen flex items-center justify-center p-6">
+      <form method="post" class="w-full max-w-sm bg-gray-800 p-6 rounded-lg shadow-lg">
+        <div class="text-center mb-6">
+          <h1 class="text-2xl font-bold text-indigo-400">Deckport.ai</h1>
+          <p class="text-gray-400 mt-2">Admin Panel Login</p>
+        </div>
+        
+        {% if error %}
+        <div class="mb-4 p-3 bg-red-900 border border-red-700 rounded text-red-200 text-sm">
+          {{ error }}
+        </div>
+        {% endif %}
+        
+        <input type="hidden" name="csrf" value="{{ csrf }}" />
+        
+        <div class="mb-4">
+          <label class="block text-sm font-medium mb-2">Admin Email</label>
+          <input name="email" type="email" class="w-full px-3 py-2 rounded bg-gray-700 border border-gray-600 focus:border-indigo-500 focus:outline-none" required />
+        </div>
+        
+        <div class="mb-6">
+          <label class="block text-sm font-medium mb-2">Password</label>
+          <input name="password" type="password" class="w-full px-3 py-2 rounded bg-gray-700 border border-gray-600 focus:border-indigo-500 focus:outline-none" required />
+        </div>
+        
+        <button type="submit" class="w-full py-2 bg-indigo-600 hover:bg-indigo-700 rounded font-medium transition-colors">
+          Login to Admin Panel
+        </button>
+        
+        <div class="text-sm mt-4 text-center text-gray-400">
+          <a href="/" class="underline hover:text-white">← Back to Main Site</a>
+        </div>
+      </form>
+    </main>
+  </body>
+</html>

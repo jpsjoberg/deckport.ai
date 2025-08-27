@@ -45,11 +45,11 @@ def list_cards():
                 items.append({
                     "product_sku": card.product_sku,
                     "name": card.name,
-                    "rarity": card.rarity.value,
-                    "category": card.category.value,
+                    "rarity": card.rarity.value if hasattr(card.rarity, 'value') else str(card.rarity),
+                    "category": card.category.value if hasattr(card.category, 'value') else str(card.category),
                     "subtype": card.subtype,
                     "base_stats": card.base_stats,
-                    "display_label": card.display_label
+                    "display_label": getattr(card, 'display_label', card.name)
                 })
             
             return jsonify({

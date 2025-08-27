@@ -1,0 +1,287 @@
+{% extends "admin/base.html" %}
+
+{% block title %}Console Matches - {{ console.device_uid }} - Deckport Admin{% endblock %}
+
+{% block content %}
+<div class="p-6">
+    <!-- Header -->
+    <div class="flex items-center justify-between mb-6">
+        <div>
+            <h1 class="text-2xl font-bold text-white">Console Matches</h1>
+            <p class="text-gray-400 mt-1">Console: {{ console.device_uid }}</p>
+        </div>
+        <div class="flex space-x-3">
+            <a href="{{ url_for('admin.console_detail', device_uid=console.device_uid) }}" 
+               class="px-4 py-2 bg-gray-600 hover:bg-gray-700 rounded font-medium text-sm">
+                <i class="fas fa-arrow-left mr-2"></i>Back to Console
+            </a>
+            {% if not current_match %}
+            <button onclick="startNewMatch()" 
+                    class="px-4 py-2 bg-green-600 hover:bg-green-700 rounded font-medium text-sm">
+                <i class="fas fa-play mr-2"></i>Start Match
+            </button>
+            {% endif %}
+        </div>
+    </div>
+
+    <!-- Match Statistics -->
+    <div class="grid grid-cols-1 md:grid-cols-4 gap-6 mb-6">
+        <div class="bg-gray-800 p-6 rounded-lg">
+            <div class="flex items-center">
+                <div class="p-3 bg-blue-500 bg-opacity-20 rounded-lg">
+                    <i class="fas fa-gamepad text-blue-400 text-xl"></i>
+                </div>
+                <div class="ml-4">
+                    <p class="text-sm text-gray-400">Total Matches</p>
+                    <p class="text-2xl font-bold text-white">{{ match_stats.total_matches }}</p>
+                </div>
+            </div>
+        </div>
+        
+        <div class="bg-gray-800 p-6 rounded-lg">
+            <div class="flex items-center">
+                <div class="p-3 bg-green-500 bg-opacity-20 rounded-lg">
+                    <i class="fas fa-trophy text-green-400 text-xl"></i>
+                </div>
+                <div class="ml-4">
+                    <p class="text-sm text-gray-400">Wins</p>
+                    <p class="text-2xl font-bold text-white">{{ match_stats.wins }}</p>
+                </div>
+            </div>
+        </div>
+        
+        <div class="bg-gray-800 p-6 rounded-lg">
+            <div class="flex items-center">
+                <div class="p-3 bg-red-500 bg-opacity-20 rounded-lg">
+                    <i class="fas fa-times text-red-400 text-xl"></i>
+                </div>
+                <div class="ml-4">
+                    <p class="text-sm text-gray-400">Losses</p>
+                    <p class="text-2xl font-bold text-white">{{ match_stats.losses }}</p>
+                </div>
+            </div>
+        </div>
+        
+        <div class="bg-gray-800 p-6 rounded-lg">
+            <div class="flex items-center">
+                <div class="p-3 bg-purple-500 bg-opacity-20 rounded-lg">
+                    <i class="fas fa-percentage text-purple-400 text-xl"></i>
+                </div>
+                <div class="ml-4">
+                    <p class="text-sm text-gray-400">Win Rate</p>
+                    <p class="text-2xl font-bold text-white">{{ match_stats.win_rate }}%</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Current Match -->
+    {% if current_match %}
+    <div class="bg-gray-800 rounded-lg p-6 mb-6 border-l-4 border-green-500">
+        <div class="flex items-center justify-between mb-4">
+            <h2 class="text-lg font-semibold text-white">
+                <i class="fas fa-play text-green-400 mr-2"></i>Active Match
+            </h2>
+            <div class="flex space-x-2">
+                <button onclick="refreshMatchState()" 
+                        class="px-3 py-1 bg-blue-600 hover:bg-blue-700 rounded text-sm">
+                    <i class="fas fa-sync mr-1"></i>Refresh
+                </button>
+                <button onclick="endCurrentMatch()" 
+                        class="px-3 py-1 bg-red-600 hover:bg-red-700 rounded text-sm">
+                    <i class="fas fa-stop mr-1"></i>End Match
+                </button>
+            </div>
+        </div>
+        
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+            <div>
+                <p class="text-gray-400 text-sm">Match ID</p>
+                <p class="text-white font-mono">{{ current_match.match_id }}</p>
+            </div>
+            <div>
+                <p class="text-gray-400 text-sm">Arena</p>
+                <p class="text-white">{{ current_match.arena_name or 'Unknown' }}</p>
+            </div>
+            <div>
+                <p class="text-gray-400 text-sm">Duration</p>
+                <p class="text-white" id="match-duration">{{ current_match.duration or '0:00' }}</p>
+            </div>
+        </div>
+        
+        {% if current_match.game_state %}
+        <div class="mt-4 p-4 bg-gray-700 rounded">
+            <h3 class="text-white font-medium mb-2">Game State</h3>
+            <div class="grid grid-cols-2 md:grid-cols-4 gap-4 text-sm">
+                <div>
+                    <p class="text-gray-400">Turn</p>
+                    <p class="text-white">{{ current_match.game_state.turn or 1 }}</p>
+                </div>
+                <div>
+                    <p class="text-gray-400">Phase</p>
+                    <p class="text-white">{{ current_match.game_state.phase or 'START' }}</p>
+                </div>
+                <div>
+                    <p class="text-gray-400">Current Player</p>
+                    <p class="text-white">Player {{ (current_match.game_state.current_player or 0) + 1 }}</p>
+                </div>
+                <div>
+                    <p class="text-gray-400">Status</p>
+                    <p class="text-white">{{ current_match.game_state.status or 'ACTIVE' }}</p>
+                </div>
+            </div>
+        </div>
+        {% endif %}
+    </div>
+    {% endif %}
+
+    <!-- Match History -->
+    <div class="bg-gray-800 rounded-lg overflow-hidden">
+        <div class="p-6 border-b border-gray-700">
+            <h2 class="text-lg font-semibold text-white">Match History</h2>
+        </div>
+        
+        <div class="overflow-x-auto">
+            <table class="w-full">
+                <thead>
+                    <tr class="text-left text-gray-400 text-sm border-b border-gray-700">
+                        <th class="p-4">Match ID</th>
+                        <th class="p-4">Arena</th>
+                        <th class="p-4">Duration</th>
+                        <th class="p-4">Result</th>
+                        <th class="p-4">Players</th>
+                        <th class="p-4">Started</th>
+                        <th class="p-4">Actions</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for match in matches %}
+                    <tr class="border-b border-gray-700 hover:bg-gray-700">
+                        <td class="p-4">
+                            <span class="text-white font-mono text-sm">{{ match.id }}</span>
+                        </td>
+                        <td class="p-4">
+                            <span class="text-white">{{ match.arena_name or 'Unknown' }}</span>
+                        </td>
+                        <td class="p-4">
+                            <span class="text-white">{{ match.duration_minutes or 0 }}m</span>
+                        </td>
+                        <td class="p-4">
+                            {% if match.winner_team == 0 %}
+                            <span class="px-2 py-1 text-xs rounded-full bg-green-500 bg-opacity-20 text-green-400">
+                                <i class="fas fa-trophy mr-1"></i>Victory
+                            </span>
+                            {% elif match.winner_team == 1 %}
+                            <span class="px-2 py-1 text-xs rounded-full bg-red-500 bg-opacity-20 text-red-400">
+                                <i class="fas fa-times mr-1"></i>Defeat
+                            </span>
+                            {% else %}
+                            <span class="px-2 py-1 text-xs rounded-full bg-gray-8000 bg-opacity-20 text-gray-400">
+                                <i class="fas fa-minus mr-1"></i>Draw
+                            </span>
+                            {% endif %}
+                        </td>
+                        <td class="p-4">
+                            <span class="text-white">{{ match.player_count or 2 }}</span>
+                        </td>
+                        <td class="p-4">
+                            <span class="text-gray-400 text-sm">{{ match.started_at }}</span>
+                        </td>
+                        <td class="p-4">
+                            <button onclick="viewMatchDetails({{ match.id }})" 
+                                    class="text-blue-400 hover:text-blue-300">
+                                <i class="fas fa-eye"></i>
+                            </button>
+                        </td>
+                    </tr>
+                    {% else %}
+                    <tr>
+                        <td colspan="7" class="px-6 py-8 text-center text-gray-400">
+                            <i class="fas fa-gamepad text-4xl mb-4"></i>
+                            <p class="text-lg">No matches played</p>
+                            <p class="text-sm">Start a new match to begin tracking game history</p>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
+<script>
+function startNewMatch() {
+    // TODO: Show arena selection modal
+    const arenaId = prompt('Enter Arena ID (temporary):');
+    if (arenaId) {
+        fetch(`{{ url_for('admin.start_console_match', device_uid=console.device_uid) }}`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({
+                arena_id: parseInt(arenaId),
+                game_mode: 'standard'
+            })
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                showAlert(data.message, 'success');
+                setTimeout(() => location.reload(), 1500);
+            } else {
+                showAlert(data.message, 'error');
+            }
+        })
+        .catch(error => {
+            showAlert('Error starting match', 'error');
+        });
+    }
+}
+
+function endCurrentMatch() {
+    if (confirm('Are you sure you want to end the current match?')) {
+        fetch(`{{ url_for('admin.end_console_match', device_uid=console.device_uid) }}`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({
+                reason: 'admin_terminated'
+            })
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                showAlert(data.message, 'success');
+                setTimeout(() => location.reload(), 1500);
+            } else {
+                showAlert(data.message, 'error');
+            }
+        })
+        .catch(error => {
+            showAlert('Error ending match', 'error');
+        });
+    }
+}
+
+function refreshMatchState() {
+    fetch(`{{ url_for('admin.console_current_match', device_uid=console.device_uid) }}`)
+        .then(response => response.json())
+        .then(data => {
+            if (data.game_state) {
+                // Update game state display
+                location.reload(); // Simple refresh for now
+            }
+        })
+        .catch(error => {
+            showAlert('Error refreshing match state', 'error');
+        });
+}
+
+function viewMatchDetails(matchId) {
+    // TODO: Implement match details modal or page
+    showAlert('Match details view coming soon', 'info');
+}
+</script>
+{% endblock %}

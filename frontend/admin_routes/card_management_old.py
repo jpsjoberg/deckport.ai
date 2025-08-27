@@ -14,8 +14,8 @@ from flask import render_template, request, redirect, url_for, flash, jsonify, c
 from . import admin_bp
 
 # Import our services
-from ..services.simple_card_service import get_simple_card_service
-from ..services.comfyui_service import get_comfyui_service
+from services.simple_card_service import get_simple_card_service
+from services.comfyui_service import get_comfyui_service
 
 # Configuration for ComfyUI and card generation
 COMFYUI_HOST = os.environ.get("COMFYUI_HOST", "http://localhost:8188")

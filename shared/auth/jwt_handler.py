@@ -72,3 +72,35 @@ def get_console_id(token: str) -> Optional[int]:
     if payload and payload.get("type") == "device":
         return payload.get("console_id")
     return None
+
+def create_admin_token(user_id: int, email: str, additional_claims: Dict = None) -> str:
+    """Create a JWT access token for admin users"""
+    payload = {
+        "user_id": user_id,
+        "email": email,
+        "role": "admin",
+        "exp": datetime.now(timezone.utc) + timedelta(hours=JWT_EXPIRATION_HOURS),
+        "iat": datetime.now(timezone.utc),
+        "type": "access"
+    }
+    
+    if additional_claims:
+        payload.update(additional_claims)
+    
+    return jwt.encode(payload, JWT_SECRET_KEY, algorithm=JWT_ALGORITHM)
+
+def verify_admin_token(token: str) -> Optional[Dict]:
+    """Verify and decode an admin JWT token"""
+    try:
+        payload = jwt.decode(token, JWT_SECRET_KEY, algorithms=[JWT_ALGORITHM])
+        if payload.get("role") == "admin" and payload.get("type") == "access":
+            return {
+                "admin_id": payload.get("user_id"),
+                "email": payload.get("email"),
+                "role": payload.get("role")
+            }
+        return None
+    except jwt.ExpiredSignatureError:
+        return None
+    except jwt.InvalidTokenError:
+        return None

@@ -117,10 +117,10 @@
                                     <div class="text-sm font-medium text-white">{{ player.display_name }}</div>
                                     <div class="text-sm text-gray-400 ml-2">({{ player.rating }})</div>
                                 </div>
-                                <div class="text-xs text-gray-500">{{ player.console_id }}</div>
+                                <div class="text-xs text-gray-400">{{ player.console_id }}</div>
                             </div>
                             {% if not loop.last %}
-                            <div class="text-center text-gray-500 text-xs">vs</div>
+                            <div class="text-center text-gray-400 text-xs">vs</div>
                             {% endif %}
                             {% endfor %}
                         </div>
@@ -155,7 +155,7 @@
                             {{ match.spectators }}
                         </div>
                         {% else %}
-                        <span class="text-gray-500">-</span>
+                        <span class="text-gray-400">-</span>
                         {% endif %}
                     </td>
                     <td class="px-6 py-4 whitespace-nowrap text-sm font-medium">
@@ -181,7 +181,7 @@
     </div>
     {% else %}
     <div class="p-12 text-center">
-        <i class="fas fa-gamepad text-6xl text-gray-600 mb-4"></i>
+        <i class="fas fa-gamepad text-6xl text-gray-400 mb-4"></i>
         <h3 class="text-xl font-semibold text-white mb-2">No Active Matches</h3>
         <p class="text-gray-400">No matches are currently in progress.</p>
         <button class="mt-4 px-4 py-2 bg-blue-600 hover:bg-blue-700 rounded font-medium text-sm" onclick="refreshMatches()">

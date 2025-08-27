@@ -1,10 +1,10 @@
 """
-Database connection and session management
+Modern SQLAlchemy 2.0+ database connection and session management
 """
 
 import os
 from sqlalchemy import create_engine
-from sqlalchemy.orm import sessionmaker
+from sqlalchemy.orm import sessionmaker, Session
 from dotenv import load_dotenv
 
 load_dotenv()
@@ -15,11 +15,19 @@ DATABASE_URL = os.getenv(
     "postgresql+psycopg2://deckport_app:N0D3-N0D3-N0D3#M0nk3y33@127.0.0.1:5432/deckport"
 )
 
-# Create engine
-engine = create_engine(DATABASE_URL, echo=os.getenv("DB_ECHO", "false").lower() == "true")
+# Create engine with SQLAlchemy 2.0+ configuration
+engine = create_engine(
+    DATABASE_URL, 
+    echo=os.getenv("DB_ECHO", "false").lower() == "true",
+    future=True  # Enable SQLAlchemy 2.0 mode
+)
 
 # Session factory
-SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
+SessionLocal = sessionmaker(
+    bind=engine,
+    class_=Session,
+    expire_on_commit=False
+)
 
 def get_db():
     """Get database session"""

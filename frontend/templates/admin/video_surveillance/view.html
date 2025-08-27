@@ -1,0 +1,323 @@
+{% extends "admin/base.html" %}
+
+{% block title %}Surveillance Stream View{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="row">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-header d-flex justify-content-between align-items-center">
+                    <h3 class="card-title">🎥 Surveillance Stream View</h3>
+                    <div>
+                        <a href="{{ url_for('video_surveillance.surveillance_dashboard') }}" class="btn btn-secondary">
+                            <i class="fas fa-arrow-left"></i> Back to Dashboard
+                        </a>
+                        {% if stream_info %}
+                            <button class="btn btn-danger" onclick="endSurveillance('{{ stream_id }}')">
+                                <i class="fas fa-stop"></i> End Surveillance
+                            </button>
+                        {% endif %}
+                    </div>
+                </div>
+                <div class="card-body">
+                    {% if error %}
+                        <div class="alert alert-danger">{{ error }}</div>
+                    {% elif stream_info %}
+                        <!-- Stream Information -->
+                        <div class="row mb-4">
+                            <div class="col-md-6">
+                                <div class="card bg-light">
+                                    <div class="card-body">
+                                        <h5 class="card-title">📊 Stream Information</h5>
+                                        <table class="table table-sm">
+                                            <tr>
+                                                <th>Stream ID:</th>
+                                                <td><code>{{ stream_id }}</code></td>
+                                            </tr>
+                                            <tr>
+                                                <th>Console ID:</th>
+                                                <td>{{ stream_info.console_id }}</td>
+                                            </tr>
+                                            <tr>
+                                                <th>Status:</th>
+                                                <td>
+                                                    <span class="badge bg-{% if stream_info.status == 'active' %}success{% elif stream_info.status == 'starting' %}warning{% else %}secondary{% endif %}">
+                                                        {{ stream_info.status.title() }}
+                                                    </span>
+                                                </td>
+                                            </tr>
+                                            <tr>
+                                                <th>Started:</th>
+                                                <td>
+                                                    {% if stream_info.started_at %}
+                                                        {{ moment(stream_info.started_at).format('YYYY-MM-DD HH:mm:ss') }}
+                                                    {% else %}
+                                                        Not started
+                                                    {% endif %}
+                                                </td>
+                                            </tr>
+                                            <tr>
+                                                <th>Recording:</th>
+                                                <td>
+                                                    {% if stream_info.recording_path %}
+                                                        <span class="badge bg-danger">🔴 Recording</span>
+                                                        <br><small><code>{{ stream_info.recording_path }}</code></small>
+                                                    {% else %}
+                                                        <span class="badge bg-secondary">Not Recording</span>
+                                                    {% endif %}
+                                                </td>
+                                            </tr>
+                                        </table>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="card bg-light">
+                                    <div class="card-body">
+                                        <h5 class="card-title">⚠️ Security Notice</h5>
+                                        <div class="alert alert-warning mb-2">
+                                            <i class="fas fa-shield-alt"></i>
+                                            <strong>Surveillance Active:</strong> This console is being monitored for security purposes.
+                                        </div>
+                                        <div class="alert alert-info mb-2">
+                                            <i class="fas fa-record-vinyl"></i>
+                                            <strong>Recording:</strong> All surveillance activities are being recorded and logged.
+                                        </div>
+                                        <div class="alert alert-danger mb-0">
+                                            <i class="fas fa-eye"></i>
+                                            <strong>Privacy:</strong> The console user has been notified of active surveillance.
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Video Stream Display -->
+                        <div class="row mb-4">
+                            <div class="col-12">
+                                <div class="card">
+                                    <div class="card-header">
+                                        <h5 class="card-title">📹 Live Video Stream</h5>
+                                    </div>
+                                    <div class="card-body text-center">
+                                        {% if stream_info.stream_url %}
+                                            <!-- Video player would go here -->
+                                            <div class="bg-dark text-white p-5 rounded" style="min-height: 400px; display: flex; align-items: center; justify-content: center;">
+                                                <div>
+                                                    <i class="fas fa-video fa-3x mb-3"></i>
+                                                    <h4>Live Video Stream</h4>
+                                                    <p>Stream URL: <code>{{ stream_info.stream_url }}</code></p>
+                                                    <p class="text-muted">Video player integration would be implemented here<br>
+                                                    (WebRTC, HLS, or RTMP player depending on stream format)</p>
+                                                    <button class="btn btn-primary" onclick="refreshStream()">
+                                                        <i class="fas fa-refresh"></i> Refresh Stream
+                                                    </button>
+                                                </div>
+                                            </div>
+                                        {% else %}
+                                            <div class="alert alert-warning">
+                                                <i class="fas fa-exclamation-triangle"></i>
+                                                Stream URL not available. Stream may be starting or experiencing issues.
+                                            </div>
+                                        {% endif %}
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Stream Controls -->
+                        <div class="row mb-4">
+                            <div class="col-12">
+                                <div class="card">
+                                    <div class="card-header">
+                                        <h5 class="card-title">🎛️ Stream Controls</h5>
+                                    </div>
+                                    <div class="card-body">
+                                        <div class="btn-group" role="group">
+                                            <button class="btn btn-success" onclick="takeScreenshot()">
+                                                <i class="fas fa-camera"></i> Take Screenshot
+                                            </button>
+                                            <button class="btn btn-info" onclick="toggleRecording()">
+                                                <i class="fas fa-record-vinyl"></i> Toggle Recording
+                                            </button>
+                                            <button class="btn btn-warning" onclick="flagIncident()">
+                                                <i class="fas fa-flag"></i> Flag Incident
+                                            </button>
+                                            <button class="btn btn-danger" onclick="endSurveillance('{{ stream_id }}')">
+                                                <i class="fas fa-stop"></i> End Surveillance
+                                            </button>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    {% endif %}
+
+                    <!-- Stream Logs -->
+                    <div class="row">
+                        <div class="col-12">
+                            <div class="card">
+                                <div class="card-header d-flex justify-content-between align-items-center">
+                                    <h5 class="card-title">📋 Stream Activity Logs</h5>
+                                    <button class="btn btn-sm btn-outline-primary" onclick="refreshLogs()">
+                                        <i class="fas fa-refresh"></i> Refresh
+                                    </button>
+                                </div>
+                                <div class="card-body">
+                                    {% if stream_logs %}
+                                        <div class="table-responsive" style="max-height: 400px; overflow-y: auto;">
+                                            <table class="table table-sm table-striped">
+                                                <thead class="sticky-top bg-gray-800">
+                                                    <tr>
+                                                        <th>Timestamp</th>
+                                                        <th>Event</th>
+                                                        <th>Severity</th>
+                                                        <th>Description</th>
+                                                        <th>Details</th>
+                                                    </tr>
+                                                </thead>
+                                                <tbody>
+                                                    {% for log in stream_logs %}
+                                                    <tr>
+                                                        <td class="text-nowrap">
+                                                            <small>{{ moment(log.timestamp).format('HH:mm:ss') }}</small>
+                                                        </td>
+                                                        <td>
+                                                            <span class="badge bg-secondary">{{ log.event_type }}</span>
+                                                        </td>
+                                                        <td>
+                                                            <span class="badge bg-{% if log.severity == 'critical' %}danger{% elif log.severity == 'error' %}warning{% elif log.severity == 'warning' %}warning{% else %}info{% endif %}">
+                                                                {{ log.severity.title() }}
+                                                            </span>
+                                                        </td>
+                                                        <td>{{ log.description }}</td>
+                                                        <td>
+                                                            {% if log.technical_data or log.security_data %}
+                                                                <button class="btn btn-sm btn-outline-info" onclick="showLogDetails({{ log.id }}, '{{ log.description }}', {{ log.technical_data|tojson if log.technical_data else '{}' }}, {{ log.security_data|tojson if log.security_data else '{}' }})">
+                                                                    <i class="fas fa-info-circle"></i>
+                                                                </button>
+                                                            {% endif %}
+                                                        </td>
+                                                    </tr>
+                                                    {% endfor %}
+                                                </tbody>
+                                            </table>
+                                        </div>
+                                    {% else %}
+                                        <div class="alert alert-info">
+                                            <i class="fas fa-info-circle"></i> No logs available for this stream
+                                        </div>
+                                    {% endif %}
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Log Details Modal -->
+<div class="modal fade" id="logDetailsModal" tabindex="-1">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">📋 Log Entry Details</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <div id="logDetailsContent"></div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+function refreshStream() {
+    location.reload();
+}
+
+function refreshLogs() {
+    fetch(`/admin/surveillance/logs/{{ stream_id }}`)
+        .then(response => response.json())
+        .then(data => {
+            if (data.logs) {
+                // Update logs table (simplified - would need more complex DOM manipulation)
+                location.reload();
+            }
+        })
+        .catch(error => {
+            console.error('Error refreshing logs:', error);
+        });
+}
+
+function takeScreenshot() {
+    alert('Screenshot functionality would be implemented here');
+    // This would capture the current video frame
+}
+
+function toggleRecording() {
+    alert('Recording toggle functionality would be implemented here');
+    // This would start/stop recording
+}
+
+function flagIncident() {
+    const reason = prompt('Enter reason for flagging this incident:');
+    if (reason) {
+        alert('Incident flagged: ' + reason);
+        // This would create a security incident record
+    }
+}
+
+function endSurveillance(streamId) {
+    if (!confirm('Are you sure you want to end this surveillance stream?')) {
+        return;
+    }
+    
+    fetch(`/admin/surveillance/end/${streamId}`, {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+        }
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            alert('Surveillance ended successfully');
+            window.location.href = '{{ url_for("video_surveillance.surveillance_dashboard") }}';
+        } else {
+            alert('Failed to end surveillance: ' + (data.error || 'Unknown error'));
+        }
+    })
+    .catch(error => {
+        console.error('Error:', error);
+        alert('Failed to end surveillance');
+    });
+}
+
+function showLogDetails(logId, description, technicalData, securityData) {
+    let content = `<h6>Description:</h6><p>${description}</p>`;
+    
+    if (Object.keys(technicalData).length > 0) {
+        content += `<h6>Technical Data:</h6><pre class="bg-light p-2 rounded">${JSON.stringify(technicalData, null, 2)}</pre>`;
+    }
+    
+    if (Object.keys(securityData).length > 0) {
+        content += `<h6>Security Data:</h6><pre class="bg-light p-2 rounded">${JSON.stringify(securityData, null, 2)}</pre>`;
+    }
+    
+    document.getElementById('logDetailsContent').innerHTML = content;
+    new bootstrap.Modal(document.getElementById('logDetailsModal')).show();
+}
+
+// Auto-refresh every 10 seconds
+setInterval(() => {
+    refreshLogs();
+}, 10000);
+</script>
+{% endblock %}

@@ -1,0 +1,220 @@
+<!doctype html>
+<html>
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>{% if card_data %}{{ card_data.card.product_sku }} - {% endif %}Deckport Card</title>
+    <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet" />
+    <meta property="og:title" content="{% if card_data %}{{ card_data.card.product_sku }}{% else %}Deckport Card{% endif %}" />
+    <meta property="og:description" content="{% if card_data %}Physical NFC card owned by {{ card_data.owner.username if card_data.owner else 'Anonymous' }}{% else %}Deckport NFC Card{% endif %}" />
+    <meta property="og:type" content="website" />
+  </head>
+  <body class="bg-gray-900 text-white min-h-screen">
+    <!-- Navigation -->
+    <nav class="bg-gray-800 border-b border-gray-700">
+      <div class="container mx-auto px-4">
+        <div class="flex justify-between items-center py-4">
+          <div class="flex items-center space-x-8">
+            <a href="/" class="text-xl font-bold text-indigo-400">Deckport</a>
+            <div class="hidden md:flex space-x-6">
+              <a href="/cards" class="text-gray-300 hover:text-white">Browse Cards</a>
+              <a href="/shop" class="text-gray-300 hover:text-white">Shop</a>
+            </div>
+          </div>
+          <div class="flex items-center space-x-4">
+            <a href="/login" class="text-gray-400 hover:text-white">Login</a>
+          </div>
+        </div>
+      </div>
+    </nav>
+
+    <div class="container mx-auto px-4 py-8">
+      {% if error %}
+      <!-- Error State -->
+      <div class="text-center py-16">
+        <div class="text-6xl mb-4">❌</div>
+        <h1 class="text-3xl font-bold mb-4">Card Not Found</h1>
+        <p class="text-gray-400 mb-8">This card doesn't exist or is not publicly visible.</p>
+        <a href="/cards" class="bg-indigo-600 hover:bg-indigo-700 px-6 py-3 rounded font-medium">Browse Cards</a>
+      </div>
+
+      {% else %}
+      <!-- Card Display -->
+      <div class="max-w-4xl mx-auto">
+        <!-- Header -->
+        <div class="text-center mb-8">
+          <div class="inline-block p-4 bg-gradient-to-br from-indigo-600 to-purple-600 rounded-full mb-4">
+            <svg class="w-12 h-12" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 11H5m14-7l2 2-2 2m2-2H9"></path>
+            </svg>
+          </div>
+          <h1 class="text-4xl font-bold mb-2">{{ card_data.card.product_sku }}</h1>
+          {% if card_data.card.serial_number %}
+          <p class="text-xl text-gray-400">#{{ card_data.card.serial_number }}</p>
+          {% endif %}
+        </div>
+
+        <!-- Main Card Info -->
+        <div class="grid grid-cols-1 lg:grid-cols-3 gap-8 mb-8">
+          <!-- Card Stats -->
+          <div class="lg:col-span-2">
+            <div class="bg-gray-800 rounded-lg p-6">
+              <h2 class="text-2xl font-semibold mb-6">Card Statistics</h2>
+              
+              <div class="grid grid-cols-2 md:grid-cols-3 gap-6">
+                <div class="text-center">
+                  <div class="text-3xl font-bold text-indigo-400 mb-2">{{ card_data.card.tap_counter }}</div>
+                  <div class="text-sm text-gray-400">Total Taps</div>
+                </div>
+                
+                <div class="text-center">
+                  <div class="text-3xl font-bold text-green-400 mb-2">{{ card_data.stats.view_count }}</div>
+                  <div class="text-sm text-gray-400">Page Views</div>
+                </div>
+                
+                <div class="text-center">
+                  <div class="text-3xl font-bold text-yellow-400 mb-2">
+                    {% if card_data.card.activated_at %}
+                    {{ ((card_data.stats.last_viewed | default(card_data.card.activated_at))[:10] | replace('-', '') | int - card_data.card.activated_at[:10] | replace('-', '') | int) // 10000 + 1 }}
+                    {% else %}
+                    0
+                    {% endif %}
+                  </div>
+                  <div class="text-sm text-gray-400">Days Active</div>
+                </div>
+              </div>
+
+              <!-- Activation Date -->
+              {% if card_data.card.activated_at %}
+              <div class="mt-6 pt-6 border-t border-gray-700">
+                <div class="flex items-center justify-between">
+                  <span class="text-gray-400">Activated:</span>
+                  <span class="font-medium">{{ card_data.card.activated_at[:10] }}</span>
+                </div>
+              </div>
+              {% endif %}
+            </div>
+          </div>
+
+          <!-- Owner & Metadata -->
+          <div class="space-y-6">
+            <!-- Owner Info -->
+            {% if card_data.owner %}
+            <div class="bg-gray-800 rounded-lg p-6">
+              <h3 class="text-lg font-semibold mb-4">Owner</h3>
+              <div class="flex items-center">
+                <div class="w-12 h-12 bg-gradient-to-br from-indigo-500 to-purple-500 rounded-full flex items-center justify-center text-xl font-bold mr-4">
+                  {{ card_data.owner.username[0].upper() if card_data.owner.username else '?' }}
+                </div>
+                <div>
+                  <div class="font-medium">{{ card_data.owner.username or 'Anonymous' }}</div>
+                  {% if card_data.owner.elo_rating %}
+                  <div class="text-sm text-yellow-400">ELO: {{ card_data.owner.elo_rating }}</div>
+                  {% endif %}
+                </div>
+              </div>
+            </div>
+            {% endif %}
+
+            <!-- Card Metadata -->
+            <div class="bg-gray-800 rounded-lg p-6">
+              <h3 class="text-lg font-semibold mb-4">Card Details</h3>
+              <div class="space-y-3 text-sm">
+                <div class="flex justify-between">
+                  <span class="text-gray-400">Product SKU:</span>
+                  <span class="font-mono">{{ card_data.card.product_sku }}</span>
+                </div>
+                {% if card_data.card.serial_number %}
+                <div class="flex justify-between">
+                  <span class="text-gray-400">Serial:</span>
+                  <span class="font-mono">{{ card_data.card.serial_number }}</span>
+                </div>
+                {% endif %}
+                <div class="flex justify-between">
+                  <span class="text-gray-400">Type:</span>
+                  <span>Physical NFC</span>
+                </div>
+                <div class="flex justify-between">
+                  <span class="text-gray-400">Status:</span>
+                  <span class="text-green-400">Active</span>
+                </div>
+              </div>
+            </div>
+
+            <!-- Share Card -->
+            <div class="bg-gray-800 rounded-lg p-6">
+              <h3 class="text-lg font-semibold mb-4">Share This Card</h3>
+              <div class="space-y-3">
+                <button onclick="copyUrl()" class="w-full bg-indigo-600 hover:bg-indigo-700 py-2 rounded text-sm font-medium">
+                  Copy Link
+                </button>
+                <button onclick="shareCard()" class="w-full bg-gray-700 hover:bg-gray-600 py-2 rounded text-sm font-medium">
+                  Share
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Upgrade History -->
+        {% if card_data.upgrades %}
+        <div class="bg-gray-800 rounded-lg p-6">
+          <h2 class="text-2xl font-semibold mb-6">Upgrade History</h2>
+          <div class="space-y-4">
+            {% for upgrade in card_data.upgrades %}
+            <div class="flex items-center justify-between p-4 bg-gray-700 rounded-lg">
+              <div class="flex items-center">
+                <div class="w-10 h-10 bg-indigo-600 rounded-full flex items-center justify-center mr-4">
+                  <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"></path>
+                  </svg>
+                </div>
+                <div>
+                  <div class="font-medium">{{ upgrade.type | title }} Upgrade</div>
+                  <div class="text-sm text-gray-400">Level {{ upgrade.level }}</div>
+                </div>
+              </div>
+              <div class="text-right">
+                <div class="text-sm text-gray-400">{{ upgrade.upgraded_at[:10] }}</div>
+              </div>
+            </div>
+            {% endfor %}
+          </div>
+        </div>
+        {% endif %}
+
+        <!-- Footer -->
+        <div class="text-center mt-8 pt-8 border-t border-gray-700">
+          <p class="text-gray-400 text-sm mb-4">This is a physical NFC card from Deckport</p>
+          <div class="space-x-4">
+            <a href="/cards" class="text-indigo-400 hover:text-indigo-300 text-sm">Browse All Cards</a>
+            <a href="/shop" class="text-indigo-400 hover:text-indigo-300 text-sm">Get Your Own Cards</a>
+          </div>
+        </div>
+      </div>
+      {% endif %}
+    </div>
+
+    <script>
+      function copyUrl() {
+        navigator.clipboard.writeText(window.location.href).then(() => {
+          alert('Card URL copied to clipboard!');
+        }).catch(() => {
+          alert('Failed to copy URL');
+        });
+      }
+
+      function shareCard() {
+        if (navigator.share) {
+          navigator.share({
+            title: '{{ card_data.card.product_sku if card_data else "Deckport Card" }}',
+            text: 'Check out this NFC card from Deckport!',
+            url: window.location.href
+          });
+        } else {
+          copyUrl();
+        }
+      }
+    </script>
+  </body>
+</html>

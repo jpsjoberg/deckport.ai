@@ -8,9 +8,22 @@ from datetime import datetime, timezone
 from enum import Enum
 from typing import Optional, List
 
-from sqlalchemy import String, Integer, Text, ForeignKey, Index
+from sqlalchemy import (
+    Boolean,
+    CheckConstraint,
+    DateTime,
+    Enum as SAEnum,
+    Float,
+    ForeignKey,
+    Index,
+    Integer,
+    JSON,
+    String,
+    Text,
+    UniqueConstraint
+)
 from sqlalchemy.dialects.postgresql import JSONB
-from sqlalchemy.orm import Mapped, mapped_column, relationship
+from sqlalchemy.orm import DeclarativeBase, Mapped, mapped_column, relationship
 
 from .base import Base
 
@@ -32,8 +45,8 @@ class Arena(Base):
     )
 
     id: Mapped[int] = mapped_column(Integer, primary_key=True)
-    name: Mapped[str] = mapped_column(String(100), nullable=False)
-    mana_color: Mapped[str] = mapped_column(String(20), nullable=False)  # CRIMSON, AZURE, etc.
+    name: Mapped[Optional[str]] = mapped_column(String(100), nullable=False)
+    mana_color: Mapped[Optional[str]] = mapped_column(String(20), nullable=False)  # CRIMSON, AZURE, etc.
     
     # Arena mechanics
     passive_effect: Mapped[Optional[dict]] = mapped_column(JSONB)  # Ongoing arena effect
@@ -50,12 +63,12 @@ class Arena(Base):
     
     # Gameplay settings
     special_rules: Mapped[Optional[dict]] = mapped_column(JSONB)   # Arena-specific rule modifications
-    difficulty_rating: Mapped[int] = mapped_column(Integer, default=1)    # 1-5 difficulty scale
+    difficulty_rating: Mapped[Optional[int]] = mapped_column(Integer, default=1)    # 1-5 difficulty scale
     
     created_at: Mapped[datetime] = mapped_column(default=utcnow, nullable=False)
     
     # Relationships
-    clips: Mapped[List[ArenaClip]] = relationship(back_populates="arena", cascade="all, delete-orphan")
+    clips: Mapped[List["ArenaClip"]] = relationship(back_populates="arena")
 
 class ArenaClip(Base):
     __tablename__ = "arena_clips"
@@ -65,10 +78,10 @@ class ArenaClip(Base):
     )
 
     id: Mapped[int] = mapped_column(Integer, primary_key=True)
-    arena_id: Mapped[int] = mapped_column(ForeignKey("arenas.id", ondelete="CASCADE"), nullable=False)
+    arena_id: Mapped[Optional[int]] = mapped_column(ForeignKey("arenas.id", ondelete="CASCADE"), nullable=False)
     
     clip_type: Mapped[ArenaClipType] = mapped_column(nullable=False)
-    file_path: Mapped[str] = mapped_column(String(255), nullable=False)  # Relative to assets/videos/
+    file_path: Mapped[Optional[str]] = mapped_column(String(255), nullable=False)  # Relative to assets/videos/
     
     # Trigger conditions
     trigger_condition: Mapped[Optional[dict]] = mapped_column(JSONB)  # When to play this clip
@@ -81,21 +94,18 @@ class ArenaClip(Base):
     created_at: Mapped[datetime] = mapped_column(default=utcnow, nullable=False)
     
     # Relationships
-    arena: Mapped[Arena] = relationship(back_populates="clips")
-
-class MatchTurn(Base):
-    __tablename__ = "match_turns"
+    arena: Mapped["Arena"] = relationship(back_populates="clips")
     __table_args__ = (
         Index("ix_match_turns_match", "match_id"),
         Index("ix_match_turns_number", "turn_number"),
     )
 
     id: Mapped[int] = mapped_column(Integer, primary_key=True)
-    match_id: Mapped[int] = mapped_column(ForeignKey("matches.id", ondelete="CASCADE"), nullable=False)
+    match_id: Mapped[Optional[int]] = mapped_column(ForeignKey("matches.id", ondelete="CASCADE"), nullable=False)
     
     turn_number: Mapped[int] = mapped_column(Integer, nullable=False)
     current_player_team: Mapped[int] = mapped_column(Integer, nullable=False)  # 0 or 1
-    phase: Mapped[str] = mapped_column(String(20), nullable=False)  # start, main, attack, end
+    phase: Mapped[Optional[str]] = mapped_column(String(20), nullable=False)  # start, main, attack, end
     
     # Timing
     phase_start_at: Mapped[datetime] = mapped_column(nullable=False)
@@ -115,14 +125,14 @@ class MatchCardAction(Base):
     )
 
     id: Mapped[int] = mapped_column(Integer, primary_key=True)
-    match_id: Mapped[int] = mapped_column(ForeignKey("matches.id", ondelete="CASCADE"), nullable=False)
+    match_id: Mapped[Optional[int]] = mapped_column(ForeignKey("matches.id", ondelete="CASCADE"), nullable=False)
     turn_id: Mapped[Optional[int]] = mapped_column(ForeignKey("match_turns.id", ondelete="SET NULL"))
     
-    player_id: Mapped[int] = mapped_column(ForeignKey("players.id", ondelete="CASCADE"), nullable=False)
-    nfc_card_id: Mapped[int] = mapped_column(ForeignKey("nfc_cards.id", ondelete="CASCADE"), nullable=False)
+    player_id: Mapped[Optional[int]] = mapped_column(ForeignKey("players.id", ondelete="CASCADE"), nullable=False)
+    nfc_card_id: Mapped[Optional[int]] = mapped_column(ForeignKey("nfc_cards.id", ondelete="CASCADE"), nullable=False)
     
     # Action details
-    action_type: Mapped[str] = mapped_column(String(50), nullable=False)  # summon, cast, equip, activate
+    action_type: Mapped[Optional[str]] = mapped_column(String(50), nullable=False)  # summon, cast, equip, activate
     action_data: Mapped[Optional[dict]] = mapped_column(JSONB)
     
     # Performance metrics

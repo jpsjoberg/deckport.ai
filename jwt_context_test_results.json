@@ -1,0 +1,50 @@
+{
+  "total_tests": 7,
+  "passed": 3,
+  "failed": 4,
+  "success_rate": 42.857142857142854,
+  "results": [
+    {
+      "test": "File Structure",
+      "success": true,
+      "message": "All JWT context files exist",
+      "timestamp": "2025-08-26T16:06:03.538317+00:00"
+    },
+    {
+      "test": "Admin Context Module",
+      "success": false,
+      "message": "Import error: No module named 'flask'",
+      "timestamp": "2025-08-26T16:06:03.601660+00:00"
+    },
+    {
+      "test": "Hardcoded ID Removal",
+      "success": true,
+      "message": "All hardcoded admin IDs removed",
+      "timestamp": "2025-08-26T16:06:03.602680+00:00"
+    },
+    {
+      "test": "Admin Context Imports",
+      "success": true,
+      "message": "All 3 files have proper imports",
+      "timestamp": "2025-08-26T16:06:03.602904+00:00"
+    },
+    {
+      "test": "Audit Logging Consistency",
+      "success": false,
+      "message": "Inconsistent logging in: ['admin_devices.py']",
+      "timestamp": "2025-08-26T16:06:03.603162+00:00"
+    },
+    {
+      "test": "Context Extraction Logic",
+      "success": false,
+      "message": "Error: No module named 'flask'",
+      "timestamp": "2025-08-26T16:06:03.603508+00:00"
+    },
+    {
+      "test": "Code Quality",
+      "success": false,
+      "message": "Only 75.0% actions have proper logging",
+      "timestamp": "2025-08-26T16:06:03.604184+00:00"
+    }
+  ]
+}

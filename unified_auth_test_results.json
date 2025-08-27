@@ -1,0 +1,50 @@
+{
+  "total_tests": 7,
+  "passed": 2,
+  "failed": 5,
+  "success_rate": 28.57142857142857,
+  "results": [
+    {
+      "test": "File Structure",
+      "success": true,
+      "message": "All 4 auth files exist",
+      "timestamp": "2025-08-26T14:34:15.550923+00:00"
+    },
+    {
+      "test": "Unified Auth Module",
+      "success": false,
+      "message": "Import error: No module named 'flask'",
+      "timestamp": "2025-08-26T14:34:15.614638+00:00"
+    },
+    {
+      "test": "Legacy Decorator Removal",
+      "success": true,
+      "message": "All legacy functions removed",
+      "timestamp": "2025-08-26T14:34:15.615610+00:00"
+    },
+    {
+      "test": "Decorator Consistency",
+      "success": false,
+      "message": "Inconsistent decorators in: ['admin_devices.py', 'admin_player_management.py']",
+      "timestamp": "2025-08-26T14:34:15.616531+00:00"
+    },
+    {
+      "test": "Import Consistency",
+      "success": false,
+      "message": "Import issues in: ['admin_analytics.py', 'admin_alerts_complex.py', 'admin_analytics_complex.py', 'admin_analytics_simple.py', 'admin_alerts_simple.py']",
+      "timestamp": "2025-08-26T14:34:15.617470+00:00"
+    },
+    {
+      "test": "Permission Coverage",
+      "success": false,
+      "message": "Only 78.7% routes have permissions (107/136)",
+      "timestamp": "2025-08-26T14:34:15.618602+00:00"
+    },
+    {
+      "test": "Auth Decorator Registry",
+      "success": false,
+      "message": "Error: No module named 'flask'",
+      "timestamp": "2025-08-26T14:34:15.618911+00:00"
+    }
+  ]
+}

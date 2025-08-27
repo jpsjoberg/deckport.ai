@@ -16,19 +16,27 @@ class APIService:
     
     def __init__(self):
         self.base_url = os.getenv('API_BASE_URL', 'http://127.0.0.1:8002')
-        self.admin_token = os.getenv('ADMIN_API_TOKEN')  # For admin operations
         self.timeout = 30
         
-    def _get_headers(self) -> Dict[str, str]:
+    def _get_headers(self, use_admin_token: bool = True) -> Dict[str, str]:
         """Get headers for API requests"""
         headers = {
             'Content-Type': 'application/json',
             'Accept': 'application/json'
         }
         
-        # Add admin token if available
-        if self.admin_token:
-            headers['Authorization'] = f'Bearer {self.admin_token}'
+        # Get admin JWT from request context
+        if use_admin_token:
+            try:
+                from flask import request
+                admin_jwt = request.cookies.get("admin_jwt")
+                if admin_jwt:
+                    headers['Authorization'] = f'Bearer {admin_jwt}'
+                else:
+                    logger.warning("No admin JWT token found in request cookies")
+            except RuntimeError:
+                # Outside request context - no fallback token
+                logger.warning("No request context available for admin JWT")
         
         return headers
     
@@ -51,12 +59,18 @@ class APIService:
                 return None
             
             # Log request for debugging
-            logger.debug(f"{method} {url} -> {response.status_code}")
+            logger.info(f"API {method} {url} -> {response.status_code}")
+            if response.status_code != 200 and response.status_code != 201:
+                logger.error(f"API Error Response: {response.text}")
             
             if response.status_code == 200:
-                return response.json()
+                json_response = response.json()
+                logger.info(f"API Success Response: {len(str(json_response))} chars")
+                return json_response
             elif response.status_code == 201:
-                return response.json()
+                json_response = response.json()
+                logger.info(f"API Success Response: {len(str(json_response))} chars")
+                return json_response
             elif response.status_code == 404:
                 logger.warning(f"API endpoint not found: {url}")
                 return None

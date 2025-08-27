@@ -46,9 +46,13 @@ var equipment_cards: Array = []
 var network_client: NetworkClient
 var nfc_manager: NFCManager
 var turn_manager: TurnManager
+var server_logger
 
 func _ready():
-	Logger.log_info("GameBoard", "Game board initialized")
+	# Initialize server logger
+	server_logger = preload("res://server_logger.gd").new()
+	add_child(server_logger)
+	server_logger.log_system_event("game_board_initialized", {})
 	
 	# Get manager references
 	network_client = get_node("/root/NetworkClient")
@@ -98,7 +102,7 @@ func _initialize_ui():
 
 func start_match(match_id: String, team: int, initial_state: Dictionary = {}):
 	"""Start a new match"""
-	Logger.log_info("GameBoard", "Starting match", {
+	server_logger.log_system_event("match_started", {
 		"match_id": match_id,
 		"team": team
 	})
@@ -137,7 +141,7 @@ func _update_game_state(state: Dictionary):
 	_update_play_window(state.get("play_window", {}))
 	_update_cards(state)
 	
-	Logger.log_debug("GameBoard", "Game state updated", {
+	server_logger.log_system_event("GameBoard", "Game state updated", {
 		"turn": turn,
 		"phase": phase,
 		"your_turn": your_turn
@@ -406,7 +410,7 @@ func _on_timer_updated(timer_data: Dictionary):
 func _on_network_error(error_message: String):
 	"""Handle network error"""
 	_add_log_entry("❌ Network Error: " + error_message)
-	Logger.log_error("GameBoard", "Network error", {"message": error_message})
+	server_logger.log_error("GameBoard", "Network error", {"message": error_message})
 
 func _on_card_scanned(card_data: Dictionary):
 	"""Handle NFC card scan"""
@@ -418,7 +422,7 @@ func _on_card_scanned(card_data: Dictionary):
 	var card_name = card_data.get("name", "Unknown")
 	var card_category = card_data.get("category", "")
 	
-	Logger.log_info("GameBoard", "Card scanned", {
+	server_logger.log_system_event("card_scanned", {
 		"id": card_id,
 		"name": card_name,
 		"category": card_category
@@ -443,10 +447,10 @@ func _on_card_play_button_pressed(card: Dictionary):
 func _play_card(card_id: String, action: String):
 	"""Play a card"""
 	if current_match_id == "":
-		Logger.log_error("GameBoard", "No active match")
+		server_logger.log_error("GameBoard", "No active match", {})
 		return
 	
-	Logger.log_info("GameBoard", "Playing card", {
+	server_logger.log_system_event("card_played", {
 		"card_id": card_id,
 		"action": action
 	})
@@ -475,10 +479,10 @@ func _on_play_window_closed():
 	playable_card_types = []
 	_add_log_entry("Local play window closed")
 
-# === DEBUG/ADMIN FUNCTIONS ===
+# === UTILITY FUNCTIONS ===
 
 func force_advance_phase():
-	"""Force advance to next phase (debug)"""
+	"""Force advance to next phase (admin function)"""
 	if current_match_id != "":
 		network_client.force_advance_phase(int(current_match_id))
 		_add_log_entry("🔧 Force advancing phase...")
@@ -521,7 +525,7 @@ func _input(event):
 
 func cleanup():
 	"""Clean up when leaving scene"""
-	Logger.log_info("GameBoard", "Cleaning up game board")
+	server_logger.log_system_event("game_board_cleanup", {})
 	
 	current_match_id = ""
 	game_state = {}

@@ -10,7 +10,10 @@ var is_sending = false
 
 func _ready():
 	print("📡 Server Logger initialized")
-	device_id = "DECK_DEV_CONSOLE_01"  # Fixed device ID for development
+	device_id = "DECK_DEV_CONSOLE_01"  # Default fallback
+	
+	# Try to get device UID from device connection manager
+	call_deferred("_update_device_id")
 	
 	# Create HTTP request node
 	http_request = HTTPRequest.new()
@@ -91,7 +94,7 @@ func send_queued_logs():
 	var json = JSON.stringify(payload)
 	var headers = ["Content-Type: application/json"]
 	
-	# TODO: Add device authentication header when available
+	# Device authentication handled by device_connection_manager
 	# headers.append("Authorization: Bearer " + device_token)
 	
 	var url = server_url + "/v1/console/logs"
@@ -146,3 +149,16 @@ func log_console_boot(boot_time: float):
 		"godot_version": Engine.get_version_info(),
 		"platform": OS.get_name()
 	})
+
+func set_device_id(new_device_id: String):
+	"""Set the device ID for logging"""
+	device_id = new_device_id
+	print("📡 Server Logger device ID updated: ", device_id)
+
+func _update_device_id():
+	"""Try to get device UID from device connection manager"""
+	var device_manager = get_node_or_null("/root/DeviceConnectionManager")
+	if device_manager and device_manager.has_method("get_device_uid"):
+		var uid = device_manager.get_device_uid()
+		if uid != "":
+			set_device_id(uid)

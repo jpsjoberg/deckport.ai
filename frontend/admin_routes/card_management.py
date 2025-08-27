@@ -10,11 +10,34 @@ from datetime import datetime
 from typing import Dict, List, Optional, Any
 
 from flask import render_template, request, redirect, url_for, flash, jsonify, current_app
+from functools import wraps
 from . import admin_bp
 
+def require_admin_auth(f):
+    """Decorator to require admin authentication for frontend routes"""
+    @wraps(f)
+    def decorated_function(*args, **kwargs):
+        admin_jwt = request.cookies.get("admin_jwt")
+        if not admin_jwt:
+            return redirect(url_for("admin_login", next=request.path))
+        return f(*args, **kwargs)
+    return decorated_function
+
 # Import our services
-from ..services.simple_card_service import get_simple_card_service
-from ..services.comfyui_service import get_comfyui_service
+try:
+    from services.card_service import get_card_service
+    from services.comfyui_service import get_comfyui_service
+    SERVICES_AVAILABLE = True
+except ImportError as e:
+    print(f"Card services not available: {e}")
+    SERVICES_AVAILABLE = False
+    
+    # Create stub services
+    def get_card_service():
+        return None
+    
+    def get_comfyui_service():
+        return None
 
 # Configuration for ComfyUI and card generation
 COMFYUI_HOST = os.environ.get("COMFYUI_HOST", "https://c.getvideo.ai")
@@ -35,6 +58,20 @@ MANA_COLORS = {
 RARITIES = ['COMMON', 'RARE', 'EPIC', 'LEGENDARY']
 CATEGORIES = ['CREATURE', 'STRUCTURE', 'ACTION', 'SPECIAL', 'EQUIPMENT']
 
+def create_pagination_object(page=1, total=0, per_page=20):
+    """Create a pagination object with all required attributes"""
+    pages = max(1, (total + per_page - 1) // per_page)  # Ceiling division
+    return {
+        'page': page,
+        'pages': pages,
+        'total': total,
+        'per_page': per_page,
+        'has_prev': page > 1,
+        'has_next': page < pages,
+        'prev_num': page - 1 if page > 1 else None,
+        'next_num': page + 1 if page < pages else None
+    }
+
 
 def call_comfyui_api(endpoint: str, method: str = 'GET', data: Dict = None) -> Optional[Dict]:
     """Call ComfyUI API endpoint"""
@@ -54,10 +91,106 @@ def call_comfyui_api(endpoint: str, method: str = 'GET', data: Dict = None) -> O
 
 
 @admin_bp.route('/cards')
+@require_admin_auth
 def card_management_index():
     """Card Management Dashboard"""
-    card_service = get_simple_card_service()
-    stats = card_service.get_statistics()
+    if not SERVICES_AVAILABLE:
+        # Return with mock data when services are not available
+        stats = {
+            'total_templates': 0,
+            'published_templates': 0,
+            'draft_templates': 0,
+            'nfc_instances': 0,
+            'total_nfc_cards': 0,
+            'by_rarity': {
+                'COMMON': 0,
+                'RARE': 0,
+                'EPIC': 0,
+                'LEGENDARY': 0
+            },
+            'by_category': {
+                'CRIMSON': 0,
+                'AZURE': 0,
+                'VERDANT': 0,
+                'OBSIDIAN': 0,
+                'RADIANT': 0,
+                'AETHER': 0
+            }
+        }
+        flash('Card services are currently unavailable. Showing placeholder data.', 'warning')
+    else:
+        card_service = get_card_service()
+        if card_service:
+            try:
+                stats = card_service.get_statistics()
+                
+                # Ensure stats has all required fields
+                if not stats or 'by_rarity' not in stats:
+                    stats = {
+                        'total_templates': stats.get('total_templates', 0),
+                        'published_templates': stats.get('published_templates', 0),
+                        'draft_templates': 0,
+                        'nfc_instances': 0,
+                        'total_nfc_cards': stats.get('total_nfc_cards', 0),
+                        'by_rarity': stats.get('by_rarity', {
+                            'COMMON': 0,
+                            'RARE': 0,
+                            'EPIC': 0,
+                            'LEGENDARY': 0
+                        }),
+                        'by_category': stats.get('by_category', {
+                            'CRIMSON': 0,
+                            'AZURE': 0,
+                            'VERDANT': 0,
+                            'OBSIDIAN': 0,
+                            'RADIANT': 0,
+                            'AETHER': 0
+                        })
+                    }
+            except Exception as e:
+                stats = {
+                    'total_templates': 0,
+                    'published_templates': 0,
+                    'draft_templates': 0,
+                    'nfc_instances': 0,
+                    'total_nfc_cards': 0,
+                    'by_rarity': {
+                        'COMMON': 0,
+                        'RARE': 0,
+                        'EPIC': 0,
+                        'LEGENDARY': 0
+                    },
+                    'by_category': {
+                        'CRIMSON': 0,
+                        'AZURE': 0,
+                        'VERDANT': 0,
+                        'OBSIDIAN': 0,
+                        'RADIANT': 0,
+                        'AETHER': 0
+                    }
+                }
+        else:
+            stats = {
+                'total_templates': 0,
+                'published_templates': 0,
+                'draft_templates': 0,
+                'nfc_instances': 0,
+                'total_nfc_cards': 0,
+                'by_rarity': {
+                    'COMMON': 0,
+                    'RARE': 0,
+                    'EPIC': 0,
+                    'LEGENDARY': 0
+                },
+                'by_category': {
+                    'CRIMSON': 0,
+                    'AZURE': 0,
+                    'VERDANT': 0,
+                    'OBSIDIAN': 0,
+                    'RADIANT': 0,
+                    'AETHER': 0
+                }
+            }
     
     return render_template('admin/card_management/index.html', 
                          stats=stats, 
@@ -131,7 +264,7 @@ def generate_card():
         }
         
         # Create card template
-        card_service = get_simple_card_service()
+        card_service = get_card_service()
         template_id = card_service.create_card_template(template_data)
         
         if not template_id:
@@ -176,45 +309,70 @@ def generate_card():
 @admin_bp.route('/cards/review')
 def card_review():
     """Card Template Review and Management Interface"""
-    # Get filter parameters
-    search = request.args.get('search', '')
-    category = request.args.get('category', '')
-    rarity = request.args.get('rarity', '')
-    color = request.args.get('color', '')
-    page = int(request.args.get('page', 1))
+    if not SERVICES_AVAILABLE:
+        # Return with empty data when services are not available
+        templates = []
+        pagination = create_pagination_object(page=1, total=0, per_page=20)
+        flash('Card services are currently unavailable. No templates to display.', 'warning')
+    else:
+        # Get filter parameters
+        search = request.args.get('search', '')
+        category = request.args.get('category', '')
+        rarity = request.args.get('rarity', '')
+        color = request.args.get('color', '')
+        page = int(request.args.get('page', 1))
+        
+        # Build filters
+        filters = {}
+        if search:
+            filters['search'] = search
+        if category:
+            filters['category'] = category
+        if rarity:
+            filters['rarity'] = rarity
+        if color:
+            filters['color'] = color
+        
+        # Get templates
+        card_service = get_card_service()
+        if card_service:
+            result = card_service.get_card_templates(filters=filters, page=page, per_page=20)
+            templates = result.get('templates', [])
+            raw_pagination = result.get('pagination', {})
+            
+            # Ensure pagination has all required attributes
+            pagination = create_pagination_object(
+                page=raw_pagination.get('page', page),
+                total=raw_pagination.get('total', 0),
+                per_page=raw_pagination.get('per_page', 20)
+            )
+            
+            # Check for generated art files
+            for template in templates:
+                art_filename = f"{template['slug']}.png"
+                art_path = os.path.join(CARDMAKER_OUTPUT_DIR, art_filename)
+                template['has_art'] = os.path.exists(art_path)
+                template['art_url'] = f"/static/cards/{art_filename}" if template['has_art'] else None
+        else:
+            templates = []
+            pagination = create_pagination_object(page=1, total=0, per_page=20)
     
-    # Build filters
-    filters = {}
-    if search:
-        filters['search'] = search
-    if category:
-        filters['category'] = category
-    if rarity:
-        filters['rarity'] = rarity
-    if color:
-        filters['color'] = color
-    
-    # Get templates
-    card_service = get_simple_card_service()
-    result = card_service.get_card_templates(filters=filters, page=page, per_page=20)
-    
-    templates = result.get('templates', [])
-    pagination = result.get('pagination', {})
-    
-    # Check for generated art files
-    for template in templates:
-        art_filename = f"{template['slug']}.png"
-        art_path = os.path.join(CARDMAKER_OUTPUT_DIR, art_filename)
-        template['has_art'] = os.path.exists(art_path)
-        template['art_url'] = f"/static/cards/{art_filename}" if template['has_art'] else None
+    # Create filters object for template
+    filters = {
+        'search': request.args.get('search', ''),
+        'category': request.args.get('category', ''),
+        'rarity': request.args.get('rarity', ''),
+        'color': request.args.get('color', '')
+    }
     
     return render_template('admin/card_management/review.html',
                          templates=templates,
                          pagination=pagination,
-                         search=search,
-                         selected_category=category,
-                         selected_rarity=rarity,
-                         selected_color=color,
+                         filters=filters,
+                         search=filters['search'],
+                         selected_category=filters['category'],
+                         selected_rarity=filters['rarity'],
+                         selected_color=filters['color'],
                          mana_colors=MANA_COLORS,
                          categories=CATEGORIES,
                          rarities=RARITIES)
@@ -223,7 +381,7 @@ def card_review():
 @admin_bp.route('/cards/<int:template_id>')
 def card_detail(template_id):
     """Individual Card Template Detail and Edit Interface"""
-    card_service = get_simple_card_service()
+    card_service = get_card_service()
     template = card_service.get_card_template(template_id)
     
     if not template:
@@ -263,7 +421,7 @@ def create_nfc_from_template(template_id):
             flash('NFC UID is required', 'error')
             return redirect(url_for('admin.card_detail', template_id=template_id))
         
-        card_service = get_simple_card_service()
+        card_service = get_card_service()
         instance_id = card_service.create_nfc_card_instance(
             template_id=template_id,
             nfc_uid=nfc_uid,

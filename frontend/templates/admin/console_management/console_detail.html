@@ -92,9 +92,32 @@
         {% endif %}
     </div>
     
+    <!-- Game Management -->
+    <div class="bg-gray-800 rounded-lg p-6 border border-gray-700">
+        <h3 class="text-lg font-semibold text-white mb-4">Game Management</h3>
+        <div class="grid grid-cols-2 gap-3">
+            <a href="{{ url_for('admin.console_arena_management', device_uid=console.device_uid) }}" 
+               class="flex items-center justify-center px-4 py-3 bg-purple-600 hover:bg-purple-700 rounded text-sm font-medium transition-colors">
+                <i class="fas fa-mountain mr-2"></i>Arena Assignment
+            </a>
+            <a href="{{ url_for('admin.console_matches', device_uid=console.device_uid) }}" 
+               class="flex items-center justify-center px-4 py-3 bg-green-600 hover:bg-green-700 rounded text-sm font-medium transition-colors">
+                <i class="fas fa-gamepad mr-2"></i>Match History
+            </a>
+            <a href="{{ url_for('admin.console_game_settings', device_uid=console.device_uid) }}" 
+               class="flex items-center justify-center px-4 py-3 bg-blue-600 hover:bg-blue-700 rounded text-sm font-medium transition-colors">
+                <i class="fas fa-cog mr-2"></i>Game Settings
+            </a>
+            <button onclick="startQuickMatch()" 
+                    class="flex items-center justify-center px-4 py-3 bg-yellow-600 hover:bg-yellow-700 rounded text-sm font-medium transition-colors">
+                <i class="fas fa-play mr-2"></i>Quick Match
+            </button>
+        </div>
+    </div>
+    
     <!-- Quick Actions -->
     <div class="bg-gray-800 rounded-lg p-6 border border-gray-700">
-        <h3 class="text-lg font-semibold text-white mb-4">Quick Actions</h3>
+        <h3 class="text-lg font-semibold text-white mb-4">Console Actions</h3>
         <div class="space-y-3">
             {% if console.is_online %}
             <button class="w-full px-4 py-2 bg-yellow-600 hover:bg-yellow-700 rounded font-medium text-sm" onclick="remoteControl('{{ console.device_uid }}')">

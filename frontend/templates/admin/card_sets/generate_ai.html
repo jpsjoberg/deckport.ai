@@ -1,0 +1,443 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AI Card Set Generation - Deckport Admin</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <style>
+        .theme-preview {
+            border: 2px solid #ddd;
+            border-radius: 8px;
+            padding: 15px;
+            margin: 10px 0;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+        .theme-preview:hover, .theme-preview.selected {
+            border-color: #007bff;
+            background-color: #f8f9fa;
+        }
+        .color-distribution-option {
+            border: 1px solid #ddd;
+            border-radius: 6px;
+            padding: 10px;
+            margin: 5px 0;
+            cursor: pointer;
+        }
+        .color-distribution-option:hover, .color-distribution-option.selected {
+            border-color: #007bff;
+            background-color: #e3f2fd;
+        }
+        .generation-progress {
+            display: none;
+        }
+        .card-preview {
+            border: 1px solid #ddd;
+            border-radius: 8px;
+            padding: 15px;
+            margin: 10px 0;
+            background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
+        }
+    </style>
+</head>
+<body>
+    <div class="container-fluid">
+        <div class="row">
+            <!-- Sidebar -->
+            <div class="col-md-2 bg-dark text-white p-3">
+                <h5><i class="fas fa-magic"></i> AI Card Set Generator</h5>
+                <ul class="nav flex-column">
+                    <li class="nav-item">
+                        <a class="nav-link text-white" href="/admin/dashboard">
+                            <i class="fas fa-dashboard"></i> Dashboard
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link text-white" href="/admin/cards">
+                            <i class="fas fa-cards"></i> Card Management
+                        </a>
+                    </li>
+                </ul>
+            </div>
+
+            <!-- Main Content -->
+            <div class="col-md-10 p-4">
+                <div class="d-flex justify-content-between align-items-center mb-4">
+                    <h2><i class="fas fa-wand-magic-sparkles"></i> AI Card Set Generation</h2>
+                    <div>
+                        <button class="btn btn-outline-secondary" onclick="showPreview()">
+                            <i class="fas fa-eye"></i> Preview
+                        </button>
+                        <button class="btn btn-success" onclick="generateSet()" id="generateBtn">
+                            <i class="fas fa-magic"></i> Generate Set
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Generation Form -->
+                <div class="row">
+                    <div class="col-md-8">
+                        <div class="card">
+                            <div class="card-header">
+                                <h5><i class="fas fa-cogs"></i> Set Configuration</h5>
+                            </div>
+                            <div class="card-body">
+                                <form id="setGenerationForm">
+                                    <!-- Basic Info -->
+                                    <div class="row mb-3">
+                                        <div class="col-md-6">
+                                            <label class="form-label">Set Name</label>
+                                            <input type="text" class="form-control" name="set_name" 
+                                                   placeholder="e.g., Crimson Legends" required>
+                                        </div>
+                                        <div class="col-md-6">
+                                            <label class="form-label">Set Code</label>
+                                            <input type="text" class="form-control" name="set_code" 
+                                                   placeholder="e.g., CL-001" required>
+                                        </div>
+                                    </div>
+
+                                    <!-- Theme Selection -->
+                                    <div class="mb-4">
+                                        <label class="form-label">Theme</label>
+                                        <div class="row">
+                                            <div class="col-md-6">
+                                                <div class="theme-preview" data-theme="fantasy">
+                                                    <h6><i class="fas fa-dragon"></i> Fantasy</h6>
+                                                    <p class="small text-muted">Magical realms, dragons, wizards, and ancient mysteries</p>
+                                                </div>
+                                            </div>
+                                            <div class="col-md-6">
+                                                <div class="theme-preview" data-theme="sci-fi">
+                                                    <h6><i class="fas fa-rocket"></i> Sci-Fi</h6>
+                                                    <p class="small text-muted">Space travel, advanced technology, and alien worlds</p>
+                                                </div>
+                                            </div>
+                                            <div class="col-md-6">
+                                                <div class="theme-preview" data-theme="steampunk">
+                                                    <h6><i class="fas fa-cog"></i> Steampunk</h6>
+                                                    <p class="small text-muted">Victorian-era steam-powered mechanical ingenuity</p>
+                                                </div>
+                                            </div>
+                                            <div class="col-md-6">
+                                                <div class="theme-preview" data-theme="cyberpunk">
+                                                    <h6><i class="fas fa-microchip"></i> Cyberpunk</h6>
+                                                    <p class="small text-muted">Dystopian future, hackers, and digital rebellion</p>
+                                                </div>
+                                            </div>
+                                        </div>
+                                        <input type="hidden" name="theme" id="selectedTheme" value="fantasy">
+                                    </div>
+
+                                    <!-- Set Size -->
+                                    <div class="row mb-3">
+                                        <div class="col-md-6">
+                                            <label class="form-label">Set Size</label>
+                                            <select class="form-control" name="set_size">
+                                                <option value="25">Small Set (25 cards)</option>
+                                                <option value="50" selected>Medium Set (50 cards)</option>
+                                                <option value="100">Large Set (100 cards)</option>
+                                                <option value="150">Expansion Set (150 cards)</option>
+                                            </select>
+                                        </div>
+                                        <div class="col-md-6">
+                                            <label class="form-label">Color Distribution</label>
+                                            <select class="form-control" name="color_distribution">
+                                                <option value="balanced" selected>Balanced (All Colors)</option>
+                                                <option value="focused">Focused (3 Main Colors)</option>
+                                                <option value="dual">Dual Color Focus</option>
+                                            </select>
+                                        </div>
+                                    </div>
+
+                                    <!-- Generation Prompt -->
+                                    <div class="mb-3">
+                                        <label class="form-label">Generation Prompt (Optional)</label>
+                                        <textarea class="form-control" name="generation_prompt" rows="3" 
+                                                  placeholder="Describe the specific direction, mechanics, or themes you want for this set..."></textarea>
+                                        <div class="form-text">
+                                            Provide specific guidance for the AI generation (e.g., "Focus on tribal mechanics", "Include more defensive cards", "Emphasize artifact synergies")
+                                        </div>
+                                    </div>
+                                </form>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Preview Panel -->
+                    <div class="col-md-4">
+                        <div class="card">
+                            <div class="card-header">
+                                <h6><i class="fas fa-chart-pie"></i> Set Preview</h6>
+                            </div>
+                            <div class="card-body" id="setPreview">
+                                <p class="text-muted">Configure your set to see preview</p>
+                            </div>
+                        </div>
+
+                        <!-- Existing Sets -->
+                        <div class="card mt-3">
+                            <div class="card-header">
+                                <h6><i class="fas fa-layer-group"></i> Existing Sets</h6>
+                            </div>
+                            <div class="card-body">
+                                {% if existing_sets %}
+                                    {% for set in existing_sets %}
+                                    <div class="d-flex justify-content-between align-items-center mb-2">
+                                        <div>
+                                            <strong>{{ set.name }}</strong>
+                                            <br><small class="text-muted">{{ set.code }}</small>
+                                        </div>
+                                        <span class="badge bg-{{ 'success' if set.is_active else 'secondary' }}">
+                                            {{ 'Active' if set.is_active else 'Draft' }}
+                                        </span>
+                                    </div>
+                                    {% endfor %}
+                                {% else %}
+                                    <p class="text-muted">No existing sets</p>
+                                {% endif %}
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Generation Progress -->
+                <div class="generation-progress mt-4" id="generationProgress">
+                    <div class="card">
+                        <div class="card-body text-center">
+                            <div class="spinner-border text-primary mb-3" role="status">
+                                <span class="visually-hidden">Generating...</span>
+                            </div>
+                            <h5>Generating Card Set...</h5>
+                            <p class="text-muted" id="progressText">Analyzing balance requirements...</p>
+                            <div class="progress">
+                                <div class="progress-bar progress-bar-striped progress-bar-animated" 
+                                     role="progressbar" style="width: 0%" id="progressBar"></div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Results Panel -->
+                <div id="resultsPanel" style="display: none;">
+                    <!-- Results will be populated here -->
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.bundle.min.js"></script>
+    <script>
+        // Theme selection
+        document.querySelectorAll('.theme-preview').forEach(preview => {
+            preview.addEventListener('click', function() {
+                document.querySelectorAll('.theme-preview').forEach(p => p.classList.remove('selected'));
+                this.classList.add('selected');
+                document.getElementById('selectedTheme').value = this.dataset.theme;
+                updatePreview();
+            });
+        });
+
+        // Set default theme
+        document.querySelector('[data-theme="fantasy"]').classList.add('selected');
+
+        function updatePreview() {
+            const formData = new FormData(document.getElementById('setGenerationForm'));
+            const setSize = formData.get('set_size');
+            const theme = formData.get('theme');
+            const distribution = formData.get('color_distribution');
+            
+            const preview = document.getElementById('setPreview');
+            preview.innerHTML = `
+                <div class="mb-2">
+                    <strong>Theme:</strong> ${theme.charAt(0).toUpperCase() + theme.slice(1)}
+                </div>
+                <div class="mb-2">
+                    <strong>Total Cards:</strong> ${setSize}
+                </div>
+                <div class="mb-2">
+                    <strong>Distribution:</strong> ${distribution.charAt(0).toUpperCase() + distribution.slice(1)}
+                </div>
+                <hr>
+                <div class="small">
+                    <div>Commons: ~${Math.floor(setSize * 0.5)}</div>
+                    <div>Rares: ~${Math.floor(setSize * 0.3)}</div>
+                    <div>Epics: ~${Math.floor(setSize * 0.15)}</div>
+                    <div>Legendaries: ~${Math.floor(setSize * 0.05)}</div>
+                </div>
+            `;
+        }
+
+        function showPreview() {
+            updatePreview();
+        }
+
+        function generateSet() {
+            const form = document.getElementById('setGenerationForm');
+            const formData = new FormData(form);
+            
+            // Show progress
+            document.getElementById('generationProgress').style.display = 'block';
+            document.getElementById('generateBtn').disabled = true;
+            
+            // Simulate progress
+            let progress = 0;
+            const progressBar = document.getElementById('progressBar');
+            const progressText = document.getElementById('progressText');
+            
+            const progressSteps = [
+                'Analyzing balance requirements...',
+                'Generating card concepts...',
+                'Creating art prompts...',
+                'Balancing stats...',
+                'Finalizing card set...'
+            ];
+            
+            const progressInterval = setInterval(() => {
+                progress += 20;
+                progressBar.style.width = progress + '%';
+                
+                if (progress <= 100) {
+                    const stepIndex = Math.floor((progress - 1) / 20);
+                    if (stepIndex < progressSteps.length) {
+                        progressText.textContent = progressSteps[stepIndex];
+                    }
+                }
+                
+                if (progress >= 100) {
+                    clearInterval(progressInterval);
+                    // Make actual API call
+                    submitGeneration(formData);
+                }
+            }, 1000);
+        }
+
+        function submitGeneration(formData) {
+            fetch('/admin/card-sets/generate', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify(Object.fromEntries(formData))
+            })
+            .then(response => response.json())
+            .then(data => {
+                document.getElementById('generationProgress').style.display = 'none';
+                document.getElementById('generateBtn').disabled = false;
+                
+                if (data.success) {
+                    showResults(data.card_set);
+                } else {
+                    alert('Generation failed: ' + data.error);
+                }
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                document.getElementById('generationProgress').style.display = 'none';
+                document.getElementById('generateBtn').disabled = false;
+                alert('Generation failed: ' + error.message);
+            });
+        }
+
+        function showResults(cardSet) {
+            const resultsPanel = document.getElementById('resultsPanel');
+            resultsPanel.style.display = 'block';
+            
+            resultsPanel.innerHTML = `
+                <div class="card">
+                    <div class="card-header">
+                        <h5><i class="fas fa-check-circle text-success"></i> Generated: ${cardSet.set_name}</h5>
+                    </div>
+                    <div class="card-body">
+                        <div class="row">
+                            <div class="col-md-8">
+                                <h6>Generated Cards (${cardSet.total_cards})</h6>
+                                <div id="cardsList" style="max-height: 400px; overflow-y: auto;">
+                                    ${cardSet.cards.map(card => `
+                                        <div class="card-preview">
+                                            <div class="d-flex justify-content-between">
+                                                <strong>${card.name}</strong>
+                                                <span class="badge bg-${getRarityColor(card.rarity)}">${card.rarity}</span>
+                                            </div>
+                                            <div class="small text-muted">${card.category} - ${card.color_code}</div>
+                                            <div class="small">${card.description}</div>
+                                            <div class="small text-primary mt-1">Art: ${card.art_prompt.substring(0, 100)}...</div>
+                                        </div>
+                                    `).join('')}
+                                </div>
+                            </div>
+                            <div class="col-md-4">
+                                <h6>Balance Report</h6>
+                                <div class="small">
+                                    <div><strong>Total Cards:</strong> ${cardSet.balance_report.total_cards}</div>
+                                    <div><strong>Balance Score:</strong> ${cardSet.balance_report.balance_score}/100</div>
+                                </div>
+                                <hr>
+                                <button class="btn btn-success btn-sm" onclick="saveCardSet()">
+                                    <i class="fas fa-save"></i> Save Set
+                                </button>
+                                <button class="btn btn-outline-primary btn-sm" onclick="regenerateSet()">
+                                    <i class="fas fa-redo"></i> Regenerate
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            `;
+            
+            // Store the card set data for saving
+            window.currentCardSet = cardSet;
+        }
+
+        function getRarityColor(rarity) {
+            const colors = {
+                'COMMON': 'secondary',
+                'RARE': 'primary', 
+                'EPIC': 'warning',
+                'LEGENDARY': 'danger'
+            };
+            return colors[rarity] || 'secondary';
+        }
+
+        function saveCardSet() {
+            if (!window.currentCardSet) return;
+            
+            fetch('/admin/card-sets/save-set', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify(window.currentCardSet)
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    alert(`Card set saved successfully! ${data.cards_created} cards created.`);
+                    location.reload();
+                } else {
+                    alert('Save failed: ' + data.error);
+                }
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                alert('Save failed: ' + error.message);
+            });
+        }
+
+        function regenerateSet() {
+            generateSet();
+        }
+
+        // Initialize preview
+        updatePreview();
+    </script>
+</body>
+</html>
+
+
+
+
+
+

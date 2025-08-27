@@ -1,0 +1,11 @@
+# NFC Card Programmer Dependencies
+# Install with: pip install -r requirements.txt
+
+# Core dependencies
+nfcpy>=1.0.4          # NFC communication library
+cryptography>=41.0.0  # Cryptographic operations
+requests>=2.31.0      # HTTP API communication
+
+# Optional dependencies for enhanced functionality
+# pyscard>=2.0.7       # Alternative NFC library (if nfcpy doesn't work)
+# colorama>=0.4.6      # Colored terminal output (Windows)

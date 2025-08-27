@@ -6,7 +6,7 @@ Handles live matches, tournaments, and game balance
 from flask import render_template, jsonify, request, flash, redirect, url_for
 from datetime import datetime, timezone
 from . import admin_bp
-from ..services.api_service import APIService
+from services.api_service import APIService
 
 # Initialize API service
 api_service = APIService()
@@ -21,7 +21,42 @@ def game_operations():
         queue_response = api_service.get('/v1/admin/game-operations/matchmaking/queue')
         tournaments_response = api_service.get('/v1/admin/game-operations/tournaments')
         
+        # Ensure dashboard_data has the expected structure
         dashboard_data = dashboard_response or {}
+        
+        # If dashboard_data doesn't have the expected nested structure, create it
+        if 'live_matches' not in dashboard_data:
+            dashboard_data['live_matches'] = {
+                'active': 0,
+                'queued_players': 0,
+                'avg_wait_time': 0,
+                'peak_concurrent': 0
+            }
+        
+        if 'tournaments' not in dashboard_data:
+            dashboard_data['tournaments'] = {
+                'active': 0,
+                'participants_today': 0,
+                'total_prize_pool': 0,
+                'scheduled_today': 0
+            }
+            
+        if 'player_activity' not in dashboard_data:
+            dashboard_data['player_activity'] = {
+                'online_now': 0,
+                'matches_today': 0,
+                'peak_today': 0,
+                'avg_session_time': 0
+            }
+            
+        if 'game_balance' not in dashboard_data:
+            dashboard_data['game_balance'] = {
+                'imbalanced_cards': 0,
+                'meta_diversity': 0,
+                'recent_changes': 0,
+                'pending_reviews': 0
+            }
+        
         live_matches = live_matches_response.get('matches', []) if live_matches_response else []
         queue_data = queue_response or {}
         tournaments = tournaments_response.get('tournaments', []) if tournaments_response else []
@@ -38,9 +73,36 @@ def game_operations():
                              
     except Exception as e:
         flash(f'Error loading game operations data: {str(e)}', 'error')
-        # Return with empty data as fallback
+        # Return with empty data as fallback with proper structure
+        fallback_dashboard_data = {
+            'live_matches': {
+                'active': 0,
+                'queued_players': 0,
+                'avg_wait_time': 0,
+                'peak_concurrent': 0
+            },
+            'tournaments': {
+                'active': 0,
+                'participants_today': 0,
+                'total_prize_pool': 0,
+                'scheduled_today': 0
+            },
+            'player_activity': {
+                'online_now': 0,
+                'matches_today': 0,
+                'peak_today': 0,
+                'avg_session_time': 0
+            },
+            'game_balance': {
+                'imbalanced_cards': 0,
+                'meta_diversity': 0,
+                'recent_changes': 0,
+                'pending_reviews': 0
+            }
+        }
+        
         return render_template('admin/game_operations/index.html',
-                             dashboard_data={},
+                             dashboard_data=fallback_dashboard_data,
                              recent_matches=[],
                              queue_data={},
                              active_tournaments=[])
@@ -132,7 +194,7 @@ def tournaments():
                              total_tournaments=0)
 
 @admin_bp.route('/game-operations/analytics')
-def analytics():
+def game_analytics():
     """Game analytics dashboard"""
     try:
         # Get analytics data

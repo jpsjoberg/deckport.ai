@@ -17,17 +17,30 @@
     </header>
     <main class="container mx-auto p-4">
       <h1 class="text-2xl font-semibold mb-4">Shop</h1>
-      <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+      <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
         {% for b in bundles %}
-        <div class="p-4 bg-gray-800 rounded">
-          <div class="font-semibold text-lg">{{ b.name }}</div>
-          <div class="text-gray-300 mb-3">{{ b.price }} {{ b.currency }}</div>
+        <div class="p-6 bg-gray-800 rounded-lg shadow-lg">
+          {% if b.image_url %}
+          <img src="{{ b.image_url }}" alt="{{ b.name }}" class="w-full h-48 object-cover rounded mb-4" />
+          {% endif %}
+          <div class="font-semibold text-xl mb-2">{{ b.name }}</div>
+          {% if b.short_description %}
+          <div class="text-gray-400 text-sm mb-3">{{ b.short_description }}</div>
+          {% elif b.description %}
+          <div class="text-gray-400 text-sm mb-3">{{ b.description[:100] }}{% if b.description|length > 100 %}...{% endif %}</div>
+          {% endif %}
+          <div class="text-green-400 font-bold text-lg mb-4">${{ b.price }} {{ b.currency }}</div>
+          
+          {% if b.is_available %}
           <form method="post" action="/shop/checkout" class="flex items-center gap-2">
             <input type="hidden" name="csrf" value="{{ csrf }}" />
             <input type="hidden" name="product_sku" value="{{ b.product_sku }}" />
-            <input type="number" min="1" value="1" name="quantity" class="px-2 py-1 w-20 rounded bg-gray-900" />
-            <button class="px-3 py-2 bg-indigo-600 rounded">Buy Now</button>
+            <input type="number" min="1" value="1" name="quantity" class="px-3 py-2 w-20 rounded bg-gray-900 border border-gray-600" />
+            <button class="px-4 py-2 bg-indigo-600 hover:bg-indigo-700 rounded font-medium transition-colors">Buy Now</button>
           </form>
+          {% else %}
+          <div class="text-red-400 font-medium">Out of Stock</div>
+          {% endif %}
         </div>
         {% endfor %}
       </div>

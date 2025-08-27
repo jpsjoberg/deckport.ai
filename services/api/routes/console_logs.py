@@ -33,7 +33,7 @@ def receive_console_logs():
                     actor_type="console",
                     actor_id=None,  # Console ID would go here when available
                     action=f"{log_entry.get('component', 'unknown')}.{log_entry.get('message', 'unknown')}",
-                    meta={
+                    details={
                         'device_id': device_id,
                         'level': log_entry.get('level', 'INFO'),
                         'component': log_entry.get('component', 'unknown'),
@@ -62,15 +62,15 @@ def get_console_logs(device_id):
     """Get logs for a specific console (for monitoring)"""
     try:
         with SessionLocal() as session:
-            # Get recent logs for this device (search in meta field)
+            # Get recent logs for this device (search in details field)
             logs = session.query(AuditLog).filter(
                 AuditLog.actor_type == "console"
             ).order_by(AuditLog.created_at.desc()).limit(100).all()
             
-            # Filter by device_id in meta
+            # Filter by device_id in details
             device_logs = []
             for log in logs:
-                if log.meta and log.meta.get('device_id') == device_id:
+                if log.details and log.details.get('device_id') == device_id:
                     device_logs.append(log)
             
             log_data = []
@@ -79,7 +79,7 @@ def get_console_logs(device_id):
                     "id": log.id,
                     "timestamp": log.created_at.isoformat(),
                     "action": log.action,
-                    "meta": log.meta
+                    "details": log.details
                 })
             
             return jsonify({
@@ -104,8 +104,8 @@ def get_active_devices():
             
             devices = set()
             for log in recent_logs:
-                if log.meta and log.meta.get('device_id'):
-                    devices.add(log.meta['device_id'])
+                if log.details and log.details.get('device_id'):
+                    devices.add(log.details['device_id'])
             
             devices = list(devices)
             

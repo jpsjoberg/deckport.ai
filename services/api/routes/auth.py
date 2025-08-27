@@ -2,12 +2,15 @@
 Authentication routes
 """
 
+import logging
 from flask import Blueprint, request, jsonify
 from shared.auth.jwt_handler import create_access_token
 from shared.utils.crypto import hash_password, verify_password
 from shared.utils.validation import validate_email, validate_password, validate_display_name, validate_username, validate_phone_number
 from shared.database.connection import SessionLocal
 from shared.models.base import Player
+
+logger = logging.getLogger(__name__)
 
 auth_bp = Blueprint('auth', __name__, url_prefix='/v1/auth')
 
@@ -136,3 +139,61 @@ def login():
             
     except Exception as e:
         return jsonify({"error": "Login failed"}), 500
+
+@auth_bp.route('/admin/login', methods=['POST'])
+def admin_login():
+    """Login an admin user using proper Admin model"""
+    data = request.get_json()
+    
+    if not data:
+        return jsonify({"error": "No data provided"}), 400
+    
+    email = data.get('email', '').strip().lower()
+    password = data.get('password', '')
+    
+    if not email or not password:
+        return jsonify({"error": "Email and password required"}), 400
+    
+    try:
+        with SessionLocal() as session:
+            # Find admin user in Admin table
+            from shared.models.base import Admin
+            admin = session.query(Admin).filter(Admin.email == email).first()
+            
+            if not admin:
+                return jsonify({"error": "Invalid email or password"}), 401
+            
+            # Check if admin account is active
+            if not admin.is_active:
+                return jsonify({"error": "Admin account is disabled"}), 403
+            
+            # Verify password
+            if not verify_password(password, admin.password_hash):
+                return jsonify({"error": "Invalid email or password"}), 401
+            
+            # Update last login timestamp
+            from datetime import datetime, timezone
+            admin.last_login = datetime.now(timezone.utc)
+            session.commit()
+            
+            # Create admin access token with role
+            from shared.auth.jwt_handler import create_admin_token
+            access_token = create_admin_token(admin.id, admin.email, {
+                "username": admin.username,
+                "is_super_admin": admin.is_super_admin
+            })
+            
+            return jsonify({
+                "access_token": access_token,
+                "admin": {
+                    "id": admin.id,
+                    "username": admin.username,
+                    "email": admin.email,
+                    "is_super_admin": admin.is_super_admin,
+                    "role": "admin"
+                }
+            })
+            
+    except Exception as e:
+        logger.error(f"Admin login error: {e}")
+        return jsonify({"error": "Admin login failed"}), 500

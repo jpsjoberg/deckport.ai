@@ -23,11 +23,18 @@ def load_env_file():
 load_env_file()
 
 app = Flask(__name__)
-API_BASE = os.environ.get("API_BASE", "http://localhost:8000")
+app.secret_key = os.environ.get("SECRET_KEY", "dev-secret-key-change-in-production")
+API_BASE = os.environ.get("API_BASE", "http://127.0.0.1:8002")
 
 # Register admin blueprint
 from admin_routes import admin_bp
+# Temporarily disabled - fixing imports
+# from admin_routes.card_generation_ai import card_gen_bp
+# from admin_routes.card_set_generator_ai import card_set_gen_bp
+
 app.register_blueprint(admin_bp)
+# app.register_blueprint(card_gen_bp)
+# app.register_blueprint(card_set_gen_bp)
 
 
 # ---------- Logging setup ----------
@@ -196,7 +203,23 @@ def api_post(path: str, json: dict | None = None, headers: dict | None = None):
 
 @app.get("/")
 def landing():
-    return render_template("index.html")
+    return render_template("index_enhanced.html")
+
+@app.get("/news")
+def news():
+    return render_template("news.html")
+
+@app.get("/videos")
+def videos():
+    return render_template("videos.html")
+
+@app.get("/news/<slug>")
+def article_detail(slug):
+    return render_template("article.html")
+
+@app.get("/videos/<slug>")
+def video_detail(slug):
+    return render_template("video.html")
 
 
 @app.get("/cards")
@@ -224,8 +247,13 @@ def card_detail(product_sku: str):
 
 @app.get("/login")
 def login():
-    resp = make_response(render_template("login.html", error=None, csrf=request.cookies.get("csrf")))
-    _csrf_get_or_set(resp)
+    token, resp = _csrf_get_or_set()
+    if resp is None:
+        resp = make_response(render_template("login.html", error=None, csrf=token))
+    else:
+        # Update the existing response with the rendered template
+        resp = make_response(render_template("login.html", error=None, csrf=token))
+        resp.set_cookie("csrf", token, httponly=True, samesite="Lax")
     return resp
 
 
@@ -248,8 +276,13 @@ def login_post():
 
 @app.get("/register")
 def register():
-    resp = make_response(render_template("register.html", error=None, csrf=request.cookies.get("csrf")))
-    _csrf_get_or_set(resp)
+    token, resp = _csrf_get_or_set()
+    if resp is None:
+        resp = make_response(render_template("register.html", error=None, csrf=token))
+    else:
+        # Update the existing response with the rendered template
+        resp = make_response(render_template("register.html", error=None, csrf=token))
+        resp.set_cookie("csrf", token, httponly=True, samesite="Lax")
     return resp
 
 
@@ -289,6 +322,67 @@ def checkout_success():
 @app.get("/checkout/cancel")
 def checkout_cancel():
     return render_template("checkout_cancel.html")
+
+
+# Admin authentication routes
+@app.get("/admin/login")
+def admin_login():
+    token, resp = _csrf_get_or_set()
+    if resp is None:
+        resp = make_response(render_template("admin_login.html", error=None, csrf=token))
+    else:
+        # Update the existing response with the rendered template
+        resp = make_response(render_template("admin_login.html", error=None, csrf=token))
+        resp.set_cookie("csrf", token, httponly=True, samesite="Lax")
+    return resp
+
+
+@app.post("/admin/login")
+def admin_login_post():
+    if not _csrf_valid(request.form.get("csrf")):
+        return render_template("admin_login.html", error="Invalid session, please retry.", csrf=request.cookies.get("csrf")), 400
+    email = request.form.get("email", "").strip()
+    password = request.form.get("password", "")
+    next_url = request.args.get("next") or "/admin/"
+    if not email or not password:
+        return render_template("admin_login.html", error="Email and password required", csrf=request.cookies.get("csrf"))
+    
+    # Use proper admin login endpoint
+    data = api_post("/v1/auth/admin/login", json={"email": email, "password": password})
+    if not data or "access_token" not in data:
+        error_msg = data.get("error", "Admin login failed") if data else "Admin login failed"
+        return render_template("admin_login.html", error=error_msg, csrf=request.cookies.get("csrf")), 401
+    
+    resp = make_response(redirect(next_url))
+    resp.set_cookie("admin_jwt", data["access_token"], httponly=True, samesite="Lax", secure=True)
+    return resp
+
+
+def _get_admin_jwt() -> str | None:
+    return request.cookies.get("admin_jwt")
+
+
+def _admin_auth_headers() -> dict:
+    token = _get_admin_jwt()
+    return {"Authorization": f"Bearer {token}"} if token else {}
+
+
+def require_admin_auth(view):
+    @wraps(view)
+    def wrapper(*args, **kwargs):
+        if not _get_admin_jwt():
+            return redirect(url_for("admin_login", next=request.path))
+        return view(*args, **kwargs)
+    return wrapper
+
+
+@app.get("/logout")
+def logout():
+    """Logout and clear authentication cookies"""
+    resp = make_response(redirect(url_for("login")))
+    resp.set_cookie("player_jwt", "", expires=0)
+    resp.set_cookie("admin_jwt", "", expires=0)
+    return resp
 
 
 @app.post("/shop/checkout")

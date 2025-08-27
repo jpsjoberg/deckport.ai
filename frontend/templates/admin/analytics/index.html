@@ -1,0 +1,339 @@
+{% extends "admin/base.html" %}
+
+{% block title %}Analytics Dashboard - Deckport Admin{% endblock %}
+
+{% block content %}
+<div class="p-6">
+    <div class="flex items-center justify-between mb-6">
+        <div>
+            <h1 class="text-2xl font-bold text-white">Analytics Dashboard</h1>
+            <p class="text-gray-400 mt-1">Business intelligence and performance metrics</p>
+        </div>
+        <div class="flex space-x-3">
+            <select class="px-3 py-2 bg-gray-700 border border-gray-600 rounded text-white text-sm">
+                <option>Last 7 days</option>
+                <option>Last 30 days</option>
+                <option>Last 90 days</option>
+            </select>
+            <button class="px-4 py-2 bg-blue-600 hover:bg-blue-700 rounded font-medium text-sm">
+                <i class="fas fa-download mr-2"></i>Export
+            </button>
+        </div>
+    </div>
+
+    <!-- Key Metrics -->
+    <div class="grid grid-cols-1 md:grid-cols-4 gap-6 mb-6">
+        <div class="bg-gray-800 p-6 rounded-lg">
+            <div class="flex items-center">
+                <div class="p-3 bg-green-500 bg-opacity-20 rounded-lg">
+                    <i class="fas fa-dollar-sign text-green-400 text-xl"></i>
+                </div>
+                <div class="ml-4">
+                    <p class="text-sm text-gray-400">Revenue (7d)</p>
+                    <p class="text-2xl font-bold text-white">$2,341</p>
+                    <p class="text-xs text-green-400">+12.5%</p>
+                </div>
+            </div>
+        </div>
+        
+        <div class="bg-gray-800 p-6 rounded-lg">
+            <div class="flex items-center">
+                <div class="p-3 bg-blue-500 bg-opacity-20 rounded-lg">
+                    <i class="fas fa-users text-blue-400 text-xl"></i>
+                </div>
+                <div class="ml-4">
+                    <p class="text-sm text-gray-400">Active Players</p>
+                    <p class="text-2xl font-bold text-white">1,247</p>
+                    <p class="text-xs text-blue-400">+8.3%</p>
+                </div>
+            </div>
+        </div>
+        
+        <div class="bg-gray-800 p-6 rounded-lg">
+            <div class="flex items-center">
+                <div class="p-3 bg-purple-500 bg-opacity-20 rounded-lg">
+                    <i class="fas fa-gamepad text-purple-400 text-xl"></i>
+                </div>
+                <div class="ml-4">
+                    <p class="text-sm text-gray-400">Matches Played</p>
+                    <p class="text-2xl font-bold text-white">3,456</p>
+                    <p class="text-xs text-purple-400">+15.2%</p>
+                </div>
+            </div>
+        </div>
+        
+        <div class="bg-gray-800 p-6 rounded-lg">
+            <div class="flex items-center">
+                <div class="p-3 bg-yellow-500 bg-opacity-20 rounded-lg">
+                    <i class="fas fa-clock text-yellow-400 text-xl"></i>
+                </div>
+                <div class="ml-4">
+                    <p class="text-sm text-gray-400">Avg Session</p>
+                    <p class="text-2xl font-bold text-white">24.5m</p>
+                    <p class="text-xs text-yellow-400">+3.1%</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Charts Row -->
+    <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
+        <!-- Revenue Chart -->
+        <div class="bg-gray-800 rounded-lg p-6">
+            <h3 class="text-lg font-semibold text-white mb-4">Revenue Trend</h3>
+            <canvas id="revenueChart" width="400" height="200"></canvas>
+        </div>
+
+        <!-- Player Activity Chart -->
+        <div class="bg-gray-800 rounded-lg p-6">
+            <h3 class="text-lg font-semibold text-white mb-4">Player Activity</h3>
+            <canvas id="playerActivityChart" width="400" height="200"></canvas>
+        </div>
+    </div>
+
+    <!-- Analytics Tables -->
+    <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        <!-- Top Performing Cards -->
+        <div class="bg-gray-800 rounded-lg overflow-hidden">
+            <div class="p-6 border-b border-gray-700">
+                <h3 class="text-lg font-semibold text-white">Top Performing Cards</h3>
+            </div>
+            <div class="p-6">
+                <div class="space-y-4">
+                    <div class="flex items-center justify-between">
+                        <div class="flex items-center">
+                            <div class="w-8 h-8 bg-red-500 bg-opacity-20 rounded flex items-center justify-center">
+                                <i class="fas fa-fire text-red-400 text-sm"></i>
+                            </div>
+                            <div class="ml-3">
+                                <p class="text-white font-medium">Crimson Dragon</p>
+                                <p class="text-gray-400 text-sm">Used in 23% of matches</p>
+                            </div>
+                        </div>
+                        <span class="text-green-400 text-sm">+5.2%</span>
+                    </div>
+                    
+                    <div class="flex items-center justify-between">
+                        <div class="flex items-center">
+                            <div class="w-8 h-8 bg-blue-500 bg-opacity-20 rounded flex items-center justify-center">
+                                <i class="fas fa-water text-blue-400 text-sm"></i>
+                            </div>
+                            <div class="ml-3">
+                                <p class="text-white font-medium">Azure Shield</p>
+                                <p class="text-gray-400 text-sm">Used in 18% of matches</p>
+                            </div>
+                        </div>
+                        <span class="text-green-400 text-sm">+2.8%</span>
+                    </div>
+                    
+                    <div class="flex items-center justify-between">
+                        <div class="flex items-center">
+                            <div class="w-8 h-8 bg-green-500 bg-opacity-20 rounded flex items-center justify-center">
+                                <i class="fas fa-leaf text-green-400 text-sm"></i>
+                            </div>
+                            <div class="ml-3">
+                                <p class="text-white font-medium">Verdant Growth</p>
+                                <p class="text-gray-400 text-sm">Used in 15% of matches</p>
+                            </div>
+                        </div>
+                        <span class="text-red-400 text-sm">-1.2%</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Player Retention -->
+        <div class="bg-gray-800 rounded-lg overflow-hidden">
+            <div class="p-6 border-b border-gray-700">
+                <h3 class="text-lg font-semibold text-white">Player Retention</h3>
+            </div>
+            <div class="p-6">
+                <div class="space-y-4">
+                    <div class="flex items-center justify-between">
+                        <span class="text-gray-400">Day 1</span>
+                        <div class="flex items-center">
+                            <div class="w-32 bg-gray-700 rounded-full h-2 mr-3">
+                                <div class="bg-green-500 h-2 rounded-full" style="width: 85%"></div>
+                            </div>
+                            <span class="text-white text-sm">85%</span>
+                        </div>
+                    </div>
+                    
+                    <div class="flex items-center justify-between">
+                        <span class="text-gray-400">Day 7</span>
+                        <div class="flex items-center">
+                            <div class="w-32 bg-gray-700 rounded-full h-2 mr-3">
+                                <div class="bg-blue-500 h-2 rounded-full" style="width: 62%"></div>
+                            </div>
+                            <span class="text-white text-sm">62%</span>
+                        </div>
+                    </div>
+                    
+                    <div class="flex items-center justify-between">
+                        <span class="text-gray-400">Day 30</span>
+                        <div class="flex items-center">
+                            <div class="w-32 bg-gray-700 rounded-full h-2 mr-3">
+                                <div class="bg-yellow-500 h-2 rounded-full" style="width: 43%"></div>
+                            </div>
+                            <span class="text-white text-sm">43%</span>
+                        </div>
+                    </div>
+                    
+                    <div class="flex items-center justify-between">
+                        <span class="text-gray-400">Day 90</span>
+                        <div class="flex items-center">
+                            <div class="w-32 bg-gray-700 rounded-full h-2 mr-3">
+                                <div class="bg-red-500 h-2 rounded-full" style="width: 28%"></div>
+                            </div>
+                            <span class="text-white text-sm">28%</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script>
+// Chart.js configuration
+Chart.defaults.color = '#9CA3AF';
+Chart.defaults.borderColor = '#374151';
+
+// Load analytics data and initialize charts
+async function loadAnalytics() {
+    try {
+        // Load revenue data
+        const revenueResponse = await fetch('/v1/admin/analytics/revenue?days=30');
+        const revenueData = await revenueResponse.json();
+        
+        // Load player behavior data
+        const playerResponse = await fetch('/v1/admin/analytics/player-behavior?days=30');
+        const playerData = await playerResponse.json();
+        
+        // Initialize revenue chart
+        const revenueCtx = document.getElementById('revenueChart').getContext('2d');
+        new Chart(revenueCtx, {
+            type: 'line',
+            data: {
+                labels: revenueData.daily_data?.map(d => new Date(d.date).toLocaleDateString()) || [],
+                datasets: [{
+                    label: 'Daily Revenue ($)',
+                    data: revenueData.daily_data?.map(d => d.revenue) || [],
+                    borderColor: '#10B981',
+                    backgroundColor: 'rgba(16, 185, 129, 0.1)',
+                    tension: 0.4,
+                    fill: true
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: {
+                        labels: {
+                            color: '#9CA3AF'
+                        }
+                    }
+                },
+                scales: {
+                    x: {
+                        ticks: {
+                            color: '#9CA3AF'
+                        },
+                        grid: {
+                            color: '#374151'
+                        }
+                    },
+                    y: {
+                        ticks: {
+                            color: '#9CA3AF',
+                            callback: function(value) {
+                                return '$' + value.toFixed(2);
+                            }
+                        },
+                        grid: {
+                            color: '#374151'
+                        }
+                    }
+                }
+            }
+        });
+        
+        // Initialize player activity chart
+        const playerCtx = document.getElementById('playerActivityChart').getContext('2d');
+        new Chart(playerCtx, {
+            type: 'bar',
+            data: {
+                labels: playerData.registration_trend?.map(d => new Date(d.date).toLocaleDateString()) || [],
+                datasets: [{
+                    label: 'New Registrations',
+                    data: playerData.registration_trend?.map(d => d.registrations) || [],
+                    backgroundColor: '#3B82F6',
+                    borderColor: '#2563EB',
+                    borderWidth: 1
+                }, {
+                    label: 'Active Players',
+                    data: playerData.activity_trend?.map(d => d.active_players) || [],
+                    backgroundColor: '#8B5CF6',
+                    borderColor: '#7C3AED',
+                    borderWidth: 1
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: {
+                        labels: {
+                            color: '#9CA3AF'
+                        }
+                    }
+                },
+                scales: {
+                    x: {
+                        ticks: {
+                            color: '#9CA3AF'
+                        },
+                        grid: {
+                            color: '#374151'
+                        }
+                    },
+                    y: {
+                        ticks: {
+                            color: '#9CA3AF'
+                        },
+                        grid: {
+                            color: '#374151'
+                        }
+                    }
+                }
+            }
+        });
+        
+    } catch (error) {
+        console.error('Failed to load analytics data:', error);
+        
+        // Show error message in charts
+        const errorMessage = 'Failed to load analytics data. Please refresh the page.';
+        document.getElementById('revenueChart').style.display = 'none';
+        document.getElementById('playerActivityChart').style.display = 'none';
+        
+        // Add error messages
+        const revenueContainer = document.getElementById('revenueChart').parentElement;
+        const playerContainer = document.getElementById('playerActivityChart').parentElement;
+        
+        revenueContainer.innerHTML += `<div class="text-center text-red-400 mt-4"><i class="fas fa-exclamation-triangle mr-2"></i>${errorMessage}</div>`;
+        playerContainer.innerHTML += `<div class="text-center text-red-400 mt-4"><i class="fas fa-exclamation-triangle mr-2"></i>${errorMessage}</div>`;
+    }
+}
+
+// Load analytics on page load
+document.addEventListener('DOMContentLoaded', loadAnalytics);
+
+// Auto-refresh analytics every 5 minutes
+setInterval(loadAnalytics, 300000);
+</script>
+{% endblock %}

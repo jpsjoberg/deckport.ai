@@ -1,0 +1,306 @@
+{% extends "admin/base.html" %}
+
+{% block title %}Content Management - Deckport Admin{% endblock %}
+{% block page_title %}Content Management System{% endblock %}
+{% block page_subtitle %}Manage news articles, videos, and media content{% endblock %}
+
+{% block content %}
+<!-- CMS Overview Stats -->
+<div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+    <!-- Articles Stats -->
+    <div class="bg-gray-800 rounded-lg p-6 border border-gray-700">
+        <div class="flex items-center">
+            <div class="flex-shrink-0">
+                <i class="fas fa-newspaper text-2xl text-blue-400"></i>
+            </div>
+            <div class="ml-4 flex-1">
+                <h3 class="text-lg font-semibold text-white">Articles</h3>
+                <div class="flex items-baseline">
+                    <span class="text-3xl font-bold text-blue-400" id="total-articles">-</span>
+                </div>
+                <p class="text-sm text-gray-400"><span id="published-articles">-</span> published</p>
+            </div>
+        </div>
+    </div>
+
+    <!-- Videos Stats -->
+    <div class="bg-gray-800 rounded-lg p-6 border border-gray-700">
+        <div class="flex items-center">
+            <div class="flex-shrink-0">
+                <i class="fas fa-play-circle text-2xl text-purple-400"></i>
+            </div>
+            <div class="ml-4 flex-1">
+                <h3 class="text-lg font-semibold text-white">Videos</h3>
+                <div class="flex items-baseline">
+                    <span class="text-3xl font-bold text-purple-400" id="total-videos">-</span>
+                </div>
+                <p class="text-sm text-gray-400"><span id="published-videos">-</span> published</p>
+            </div>
+        </div>
+    </div>
+
+    <!-- Popular Content -->
+    <div class="bg-gray-800 rounded-lg p-6 border border-gray-700">
+        <div class="flex items-center">
+            <div class="flex-shrink-0">
+                <i class="fas fa-fire text-2xl text-red-400"></i>
+            </div>
+            <div class="ml-4 flex-1">
+                <h3 class="text-lg font-semibold text-white">Top Article</h3>
+                <div class="flex items-baseline">
+                    <span class="text-2xl font-bold text-red-400" id="top-article-views">-</span>
+                </div>
+                <p class="text-sm text-gray-400">views</p>
+            </div>
+        </div>
+    </div>
+
+    <!-- Recent Activity -->
+    <div class="bg-gray-800 rounded-lg p-6 border border-gray-700">
+        <div class="flex items-center">
+            <div class="flex-shrink-0">
+                <i class="fas fa-clock text-2xl text-green-400"></i>
+            </div>
+            <div class="ml-4 flex-1">
+                <h3 class="text-lg font-semibold text-white">Last Updated</h3>
+                <div class="flex items-baseline">
+                    <span class="text-sm font-bold text-green-400" id="last-updated">-</span>
+                </div>
+                <p class="text-sm text-gray-400">ago</p>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Quick Actions -->
+<div class="grid grid-cols-1 lg:grid-cols-2 gap-8 mb-8">
+    <!-- Articles Management -->
+    <div class="bg-gray-800 rounded-lg p-6 border border-gray-700">
+        <div class="flex items-center justify-between mb-6">
+            <h3 class="text-xl font-bold text-white">
+                <i class="fas fa-newspaper mr-2 text-blue-400"></i>Articles
+            </h3>
+            <a href="{{ url_for('admin.cms_articles') }}" class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg text-sm font-medium transition-colors">
+                <i class="fas fa-plus mr-2"></i>New Article
+            </a>
+        </div>
+        
+        <div class="space-y-4" id="recent-articles">
+            <div class="text-center py-4">
+                <div class="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-400 mx-auto"></div>
+                <p class="text-gray-400 mt-2 text-sm">Loading articles...</p>
+            </div>
+        </div>
+        
+        <div class="mt-6 text-center">
+            <a href="{{ url_for('admin.cms_articles') }}" class="text-blue-400 hover:text-blue-300 text-sm font-medium">
+                View All Articles →
+            </a>
+        </div>
+    </div>
+
+    <!-- Videos Management -->
+    <div class="bg-gray-800 rounded-lg p-6 border border-gray-700">
+        <div class="flex items-center justify-between mb-6">
+            <h3 class="text-xl font-bold text-white">
+                <i class="fas fa-play-circle mr-2 text-purple-400"></i>Videos
+            </h3>
+            <a href="{{ url_for('admin.cms_videos') }}" class="bg-purple-600 hover:bg-purple-700 text-white px-4 py-2 rounded-lg text-sm font-medium transition-colors">
+                <i class="fas fa-plus mr-2"></i>New Video
+            </a>
+        </div>
+        
+        <div class="space-y-4" id="recent-videos">
+            <div class="text-center py-4">
+                <div class="animate-spin rounded-full h-8 w-8 border-b-2 border-purple-400 mx-auto"></div>
+                <p class="text-gray-400 mt-2 text-sm">Loading videos...</p>
+            </div>
+        </div>
+        
+        <div class="mt-6 text-center">
+            <a href="{{ url_for('admin.cms_videos') }}" class="text-purple-400 hover:text-purple-300 text-sm font-medium">
+                View All Videos →
+            </a>
+        </div>
+    </div>
+</div>
+
+<!-- Popular Content -->
+<div class="bg-gray-800 rounded-lg p-6 border border-gray-700">
+    <h3 class="text-xl font-bold text-white mb-6">
+        <i class="fas fa-chart-line mr-2 text-yellow-400"></i>Popular Content
+    </h3>
+    
+    <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        <!-- Popular Articles -->
+        <div>
+            <h4 class="text-lg font-semibold text-gray-300 mb-4">Top Articles</h4>
+            <div class="space-y-3" id="popular-articles">
+                <div class="text-center py-4">
+                    <div class="animate-spin rounded-full h-6 w-6 border-b-2 border-yellow-400 mx-auto"></div>
+                    <p class="text-gray-400 mt-2 text-sm">Loading...</p>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Popular Videos -->
+        <div>
+            <h4 class="text-lg font-semibold text-gray-300 mb-4">Top Videos</h4>
+            <div class="space-y-3" id="popular-videos">
+                <div class="text-center py-4">
+                    <div class="animate-spin rounded-full h-6 w-6 border-b-2 border-yellow-400 mx-auto"></div>
+                    <p class="text-gray-400 mt-2 text-sm">Loading...</p>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    loadCMSAnalytics();
+    loadRecentContent();
+});
+
+async function loadCMSAnalytics() {
+    try {
+        const response = await fetch('/v1/admin/cms/analytics', {
+            headers: {
+                'Authorization': 'Bearer ' + getAdminToken()
+            }
+        });
+        
+        if (response.ok) {
+            const data = await response.json();
+            
+            // Update stats
+            document.getElementById('total-articles').textContent = data.articles.total;
+            document.getElementById('published-articles').textContent = data.articles.published;
+            document.getElementById('total-videos').textContent = data.videos.total;
+            document.getElementById('published-videos').textContent = data.videos.published;
+            
+            // Update popular content
+            if (data.popular_articles.length > 0) {
+                document.getElementById('top-article-views').textContent = data.popular_articles[0].view_count;
+                
+                const articlesHTML = data.popular_articles.map(article => `
+                    <div class="flex items-center justify-between p-3 bg-gray-700 rounded-lg">
+                        <div class="flex-1">
+                            <h5 class="font-medium text-white text-sm">${article.title}</h5>
+                            <p class="text-xs text-gray-400">${article.view_count} views</p>
+                        </div>
+                        <a href="/admin/cms/articles/${article.id}" class="text-blue-400 hover:text-blue-300">
+                            <i class="fas fa-edit"></i>
+                        </a>
+                    </div>
+                `).join('');
+                document.getElementById('popular-articles').innerHTML = articlesHTML;
+            }
+            
+            if (data.popular_videos.length > 0) {
+                const videosHTML = data.popular_videos.map(video => `
+                    <div class="flex items-center justify-between p-3 bg-gray-700 rounded-lg">
+                        <div class="flex-1">
+                            <h5 class="font-medium text-white text-sm">${video.title}</h5>
+                            <p class="text-xs text-gray-400">${video.view_count} views</p>
+                        </div>
+                        <a href="/admin/cms/videos/${video.id}" class="text-purple-400 hover:text-purple-300">
+                            <i class="fas fa-edit"></i>
+                        </a>
+                    </div>
+                `).join('');
+                document.getElementById('popular-videos').innerHTML = videosHTML;
+            }
+        }
+    } catch (error) {
+        console.error('Failed to load CMS analytics:', error);
+    }
+}
+
+async function loadRecentContent() {
+    try {
+        // Load recent articles
+        const articlesResponse = await fetch('/v1/admin/cms/articles?page_size=5', {
+            headers: {
+                'Authorization': 'Bearer ' + getAdminToken()
+            }
+        });
+        
+        if (articlesResponse.ok) {
+            const articlesData = await articlesResponse.json();
+            const articlesHTML = articlesData.articles.map(article => {
+                const statusColor = article.status === 'published' ? 'text-green-400' : 
+                                  article.status === 'draft' ? 'text-yellow-400' : 'text-gray-400';
+                const publishedDate = article.published_at ? 
+                    new Date(article.published_at).toLocaleDateString() : 'Not published';
+                
+                return `
+                    <div class="flex items-center justify-between p-3 bg-gray-700 rounded-lg">
+                        <div class="flex-1">
+                            <h5 class="font-medium text-white text-sm">${article.title}</h5>
+                            <div class="flex items-center space-x-2 text-xs">
+                                <span class="${statusColor}">${article.status}</span>
+                                <span class="text-gray-400">•</span>
+                                <span class="text-gray-400">${publishedDate}</span>
+                            </div>
+                        </div>
+                        <a href="/admin/cms/articles/${article.id}" class="text-blue-400 hover:text-blue-300">
+                            <i class="fas fa-edit"></i>
+                        </a>
+                    </div>
+                `;
+            }).join('');
+            document.getElementById('recent-articles').innerHTML = articlesHTML;
+        }
+        
+        // Load recent videos
+        const videosResponse = await fetch('/v1/admin/cms/videos?page_size=5', {
+            headers: {
+                'Authorization': 'Bearer ' + getAdminToken()
+            }
+        });
+        
+        if (videosResponse.ok) {
+            const videosData = await videosResponse.json();
+            const videosHTML = videosData.videos.map(video => {
+                const statusColor = video.status === 'published' ? 'text-green-400' : 
+                                  video.status === 'draft' ? 'text-yellow-400' : 'text-gray-400';
+                const publishedDate = video.published_at ? 
+                    new Date(video.published_at).toLocaleDateString() : 'Not published';
+                
+                return `
+                    <div class="flex items-center justify-between p-3 bg-gray-700 rounded-lg">
+                        <div class="flex-1">
+                            <h5 class="font-medium text-white text-sm">${video.title}</h5>
+                            <div class="flex items-center space-x-2 text-xs">
+                                <span class="${statusColor}">${video.status}</span>
+                                <span class="text-gray-400">•</span>
+                                <span class="text-gray-400">${publishedDate}</span>
+                            </div>
+                        </div>
+                        <a href="/admin/cms/videos/${video.id}" class="text-purple-400 hover:text-purple-300">
+                            <i class="fas fa-edit"></i>
+                        </a>
+                    </div>
+                `;
+            }).join('');
+            document.getElementById('recent-videos').innerHTML = videosHTML;
+        }
+        
+    } catch (error) {
+        console.error('Failed to load recent content:', error);
+    }
+}
+
+function getAdminToken() {
+    // Get admin token from cookie or localStorage
+    return getCookie('admin_jwt') || localStorage.getItem('admin_token') || '';
+}
+
+function getCookie(name) {
+    const value = `; ${document.cookie}`;
+    const parts = value.split(`; ${name}=`);
+    if (parts.length === 2) return parts.pop().split(';').shift();
+}
+</script>
+{% endblock %}

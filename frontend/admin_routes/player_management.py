@@ -6,7 +6,7 @@ Handles player accounts, authentication, and community moderation
 from flask import render_template, jsonify, request, flash, redirect, url_for
 from datetime import datetime, timezone
 from . import admin_bp
-from ..services.api_service import APIService
+from services.api_service import APIService
 
 # Initialize API service
 api_service = APIService()

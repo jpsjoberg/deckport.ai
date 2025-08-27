@@ -1,0 +1,163 @@
+{% extends "admin/base.html" %}
+
+{% block title %}Arena Assignment - {{ console.device_uid }} - Deckport Admin{% endblock %}
+
+{% block content %}
+<div class="p-6">
+    <!-- Header -->
+    <div class="flex items-center justify-between mb-6">
+        <div>
+            <h1 class="text-2xl font-bold text-white">Arena Assignment</h1>
+            <p class="text-gray-400 mt-1">Console: {{ console.device_uid }}</p>
+        </div>
+        <div class="flex space-x-3">
+            <a href="{{ url_for('admin.console_detail', device_uid=console.device_uid) }}" 
+               class="px-4 py-2 bg-gray-600 hover:bg-gray-700 rounded font-medium text-sm">
+                <i class="fas fa-arrow-left mr-2"></i>Back to Console
+            </a>
+        </div>
+    </div>
+
+    <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        <!-- Current Arena -->
+        <div class="bg-gray-800 rounded-lg p-6">
+            <h2 class="text-lg font-semibold text-white mb-4">Current Arena</h2>
+            
+            {% if current_arena %}
+            <div class="border border-{{ current_arena.mana_color|lower }}-500 border-opacity-30 rounded-lg p-4 bg-{{ current_arena.mana_color|lower }}-500 bg-opacity-10">
+                <div class="flex items-center mb-3">
+                    <div class="w-12 h-12 bg-{{ current_arena.mana_color|lower }}-500 bg-opacity-20 rounded-lg flex items-center justify-center mr-4">
+                        <i class="fas fa-mountain text-{{ current_arena.mana_color|lower }}-400 text-xl"></i>
+                    </div>
+                    <div>
+                        <h3 class="text-white font-semibold">{{ current_arena.name }}</h3>
+                        <p class="text-{{ current_arena.mana_color|lower }}-400 text-sm">{{ current_arena.mana_color }} Arena</p>
+                    </div>
+                </div>
+                
+                <p class="text-gray-300 text-sm mb-3">{{ current_arena.flavor_text }}</p>
+                
+                <div class="flex items-center justify-between">
+                    <div class="flex items-center">
+                        <span class="text-gray-400 text-sm mr-2">Difficulty:</span>
+                        {% for i in range(current_arena.difficulty_rating) %}
+                        <i class="fas fa-star text-yellow-400 text-xs"></i>
+                        {% endfor %}
+                    </div>
+                    
+                    <button onclick="unassignArena()" 
+                            class="px-3 py-1 bg-red-600 hover:bg-red-700 rounded text-sm">
+                        <i class="fas fa-times mr-1"></i>Unassign
+                    </button>
+                </div>
+            </div>
+            {% else %}
+            <div class="text-center py-8 text-gray-400">
+                <i class="fas fa-mountain text-4xl mb-3"></i>
+                <p class="text-lg">No Arena Assigned</p>
+                <p class="text-sm">Select an arena from the available options</p>
+            </div>
+            {% endif %}
+        </div>
+
+        <!-- Available Arenas -->
+        <div class="bg-gray-800 rounded-lg p-6">
+            <h2 class="text-lg font-semibold text-white mb-4">Available Arenas</h2>
+            
+            <div class="space-y-3 max-h-96 overflow-y-auto">
+                {% for arena in arenas %}
+                {% if not current_arena or arena.id != current_arena.id %}
+                <div class="border border-gray-700 rounded-lg p-4 hover:border-{{ arena.mana_color|lower }}-500 hover:border-opacity-50 transition-colors cursor-pointer"
+                     onclick="assignArena({{ arena.id }})">
+                    <div class="flex items-center mb-2">
+                        <div class="w-8 h-8 bg-{{ arena.mana_color|lower }}-500 bg-opacity-20 rounded flex items-center justify-center mr-3">
+                            <i class="fas fa-mountain text-{{ arena.mana_color|lower }}-400 text-sm"></i>
+                        </div>
+                        <div class="flex-1">
+                            <h4 class="text-white font-medium">{{ arena.name }}</h4>
+                            <p class="text-{{ arena.mana_color|lower }}-400 text-xs">{{ arena.mana_color }}</p>
+                        </div>
+                        <div class="flex items-center">
+                            {% for i in range(arena.difficulty_rating) %}
+                            <i class="fas fa-star text-yellow-400 text-xs"></i>
+                            {% endfor %}
+                        </div>
+                    </div>
+                    
+                    <p class="text-gray-400 text-sm">{{ arena.flavor_text[:80] }}...</p>
+                    
+                    {% if arena.passive_effect %}
+                    <div class="mt-2">
+                        <span class="px-2 py-1 bg-blue-500 bg-opacity-20 text-blue-400 text-xs rounded">
+                            <i class="fas fa-magic mr-1"></i>{{ arena.passive_effect.name or 'Passive Effect' }}
+                        </span>
+                    </div>
+                    {% endif %}
+                </div>
+                {% endif %}
+                {% else %}
+                <div class="text-center py-8 text-gray-400">
+                    <i class="fas fa-exclamation-triangle text-4xl mb-3"></i>
+                    <p class="text-lg">No Available Arenas</p>
+                    <p class="text-sm">All arenas are currently assigned or unavailable</p>
+                </div>
+                {% endfor %}
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+function assignArena(arenaId) {
+    if (confirm('Assign this arena to the console?')) {
+        fetch(`{{ url_for('admin.console_arena_management', device_uid=console.device_uid) }}`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({
+                arena_id: arenaId
+            })
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                showAlert(data.message, 'success');
+                setTimeout(() => location.reload(), 1500);
+            } else {
+                showAlert(data.message, 'error');
+            }
+        })
+        .catch(error => {
+            showAlert('Error assigning arena', 'error');
+        });
+    }
+}
+
+function unassignArena() {
+    if (confirm('Remove arena assignment from this console?')) {
+        fetch(`{{ url_for('admin.console_arena_management', device_uid=console.device_uid) }}`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({
+                arena_id: null
+            })
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                showAlert(data.message, 'success');
+                setTimeout(() => location.reload(), 1500);
+            } else {
+                showAlert(data.message, 'error');
+            }
+        })
+        .catch(error => {
+            showAlert('Error unassigning arena', 'error');
+        });
+    }
+}
+</script>
+{% endblock %}

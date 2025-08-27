@@ -1,0 +1,458 @@
+{% extends "admin/base.html" %}
+
+{% block title %}AI Card Generation{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="row">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-header d-flex justify-content-between align-items-center">
+                    <h3 class="mb-0">🤖 AI-Powered Card Generation</h3>
+                    <div>
+                        <button type="button" class="btn btn-info btn-sm" onclick="analyzeBalance()">
+                            📊 Analyze Balance
+                        </button>
+                        <a href="{{ url_for('card_management.index') }}" class="btn btn-secondary btn-sm">
+                            ← Back to Cards
+                        </a>
+                    </div>
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        <!-- Generation Form -->
+                        <div class="col-md-6">
+                            <h5>🎯 Card Generation Parameters</h5>
+                            <form id="generateForm">
+                                <div class="mb-3">
+                                    <label for="card_set_id" class="form-label">Card Set</label>
+                                    <select class="form-select" id="card_set_id" name="card_set_id" required>
+                                        <option value="">Select a card set...</option>
+                                        {% for card_set in card_sets %}
+                                        <option value="{{ card_set.id }}">{{ card_set.name }} ({{ card_set.code }})</option>
+                                        {% endfor %}
+                                    </select>
+                                </div>
+
+                                <div class="row">
+                                    <div class="col-md-6">
+                                        <div class="mb-3">
+                                            <label for="rarity" class="form-label">Rarity</label>
+                                            <select class="form-select" id="rarity" name="rarity" required>
+                                                <option value="">Select rarity...</option>
+                                                <option value="common">Common</option>
+                                                <option value="rare">Rare</option>
+                                                <option value="epic">Epic</option>
+                                                <option value="legendary">Legendary</option>
+                                            </select>
+                                        </div>
+                                    </div>
+                                    <div class="col-md-6">
+                                        <div class="mb-3">
+                                            <label for="category" class="form-label">Card Type</label>
+                                            <select class="form-select" id="category" name="category" required>
+                                                <option value="">Select type...</option>
+                                                <option value="creature">Creature</option>
+                                                <option value="structure">Structure</option>
+                                                <option value="action_fast">Action (Fast)</option>
+                                                <option value="action_slow">Action (Slow)</option>
+                                                <option value="equipment">Equipment</option>
+                                                <option value="enchantment">Enchantment</option>
+                                                <option value="special">Special</option>
+                                            </select>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <div class="mb-3">
+                                    <label for="color_code" class="form-label">Color</label>
+                                    <select class="form-select" id="color_code" name="color_code" required>
+                                        <option value="">Select color...</option>
+                                        <option value="RADIANT">🌟 Radiant (Light/Holy)</option>
+                                        <option value="CRIMSON">🔥 Crimson (Fire/Aggression)</option>
+                                        <option value="AZURE">💧 Azure (Water/Control)</option>
+                                        <option value="VERDANT">🌿 Verdant (Nature/Growth)</option>
+                                        <option value="OBSIDIAN">🖤 Obsidian (Dark/Death)</option>
+                                    </select>
+                                </div>
+
+                                <div class="mb-3">
+                                    <label for="generation_prompt" class="form-label">Generation Prompt</label>
+                                    <textarea class="form-control" id="generation_prompt" name="generation_prompt" rows="3" 
+                                              placeholder="Describe the card you want to generate... (e.g., 'A defensive creature that can protect other units' or 'A spell that deals damage based on the number of creatures')"></textarea>
+                                    <div class="form-text">
+                                        💡 The AI will analyze existing cards and create a balanced card based on your description.
+                                    </div>
+                                </div>
+
+                                <div class="d-grid">
+                                    <button type="submit" class="btn btn-primary" id="generateBtn">
+                                        🎲 Generate Balanced Card
+                                    </button>
+                                </div>
+                            </form>
+                        </div>
+
+                        <!-- Balance Analysis & Preview -->
+                        <div class="col-md-6">
+                            <h5>📊 Balance Analysis</h5>
+                            <div id="balanceAnalysis" class="mb-4">
+                                <div class="alert alert-info">
+                                    <i class="fas fa-info-circle"></i>
+                                    Select card parameters to see balance analysis
+                                </div>
+                            </div>
+
+                            <h5>🎴 Generated Card Preview</h5>
+                            <div id="cardPreview">
+                                <div class="alert alert-secondary">
+                                    <i class="fas fa-magic"></i>
+                                    Generated card will appear here
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Generated Card Modal -->
+<div class="modal fade" id="cardModal" tabindex="-1">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">🎴 Review Generated Card</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body" id="modalCardContent">
+                <!-- Generated card details will be inserted here -->
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                <button type="button" class="btn btn-warning" onclick="regenerateCard()">🎲 Regenerate</button>
+                <button type="button" class="btn btn-success" onclick="saveGeneratedCard()">💾 Save Card</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+.card-preview {
+    border: 2px solid #ddd;
+    border-radius: 10px;
+    padding: 15px;
+    background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
+}
+
+.card-preview.rarity-common { border-color: #6c757d; }
+.card-preview.rarity-rare { border-color: #0d6efd; }
+.card-preview.rarity-epic { border-color: #6f42c1; }
+.card-preview.rarity-legendary { border-color: #fd7e14; }
+
+.stat-badge {
+    display: inline-block;
+    padding: 4px 8px;
+    margin: 2px;
+    border-radius: 4px;
+    font-size: 0.875rem;
+    font-weight: bold;
+}
+
+.stat-attack { background-color: #dc3545; color: white; }
+.stat-health { background-color: #28a745; color: white; }
+.stat-defense { background-color: #17a2b8; color: white; }
+.stat-energy { background-color: #ffc107; color: black; }
+
+.balance-metric {
+    padding: 8px;
+    margin: 4px 0;
+    border-radius: 4px;
+    font-size: 0.9rem;
+}
+
+.balance-good { background-color: #d4edda; border-left: 4px solid #28a745; }
+.balance-warning { background-color: #fff3cd; border-left: 4px solid #ffc107; }
+.balance-danger { background-color: #f8d7da; border-left: 4px solid #dc3545; }
+</style>
+
+<script>
+let currentGeneratedCard = null;
+
+document.getElementById('generateForm').addEventListener('submit', function(e) {
+    e.preventDefault();
+    generateCard();
+});
+
+// Auto-analyze balance when parameters change
+document.querySelectorAll('#card_set_id, #rarity, #category, #color_code').forEach(element => {
+    element.addEventListener('change', function() {
+        if (this.value) {
+            analyzeBalance();
+        }
+    });
+});
+
+function generateCard() {
+    const form = document.getElementById('generateForm');
+    const formData = new FormData(form);
+    const generateBtn = document.getElementById('generateBtn');
+    
+    // Validate form
+    if (!form.checkValidity()) {
+        form.reportValidity();
+        return;
+    }
+    
+    // Show loading state
+    generateBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Generating...';
+    generateBtn.disabled = true;
+    
+    // Convert FormData to JSON
+    const data = {};
+    formData.forEach((value, key) => {
+        data[key] = value;
+    });
+    
+    fetch('/admin/cards/generate', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(data)
+    })
+    .then(response => response.json())
+    .then(result => {
+        if (result.success) {
+            currentGeneratedCard = result.card;
+            displayGeneratedCard(result.card);
+            showCardModal(result.card);
+        } else {
+            alert('Error generating card: ' + result.error);
+        }
+    })
+    .catch(error => {
+        console.error('Error:', error);
+        alert('Error generating card: ' + error.message);
+    })
+    .finally(() => {
+        generateBtn.innerHTML = '🎲 Generate Balanced Card';
+        generateBtn.disabled = false;
+    });
+}
+
+function analyzeBalance() {
+    const cardSetId = document.getElementById('card_set_id').value;
+    const colorCode = document.getElementById('color_code').value;
+    const rarity = document.getElementById('rarity').value;
+    
+    if (!cardSetId || !colorCode || !rarity) {
+        document.getElementById('balanceAnalysis').innerHTML = `
+            <div class="alert alert-info">
+                <i class="fas fa-info-circle"></i>
+                Select card set, color, and rarity to see balance analysis
+            </div>
+        `;
+        return;
+    }
+    
+    document.getElementById('balanceAnalysis').innerHTML = `
+        <div class="alert alert-info">
+            <i class="fas fa-spinner fa-spin"></i>
+            Analyzing balance...
+        </div>
+    `;
+    
+    fetch('/admin/cards/analyze-balance', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+            card_set_id: cardSetId,
+            color_code: colorCode,
+            rarity: rarity
+        })
+    })
+    .then(response => response.json())
+    .then(result => {
+        if (result.success) {
+            displayBalanceAnalysis(result.analysis);
+        } else {
+            document.getElementById('balanceAnalysis').innerHTML = `
+                <div class="alert alert-danger">
+                    <i class="fas fa-exclamation-triangle"></i>
+                    Error analyzing balance: ${result.error}
+                </div>
+            `;
+        }
+    })
+    .catch(error => {
+        console.error('Error:', error);
+        document.getElementById('balanceAnalysis').innerHTML = `
+            <div class="alert alert-danger">
+                <i class="fas fa-exclamation-triangle"></i>
+                Error analyzing balance: ${error.message}
+            </div>
+        `;
+    });
+}
+
+function displayBalanceAnalysis(analysis) {
+    const avgStats = analysis.avg_stats || {};
+    const similarCount = analysis.similar_card_count || 0;
+    const manaGaps = analysis.mana_curve_gaps || [];
+    
+    let html = `
+        <div class="balance-metric balance-good">
+            <strong>📊 Similar Cards:</strong> ${similarCount} cards found for comparison
+        </div>
+    `;
+    
+    if (Object.keys(avgStats).length > 0) {
+        html += `<div class="balance-metric balance-good">
+            <strong>📈 Average Stats:</strong><br>
+        `;
+        
+        Object.entries(avgStats).forEach(([stat, value]) => {
+            const displayStat = stat.replace('avg_', '').replace('_', ' ');
+            html += `<span class="stat-badge stat-${stat.replace('avg_', '')}">${displayStat}: ${Math.round(value * 10) / 10}</span>`;
+        });
+        
+        html += `</div>`;
+    }
+    
+    if (manaGaps.length > 0) {
+        html += `
+            <div class="balance-metric balance-warning">
+                <strong>⚡ Mana Curve Gaps:</strong> Consider costs ${manaGaps.join(', ')}
+            </div>
+        `;
+    }
+    
+    html += `
+        <div class="balance-metric balance-good">
+            <strong>🎯 Recommendation:</strong> ${analysis.balance_recommendation || 'Generate balanced card'}
+        </div>
+    `;
+    
+    document.getElementById('balanceAnalysis').innerHTML = html;
+}
+
+function displayGeneratedCard(card) {
+    const rarityClass = `rarity-${card.rarity}`;
+    
+    let statsHtml = '';
+    if (card.base_stats) {
+        Object.entries(card.base_stats).forEach(([stat, value]) => {
+            statsHtml += `<span class="stat-badge stat-${stat}">${stat}: ${value}</span>`;
+        });
+    }
+    
+    const html = `
+        <div class="card-preview ${rarityClass}">
+            <h6 class="mb-2">
+                <span class="badge bg-secondary">${card.rarity}</span>
+                <span class="badge bg-primary">${card.category}</span>
+                <span class="badge bg-info">${card.color_code}</span>
+            </h6>
+            <h5 class="card-title">${card.name}</h5>
+            <p class="card-text"><strong>Ability:</strong> ${card.description}</p>
+            <p class="card-text"><em>"${card.flavor_text}"</em></p>
+            <div class="mb-2">${statsHtml}</div>
+            <small class="text-muted">
+                <strong>Art Prompt:</strong> ${card.art_prompt}<br>
+                <strong>Balance Weight:</strong> ${card.balance_weight}/100
+            </small>
+        </div>
+    `;
+    
+    document.getElementById('cardPreview').innerHTML = html;
+}
+
+function showCardModal(card) {
+    const modalContent = document.getElementById('modalCardContent');
+    
+    let statsTable = '';
+    if (card.base_stats) {
+        statsTable = '<h6>Stats:</h6><table class="table table-sm">';
+        Object.entries(card.base_stats).forEach(([stat, value]) => {
+            statsTable += `<tr><td>${stat.replace('_', ' ')}</td><td><strong>${value}</strong></td></tr>`;
+        });
+        statsTable += '</table>';
+    }
+    
+    modalContent.innerHTML = `
+        <div class="row">
+            <div class="col-md-6">
+                <h5>${card.name}</h5>
+                <p><strong>Rarity:</strong> <span class="badge bg-secondary">${card.rarity}</span></p>
+                <p><strong>Type:</strong> <span class="badge bg-primary">${card.category}</span></p>
+                <p><strong>Color:</strong> <span class="badge bg-info">${card.color_code}</span></p>
+                <p><strong>Ability:</strong> ${card.description}</p>
+                <p><strong>Flavor:</strong> <em>"${card.flavor_text}"</em></p>
+            </div>
+            <div class="col-md-6">
+                ${statsTable}
+                <h6>Generation Details:</h6>
+                <p><strong>Art Prompt:</strong> ${card.art_prompt}</p>
+                <p><strong>Balance Weight:</strong> ${card.balance_weight}/100</p>
+                <p><strong>Context:</strong> ${card.generation_context || 'AI generated'}</p>
+            </div>
+        </div>
+    `;
+    
+    const modal = new bootstrap.Modal(document.getElementById('cardModal'));
+    modal.show();
+}
+
+function regenerateCard() {
+    // Close modal and regenerate
+    const modal = bootstrap.Modal.getInstance(document.getElementById('cardModal'));
+    modal.hide();
+    generateCard();
+}
+
+function saveGeneratedCard() {
+    if (!currentGeneratedCard) {
+        alert('No card to save');
+        return;
+    }
+    
+    // Add form data to the card
+    const formData = new FormData(document.getElementById('generateForm'));
+    const cardData = { ...currentGeneratedCard };
+    formData.forEach((value, key) => {
+        cardData[key] = value;
+    });
+    
+    fetch('/admin/cards/save-generated', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(cardData)
+    })
+    .then(response => response.json())
+    .then(result => {
+        if (result.success) {
+            alert(`Card "${result.product_sku}" saved successfully!`);
+            const modal = bootstrap.Modal.getInstance(document.getElementById('cardModal'));
+            modal.hide();
+            
+            // Optionally redirect to card management
+            if (confirm('Card saved! Go to card management to review?')) {
+                window.location.href = '/admin/cards';
+            }
+        } else {
+            alert('Error saving card: ' + result.error);
+        }
+    })
+    .catch(error => {
+        console.error('Error:', error);
+        alert('Error saving card: ' + error.message);
+    });
+}
+</script>
+{% endblock %}

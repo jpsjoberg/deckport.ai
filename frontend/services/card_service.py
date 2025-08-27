@@ -6,6 +6,8 @@ Integrates cardmaker.ai functionality for card generation and rendering
 import os
 import json
 import sqlite3
+import psycopg2
+import psycopg2.extras
 from typing import Dict, List, Optional, Any, Tuple
 from datetime import datetime
 from PIL import Image, ImageDraw, ImageFont
@@ -43,6 +45,15 @@ class CardService:
         self.db_path = db_path or CARDMAKER_DB_PATH
         self.comfyui = get_comfyui_service()
         
+        # PostgreSQL connection config for main database
+        self.pg_config = {
+            'host': '127.0.0.1',
+            'port': 5432,
+            'database': 'deckport',
+            'user': 'deckport_app',
+            'password': 'N0D3-N0D3-N0D3#M0nk3y33'
+        }
+        
         # Ensure output directory exists
         os.makedirs(CARDMAKER_OUTPUT_DIR, exist_ok=True)
     
@@ -54,6 +65,16 @@ class CardService:
             return conn
         except Exception as e:
             logger.error(f"Database connection failed: {e}")
+            return None
+    
+    def get_pg_connection(self):
+        """Get PostgreSQL database connection"""
+        try:
+            conn = psycopg2.connect(**self.pg_config)
+            conn.autocommit = False
+            return conn
+        except Exception as e:
+            logger.error(f"PostgreSQL connection failed: {e}")
             return None
     
     def create_card(self, card_data: Dict[str, Any]) -> Optional[int]:
@@ -531,6 +552,139 @@ class CardService:
         except Exception as e:
             logger.error(f"Failed to get statistics: {e}")
             return {}
+        finally:
+            conn.close()
+    
+    def get_statistics(self) -> Dict[str, Any]:
+        """Get card system statistics from PostgreSQL database"""
+        conn = self.get_pg_connection()
+        if not conn:
+            return {}
+        
+        try:
+            with conn.cursor(cursor_factory=psycopg2.extras.RealDictCursor) as cursor:
+                stats = {}
+                
+                # Card catalog stats (using actual table name)
+                cursor.execute("SELECT COUNT(*) as total FROM card_catalog")
+                stats['total_templates'] = cursor.fetchone()['total']
+                
+                # All cards in catalog are considered "published"
+                stats['published_templates'] = stats['total_templates']
+                
+                cursor.execute("SELECT rarity, COUNT(*) as count FROM card_catalog GROUP BY rarity")
+                raw_rarity = {row['rarity']: row['count'] for row in cursor.fetchall()}
+                
+                # Map database rarity values to template expected values
+                stats['by_rarity'] = {
+                    'COMMON': raw_rarity.get('common', 0),
+                    'RARE': raw_rarity.get('rare', 0),
+                    'EPIC': raw_rarity.get('epic', 0),
+                    'LEGENDARY': raw_rarity.get('legendary', 0)
+                }
+                
+                cursor.execute("SELECT category, COUNT(*) as count FROM card_catalog GROUP BY category")
+                raw_category = {row['category']: row['count'] for row in cursor.fetchall()}
+                
+                # Map database category values to template expected values (mana colors)
+                stats['by_category'] = {
+                    'CRIMSON': raw_category.get('creature', 0),  # Map creature to crimson for demo
+                    'AZURE': raw_category.get('action_fast', 0),  # Map action_fast to azure
+                    'VERDANT': raw_category.get('enchantment', 0),  # Map enchantment to verdant
+                    'OBSIDIAN': raw_category.get('action_slow', 0),  # Map action_slow to obsidian
+                    'RADIANT': 0,  # No mapping available
+                    'AETHER': 0   # No mapping available
+                }
+                
+                # NFC card stats (using actual table name)
+                cursor.execute("SELECT COUNT(*) as total FROM nfc_cards")
+                stats['total_nfc_cards'] = cursor.fetchone()['total']
+                
+                cursor.execute("SELECT status, COUNT(*) as count FROM nfc_cards GROUP BY status")
+                stats['nfc_by_status'] = {row['status']: row['count'] for row in cursor.fetchall()}
+                
+                return stats
+                
+        except Exception as e:
+            logger.error(f"Error getting statistics: {e}")
+            return {}
+        finally:
+            conn.close()
+    
+    def get_card_templates(self, filters: Dict = None, page: int = 1, per_page: int = 20) -> Dict[str, Any]:
+        """Get card templates from PostgreSQL database with pagination and filtering"""
+        conn = self.get_pg_connection()
+        if not conn:
+            return {'templates': [], 'pagination': {'page': 1, 'pages': 1, 'total': 0}}
+        
+        try:
+            with conn.cursor(cursor_factory=psycopg2.extras.RealDictCursor) as cursor:
+                # Build WHERE clause based on filters
+                where_conditions = []
+                params = []
+                
+                if filters:
+                    if filters.get('search'):
+                        where_conditions.append("(name ILIKE %s OR rules_text ILIKE %s)")
+                        search_term = f"%{filters['search']}%"
+                        params.extend([search_term, search_term])
+                    
+                    if filters.get('category'):
+                        where_conditions.append("category = %s")
+                        params.append(filters['category'].lower())
+                    
+                    if filters.get('rarity'):
+                        where_conditions.append("rarity = %s")
+                        params.append(filters['rarity'].lower())
+                
+                where_clause = " WHERE " + " AND ".join(where_conditions) if where_conditions else ""
+                
+                # Get total count
+                count_query = f"SELECT COUNT(*) as total FROM card_catalog{where_clause}"
+                cursor.execute(count_query, params)
+                total = cursor.fetchone()['total']
+                
+                # Calculate pagination
+                pages = max(1, (total + per_page - 1) // per_page)
+                offset = (page - 1) * per_page
+                
+                # Get templates
+                query = f"""
+                    SELECT id, product_sku, name, rarity, category, subtype, 
+                           base_stats, flavor_text, rules_text, artwork_url,
+                           created_at, updated_at
+                    FROM card_catalog{where_clause}
+                    ORDER BY created_at DESC
+                    LIMIT %s OFFSET %s
+                """
+                cursor.execute(query, params + [per_page, offset])
+                templates = []
+                
+                for row in cursor.fetchall():
+                    template = dict(row)
+                    # Create a slug from the name for compatibility
+                    template['slug'] = template['name'].lower().replace(' ', '_').replace("'", "")
+                    templates.append(template)
+                
+                pagination = {
+                    'page': page,
+                    'pages': pages,
+                    'total': total,
+                    'per_page': per_page,
+                    'has_prev': page > 1,
+                    'has_next': page < pages,
+                    'prev_num': page - 1 if page > 1 else None,
+                    'next_num': page + 1 if page < pages else None
+                }
+                
+                return {
+                    'templates': templates,
+                    'pagination': pagination
+                }
+                
+        except Exception as e:
+            logger.error(f"Error getting card templates: {e}")
+            return {'templates': [], 'pagination': {'page': 1, 'pages': 1, 'total': 0}}
         finally:
             conn.close()
 

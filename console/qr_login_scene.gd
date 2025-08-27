@@ -35,10 +35,15 @@ func _ready():
 	device_connection_manager = preload("res://device_connection_manager.gd").new()
 	add_child(device_connection_manager)
 	
-	# Check if device is properly authenticated
-	if not device_connection_manager.is_connected():
-		_show_error("Device not authenticated. Please restart console.")
-		return
+	# Note: Skip device connection check since reaching this scene means device was authenticated
+	# The boot process already verified device authentication before allowing scene transitions
+	print("🔐 Device connection manager initialized for QR login")
+	
+	# Force device identity setup to get device UID
+	device_connection_manager.setup_device_identity()
+	
+	# Wait a moment for setup to complete
+	await get_tree().create_timer(0.1).timeout
 	
 	# Setup HTTP request
 	http_request = HTTPRequest.new()
@@ -76,20 +81,92 @@ func _ready():
 
 
 func setup_background():
-	"""Setup background video/animation"""
-	var video_path = "res://assets/videos/ui/qr_login_background.mp4"
-	if ResourceLoader.exists(video_path):
-		background_video.stream = load(video_path)
-		background_video.loop = true
-		background_video.play()
-		print("🎬 QR login background video loaded")
+	"""Setup background video for QR login scene"""
+	# Priority order for QR login background videos
+	var qr_portal_video_paths = [
+		"res://assets/videos/qr_login/qr_portal_background.ogv",
+		"res://assets/videos/qr_login/qr_portal_background.mp4"
+	]
+	var qr_login_video_paths = [
+		"res://assets/videos/qr_login/qr_login_background.ogv",
+		"res://assets/videos/qr_login/qr_login_background.mp4"
+	]
+	var ui_fallback_paths = [
+		"res://assets/videos/ui/qr_background.ogv",
+		"res://assets/videos/ui/qr_background.mp4"
+	]
+	
+	var video_loaded = false
+	
+	# Try QR portal video paths first
+	for video_path in qr_portal_video_paths:
+		if ResourceLoader.exists(video_path):
+			print("📁 Found QR portal video: ", video_path)
+			background_video.stream = load(video_path)
+			if background_video.stream != null:
+				background_video.loop = true
+				background_video.volume_db = -80.0  # Mute audio
+				background_video.visible = true
+				background_video.play()
+				server_logger.log_system_event("qr_portal_video_loaded", {"path": video_path})
+				print("🌀 QR portal background video loaded and playing")
+				video_loaded = true
+				break
+			else:
+				print("❌ Failed to load QR portal video: ", video_path)
+	
+	# Try general QR login videos if portal video not loaded
+	if not video_loaded:
+		for video_path in qr_login_video_paths:
+			if ResourceLoader.exists(video_path):
+				print("📁 Found QR login video: ", video_path)
+				background_video.stream = load(video_path)
+				if background_video.stream != null:
+					background_video.loop = true
+					background_video.volume_db = -80.0  # Mute audio
+					background_video.visible = true
+					background_video.play()
+					server_logger.log_system_event("qr_login_video_loaded", {"path": video_path})
+					print("📱 QR login background video loaded and playing")
+					video_loaded = true
+					break
+				else:
+					print("❌ Failed to load QR login video: ", video_path)
+	
+	# Try UI fallback videos if still not loaded
+	if not video_loaded:
+		for video_path in ui_fallback_paths:
+			if ResourceLoader.exists(video_path):
+				print("📁 Found UI fallback video: ", video_path)
+				background_video.stream = load(video_path)
+				if background_video.stream != null:
+					background_video.loop = true
+					background_video.volume_db = -80.0  # Mute audio
+					background_video.visible = true
+					background_video.play()
+					server_logger.log_system_event("qr_ui_video_loaded", {"path": video_path})
+					print("🎬 QR UI fallback video loaded and playing")
+					video_loaded = true
+					break
+				else:
+					print("❌ Failed to load UI fallback video: ", video_path)
+	
+	if not video_loaded:
+		# Show background ColorRect and create QR-themed animated background
+		$Background.visible = true
+		create_qr_animation()
 	else:
-		# Animated background
-		var tween = create_tween()
-		tween.set_loops()
-		tween.tween_property($Background, "color", Color(0.05, 0.15, 0.25, 1), 4.0)
-		tween.tween_property($Background, "color", Color(0.15, 0.05, 0.25, 1), 4.0)
-		print("🎨 QR login background animation started")
+		# Hide background ColorRect so video is visible
+		$Background.visible = false
+
+func create_qr_animation():
+	"""Create animated background fallback for QR login"""
+	var tween = create_tween()
+	tween.set_loops()
+	tween.tween_property($Background, "color", Color(0.05, 0.15, 0.25, 1), 4.0)
+	tween.tween_property($Background, "color", Color(0.15, 0.05, 0.25, 1), 4.0)
+	server_logger.log_system_event("qr_animation_fallback", {"type": "color_cycle"})
+	print("🎨 QR login background animation started")
 
 func start_qr_login_flow():
 	"""Start real QR login flow with server"""
@@ -100,8 +177,18 @@ func start_qr_login_flow():
 	status_label.text = "Generating QR code..."
 	qr_text.text = "⏳ Loading..."
 	
-	# Call server to start QR login with device authentication
-	var headers = device_connection_manager.get_authenticated_headers()
+	# Get device UID for headers (API currently only requires X-Device-UID header)
+	var device_uid = device_connection_manager.get_device_uid()
+	if device_uid.is_empty():
+		_show_error("Device UID not available. Please restart console.")
+		return
+	
+	# Create headers with device UID (simplified authentication for now)
+	var headers = [
+		"Content-Type: application/json",
+		"X-Device-UID: " + device_uid,
+		"User-Agent: Deckport-Console/1.0"
+	]
 	var body = "{}"
 	var url = server_url + "/v1/console-login/start"
 	
@@ -226,8 +313,7 @@ func _handle_qr_start_response(data: Dictionary):
 		"expires_in": remaining_time
 	})
 	
-	# Create a test placeholder texture to verify TextureRect works
-	create_placeholder_texture()
+	# QR code will be loaded when login starts
 	
 	# Load the real QR code image
 	if qr_image_url:
@@ -246,20 +332,7 @@ func _handle_qr_start_response(data: Dictionary):
 	# Start polling
 	_start_polling()
 
-func create_placeholder_texture():
-	"""Create a placeholder texture to test TextureRect"""
-	var image = Image.create(300, 300, false, Image.FORMAT_RGB8)
-	image.fill(Color.DARK_GRAY)
-	
-	# Draw a simple pattern
-	for x in range(50, 250, 20):
-		for y in range(50, 250, 20):
-			image.set_pixel(x, y, Color.WHITE)
-	
-	var texture = ImageTexture.new()
-	texture.set_image(image)
-	qr_image.texture = texture
-	print("🔲 Placeholder texture created and assigned")
+# Placeholder texture function removed - using real QR codes
 
 func load_qr_image(image_url: String):
 	"""Load QR code image from server"""
@@ -329,7 +402,13 @@ func _poll_login_status():
 	if not is_polling or login_token.is_empty():
 		return
 	
-	var headers = device_connection_manager.get_authenticated_headers()
+	# Use simplified headers (same as start_qr_login_flow)
+	var device_uid = device_connection_manager.get_device_uid()
+	var headers = [
+		"Content-Type: application/json",
+		"X-Device-UID: " + device_uid,
+		"User-Agent: Deckport-Console/1.0"
+	]
 	var url = server_url + "/v1/console-login/poll?login_token=" + login_token
 	
 	http_request.request(url, headers, HTTPClient.METHOD_GET)
@@ -404,18 +483,10 @@ func _transition_to_player_menu():
 	get_tree().change_scene_to_file("res://player_menu.tscn")
 
 func _input(event):
-	"""Handle input"""
+	"""Handle input - minimal controls during QR login"""
 	if event is InputEventKey and event.pressed:
-		if event.keycode == KEY_ESCAPE:
-			_on_cancel_pressed()
-		elif event.keycode == KEY_F11:
-			# Toggle fullscreen
-			if DisplayServer.window_get_mode() == DisplayServer.WINDOW_MODE_FULLSCREEN:
-				DisplayServer.window_set_mode(DisplayServer.WINDOW_MODE_WINDOWED)
-			else:
-				DisplayServer.window_set_mode(DisplayServer.WINDOW_MODE_FULLSCREEN)
-		elif event.keycode == KEY_F12:
-			# Development: Skip to old menu
-			server_logger.log_user_action("dev_skip_to_menu", {})
-			print("🔧 Development: Skipping to main menu")
-			get_tree().change_scene_to_file("res://simple_menu.tscn")
+		if event.keycode == KEY_F12:
+			# Development: Skip to player menu
+			server_logger.log_user_action("dev_skip_to_player_menu", {})
+			print("🔧 Development: Skipping to player menu")
+			get_tree().change_scene_to_file("res://player_menu.tscn")

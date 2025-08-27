@@ -7,11 +7,67 @@
     <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet" />
   </head>
   <body class="bg-gray-900 text-white">
-    <main class="min-h-screen flex items-center justify-center p-6">
-      <div class="bg-gray-800 p-6 rounded text-center">
-        <h1 class="text-xl font-semibold mb-2">Thank you!</h1>
-        <p>Your order was completed successfully.</p>
-        <a href="/shop" class="inline-block mt-4 px-4 py-2 bg-indigo-600 rounded">Back to shop</a>
+    <header class="p-4 flex justify-between container mx-auto">
+      <a href="/" class="font-bold">Deckport</a>
+      <nav class="space-x-4">
+        <a href="/cards">Cards</a>
+        <a href="/shop">Shop</a>
+        <a href="/login">Login</a>
+      </nav>
+    </header>
+    <main class="container mx-auto p-4 max-w-2xl">
+      <div class="bg-gray-800 p-8 rounded-lg text-center">
+        <div class="text-green-400 text-6xl mb-4">✓</div>
+        <h1 class="text-3xl font-semibold mb-4">Order Complete!</h1>
+        <p class="text-gray-300 mb-6">Thank you for your purchase. Your order has been processed successfully.</p>
+        
+        {% if order %}
+        <div class="bg-gray-700 p-6 rounded-lg mb-6 text-left">
+          <h2 class="text-xl font-semibold mb-4">Order Details</h2>
+          <div class="space-y-2">
+            <div class="flex justify-between">
+              <span class="text-gray-300">Order Number:</span>
+              <span class="font-mono">{{ order.order_number }}</span>
+            </div>
+            <div class="flex justify-between">
+              <span class="text-gray-300">Total:</span>
+              <span class="font-semibold">${{ "%.2f"|format(order.total_amount) }} {{ order.currency }}</span>
+            </div>
+            <div class="flex justify-between">
+              <span class="text-gray-300">Status:</span>
+              <span class="text-green-400 capitalize">{{ order.order_status }}</span>
+            </div>
+            <div class="flex justify-between">
+              <span class="text-gray-300">Date:</span>
+              <span>{{ order.created_at[:10] }}</span>
+            </div>
+          </div>
+          
+          {% if order.items %}
+          <div class="mt-4">
+            <h3 class="font-semibold mb-2">Items:</h3>
+            <div class="space-y-2">
+              {% for item in order.items %}
+              <div class="flex justify-between text-sm">
+                <span>{{ item.product_name }} ({{ item.quantity }}x)</span>
+                <span>${{ "%.2f"|format(item.total_price) }}</span>
+              </div>
+              {% endfor %}
+            </div>
+          </div>
+          {% endif %}
+        </div>
+        {% endif %}
+        
+        <div class="space-y-3">
+          <p class="text-sm text-gray-400">
+            You will receive an email confirmation shortly with your order details and tracking information.
+          </p>
+          <div class="flex gap-4 justify-center">
+            <a href="/shop" class="px-6 py-3 bg-indigo-600 hover:bg-indigo-700 rounded font-medium transition-colors">Continue Shopping</a>
+            <a href="/me" class="px-6 py-3 bg-gray-600 hover:bg-gray-700 rounded font-medium transition-colors">View Account</a>
+          </div>
+        </div>
       </div>
     </main>
   </body>

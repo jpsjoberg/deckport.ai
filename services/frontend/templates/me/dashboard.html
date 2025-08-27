@@ -1,0 +1,234 @@
+<!doctype html>
+<html>
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Dashboard - Deckport</title>
+    <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet" />
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  </head>
+  <body class="bg-gray-900 text-white">
+    <!-- Navigation -->
+    <nav class="bg-gray-800 border-b border-gray-700">
+      <div class="container mx-auto px-4">
+        <div class="flex justify-between items-center py-4">
+          <div class="flex items-center space-x-8">
+            <a href="/" class="text-xl font-bold text-indigo-400">Deckport</a>
+            <div class="hidden md:flex space-x-6">
+              <a href="/cards" class="text-gray-300 hover:text-white">Browse Cards</a>
+              <a href="/shop" class="text-gray-300 hover:text-white">Shop</a>
+              <a href="/me" class="text-indigo-400 font-medium">Dashboard</a>
+            </div>
+          </div>
+          <div class="flex items-center space-x-4">
+            <div class="text-sm text-gray-400">{{ profile.display_name }}</div>
+            <div class="text-sm text-yellow-400">ELO: {{ profile.elo_rating }}</div>
+            <a href="/logout" class="text-gray-400 hover:text-white">Logout</a>
+          </div>
+        </div>
+      </div>
+    </nav>
+
+    <div class="container mx-auto px-4 py-8">
+      <!-- Header -->
+      <div class="mb-8">
+        <h1 class="text-3xl font-bold mb-2">Welcome back, {{ profile.display_name }}!</h1>
+        <p class="text-gray-400">Here's what's happening with your cards and games.</p>
+      </div>
+
+      <!-- Quick Stats -->
+      <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+        <div class="bg-gray-800 rounded-lg p-6">
+          <div class="flex items-center">
+            <div class="p-3 bg-indigo-600 rounded-lg">
+              <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 11H5m14-7l2 2-2 2m2-2H9"></path>
+              </svg>
+            </div>
+            <div class="ml-4">
+              <p class="text-2xl font-bold">{{ stats.total_cards }}</p>
+              <p class="text-gray-400 text-sm">Cards Owned</p>
+            </div>
+          </div>
+        </div>
+
+        <div class="bg-gray-800 rounded-lg p-6">
+          <div class="flex items-center">
+            <div class="p-3 bg-green-600 rounded-lg">
+              <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+              </svg>
+            </div>
+            <div class="ml-4">
+              <p class="text-2xl font-bold">{{ stats.win_rate }}%</p>
+              <p class="text-gray-400 text-sm">Win Rate</p>
+            </div>
+          </div>
+        </div>
+
+        <div class="bg-gray-800 rounded-lg p-6">
+          <div class="flex items-center">
+            <div class="p-3 bg-yellow-600 rounded-lg">
+              <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"></path>
+              </svg>
+            </div>
+            <div class="ml-4">
+              <p class="text-2xl font-bold">{{ profile.elo_rating }}</p>
+              <p class="text-gray-400 text-sm">ELO Rating</p>
+            </div>
+          </div>
+        </div>
+
+        <div class="bg-gray-800 rounded-lg p-6">
+          <div class="flex items-center">
+            <div class="p-3 bg-purple-600 rounded-lg">
+              <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7h12m0 0l-4-4m4 4l-4 4m0 6H4m0 0l4 4m-4-4l4-4"></path>
+              </svg>
+            </div>
+            <div class="ml-4">
+              <p class="text-2xl font-bold">{{ stats.active_trades }}</p>
+              <p class="text-gray-400 text-sm">Active Trades</p>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Main Content Grid -->
+      <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
+        <!-- Recent Activity -->
+        <div class="lg:col-span-2">
+          <div class="bg-gray-800 rounded-lg p-6">
+            <h2 class="text-xl font-semibold mb-4">Recent Activity</h2>
+            <div class="space-y-4">
+              {% for match in recent_activity.matches %}
+              <div class="flex items-center justify-between p-4 bg-gray-700 rounded-lg">
+                <div class="flex items-center">
+                  <div class="p-2 bg-indigo-600 rounded-lg mr-3">
+                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                    </svg>
+                  </div>
+                  <div>
+                    <p class="font-medium">Match #{{ match.id }}</p>
+                    <p class="text-sm text-gray-400">{{ match.participant_count }} players</p>
+                  </div>
+                </div>
+                <div class="text-right">
+                  <p class="text-sm font-medium capitalize">{{ match.status }}</p>
+                  <p class="text-xs text-gray-400">{{ match.created_at[:10] }}</p>
+                </div>
+              </div>
+              {% endfor %}
+              
+              {% if not recent_activity.matches %}
+              <div class="text-center py-8 text-gray-400">
+                <p>No recent matches</p>
+                <a href="/games" class="text-indigo-400 hover:text-indigo-300 text-sm">Start playing!</a>
+              </div>
+              {% endif %}
+            </div>
+          </div>
+        </div>
+
+        <!-- Quick Actions & Info -->
+        <div class="space-y-6">
+          <!-- Quick Actions -->
+          <div class="bg-gray-800 rounded-lg p-6">
+            <h3 class="text-lg font-semibold mb-4">Quick Actions</h3>
+            <div class="space-y-3">
+              <a href="/me/cards/activate" class="block w-full bg-indigo-600 hover:bg-indigo-700 text-center py-3 rounded-lg font-medium transition-colors">
+                Activate New Card
+              </a>
+              <a href="/me/cards" class="block w-full bg-gray-700 hover:bg-gray-600 text-center py-3 rounded-lg font-medium transition-colors">
+                View My Cards
+              </a>
+              <a href="/me/trading" class="block w-full bg-gray-700 hover:bg-gray-600 text-center py-3 rounded-lg font-medium transition-colors">
+                Trading Hub
+              </a>
+              <a href="/shop" class="block w-full bg-gray-700 hover:bg-gray-600 text-center py-3 rounded-lg font-medium transition-colors">
+                Browse Shop
+              </a>
+            </div>
+          </div>
+
+          <!-- Recent Orders -->
+          <div class="bg-gray-800 rounded-lg p-6">
+            <h3 class="text-lg font-semibold mb-4">Recent Orders</h3>
+            <div class="space-y-3">
+              {% for order in recent_activity.orders %}
+              <div class="flex justify-between items-center p-3 bg-gray-700 rounded">
+                <div>
+                  <p class="font-medium text-sm">{{ order.order_number }}</p>
+                  <p class="text-xs text-gray-400">${{ "%.2f"|format(order.total_amount) }}</p>
+                </div>
+                <div class="text-right">
+                  <p class="text-xs font-medium capitalize">{{ order.status }}</p>
+                  <p class="text-xs text-gray-400">{{ order.created_at[:10] }}</p>
+                </div>
+              </div>
+              {% endfor %}
+              
+              {% if not recent_activity.orders %}
+              <div class="text-center py-4 text-gray-400">
+                <p class="text-sm">No recent orders</p>
+              </div>
+              {% endif %}
+            </div>
+            <a href="/me/orders" class="block text-center text-indigo-400 hover:text-indigo-300 text-sm mt-3">View All Orders</a>
+          </div>
+        </div>
+      </div>
+
+      <!-- Navigation Menu -->
+      <div class="mt-8 bg-gray-800 rounded-lg p-6">
+        <h3 class="text-lg font-semibold mb-4">Dashboard Navigation</h3>
+        <div class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4">
+          <a href="/me/cards" class="flex flex-col items-center p-4 bg-gray-700 hover:bg-gray-600 rounded-lg transition-colors">
+            <svg class="w-8 h-8 mb-2 text-indigo-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 11H5m14-7l2 2-2 2m2-2H9"></path>
+            </svg>
+            <span class="text-sm font-medium">My Cards</span>
+          </a>
+          
+          <a href="/me/analytics" class="flex flex-col items-center p-4 bg-gray-700 hover:bg-gray-600 rounded-lg transition-colors">
+            <svg class="w-8 h-8 mb-2 text-green-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"></path>
+            </svg>
+            <span class="text-sm font-medium">Analytics</span>
+          </a>
+          
+          <a href="/me/trading" class="flex flex-col items-center p-4 bg-gray-700 hover:bg-gray-600 rounded-lg transition-colors">
+            <svg class="w-8 h-8 mb-2 text-yellow-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7h12m0 0l-4-4m4 4l-4 4m0 6H4m0 0l4 4m-4-4l4-4"></path>
+            </svg>
+            <span class="text-sm font-medium">Trading</span>
+          </a>
+          
+          <a href="/me/orders" class="flex flex-col items-center p-4 bg-gray-700 hover:bg-gray-600 rounded-lg transition-colors">
+            <svg class="w-8 h-8 mb-2 text-purple-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 11V7a4 4 0 00-8 0v4M5 9h14l1 12H4L5 9z"></path>
+            </svg>
+            <span class="text-sm font-medium">Orders</span>
+          </a>
+          
+          <a href="/me/consoles" class="flex flex-col items-center p-4 bg-gray-700 hover:bg-gray-600 rounded-lg transition-colors">
+            <svg class="w-8 h-8 mb-2 text-red-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9.75 17L9 20l-1 1h8l-1-1-.75-3M3 13h18M5 17h14a2 2 0 002-2V5a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"></path>
+            </svg>
+            <span class="text-sm font-medium">Consoles</span>
+          </a>
+          
+          <a href="/me/settings" class="flex flex-col items-center p-4 bg-gray-700 hover:bg-gray-600 rounded-lg transition-colors">
+            <svg class="w-8 h-8 mb-2 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"></path>
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path>
+            </svg>
+            <span class="text-sm font-medium">Settings</span>
+          </a>
+        </div>
+      </div>
+    </div>
+  </body>
+</html>

@@ -1,0 +1,5 @@
+# Stripe Payment Processing
+stripe>=7.0.0,<8.0.0
+
+# Add this to your main requirements.txt or install with:
+# pip install stripe>=7.0.0

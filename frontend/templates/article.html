@@ -1,0 +1,474 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title id="page-title">Loading... - Deckport</title>
+    <meta name="description" id="page-description" content="Deckport - The Future of Trading Card Gaming">
+    
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    
+    <!-- Font Awesome -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    
+    <!-- Custom styles -->
+    <style>
+        .gradient-text {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+        
+        .article-content h1, .article-content h2, .article-content h3 {
+            color: #f3f4f6;
+            margin: 1.5rem 0 1rem 0;
+            font-weight: 600;
+        }
+        
+        .article-content h1 { font-size: 2rem; }
+        .article-content h2 { font-size: 1.5rem; }
+        .article-content h3 { font-size: 1.25rem; }
+        
+        .article-content p {
+            margin-bottom: 1rem;
+            line-height: 1.7;
+        }
+        
+        .article-content ul, .article-content ol {
+            margin: 1rem 0;
+            padding-left: 2rem;
+        }
+        
+        .article-content li {
+            margin-bottom: 0.5rem;
+            line-height: 1.6;
+        }
+        
+        .article-content blockquote {
+            border-left: 4px solid #667eea;
+            padding-left: 1rem;
+            margin: 1.5rem 0;
+            font-style: italic;
+            color: #d1d5db;
+        }
+        
+        .article-content code {
+            background: #374151;
+            padding: 0.25rem 0.5rem;
+            border-radius: 0.25rem;
+            font-family: 'Courier New', monospace;
+            font-size: 0.875rem;
+        }
+        
+        .article-content pre {
+            background: #1f2937;
+            padding: 1rem;
+            border-radius: 0.5rem;
+            overflow-x: auto;
+            margin: 1rem 0;
+        }
+        
+        .article-content img {
+            max-width: 100%;
+            height: auto;
+            border-radius: 0.5rem;
+            margin: 1.5rem 0;
+        }
+        
+        .article-content a {
+            color: #667eea;
+            text-decoration: underline;
+        }
+        
+        .article-content a:hover {
+            color: #764ba2;
+        }
+    </style>
+</head>
+<body class="bg-gray-900 text-gray-100 min-h-screen">
+    <!-- Navigation -->
+    <nav class="bg-gray-800 border-b border-gray-700 sticky top-0 z-50">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="flex justify-between items-center h-16">
+                <!-- Logo -->
+                <div class="flex items-center">
+                    <a href="/" class="flex items-center">
+                        <div class="w-10 h-10 bg-gradient-to-r from-indigo-600 to-purple-600 rounded-lg flex items-center justify-center mr-3">
+                            <i class="fas fa-bolt text-white text-xl"></i>
+                        </div>
+                        <span class="text-xl font-bold gradient-text">Deckport</span>
+                    </a>
+                </div>
+                
+                <!-- Navigation Links -->
+                <div class="hidden md:flex items-center space-x-8">
+                    <a href="/" class="text-gray-300 hover:text-white transition-colors">Home</a>
+                    <a href="/news" class="text-indigo-400 font-medium">News</a>
+                    <a href="/videos" class="text-gray-300 hover:text-white transition-colors">Videos</a>
+                    <a href="#" class="text-gray-300 hover:text-white transition-colors">Play</a>
+                    <a href="#" class="text-gray-300 hover:text-white transition-colors">Shop</a>
+                </div>
+                
+                <!-- Mobile menu button -->
+                <div class="md:hidden">
+                    <button class="text-gray-400 hover:text-white">
+                        <i class="fas fa-bars text-xl"></i>
+                    </button>
+                </div>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Loading State -->
+    <div id="loading-state" class="flex items-center justify-center min-h-screen">
+        <div class="text-center">
+            <div class="animate-spin rounded-full h-16 w-16 border-b-2 border-indigo-400 mx-auto mb-4"></div>
+            <p class="text-gray-400 text-lg">Loading article...</p>
+        </div>
+    </div>
+
+    <!-- Error State -->
+    <div id="error-state" class="hidden flex items-center justify-center min-h-screen">
+        <div class="text-center">
+            <i class="fas fa-exclamation-triangle text-6xl text-red-400 mb-6"></i>
+            <h1 class="text-3xl font-bold text-white mb-4">Article Not Found</h1>
+            <p class="text-gray-400 text-lg mb-8">The article you're looking for doesn't exist or has been removed.</p>
+            <a href="/news" class="bg-indigo-600 hover:bg-indigo-700 text-white px-6 py-3 rounded-lg font-medium transition-colors">
+                <i class="fas fa-arrow-left mr-2"></i>Back to News
+            </a>
+        </div>
+    </div>
+
+    <!-- Article Content -->
+    <div id="article-content" class="hidden">
+        <!-- Hero Section -->
+        <div class="relative bg-gray-800 overflow-hidden">
+            <div class="absolute inset-0" id="hero-background">
+                <!-- Background image will be set via JavaScript -->
+            </div>
+            <div class="absolute inset-0 bg-gradient-to-t from-gray-900 via-gray-900/70 to-transparent"></div>
+            
+            <div class="relative max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-24">
+                <!-- Breadcrumb -->
+                <nav class="mb-8">
+                    <ol class="flex items-center space-x-2 text-sm">
+                        <li><a href="/" class="text-gray-400 hover:text-white">Home</a></li>
+                        <li><i class="fas fa-chevron-right text-gray-500 text-xs"></i></li>
+                        <li><a href="/news" class="text-gray-400 hover:text-white">News</a></li>
+                        <li><i class="fas fa-chevron-right text-gray-500 text-xs"></i></li>
+                        <li class="text-indigo-400" id="breadcrumb-title">Article</li>
+                    </ol>
+                </nav>
+                
+                <!-- Article Header -->
+                <div class="mb-8">
+                    <div class="flex items-center space-x-4 mb-4">
+                        <span id="article-type" class="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium bg-indigo-600 text-white">
+                            News
+                        </span>
+                        <span id="article-featured" class="hidden inline-flex items-center px-3 py-1 rounded-full text-sm font-medium bg-red-600 text-white">
+                            <i class="fas fa-star mr-1"></i>Featured
+                        </span>
+                        <span id="article-pinned" class="hidden inline-flex items-center px-3 py-1 rounded-full text-sm font-medium bg-yellow-600 text-white">
+                            <i class="fas fa-thumbtack mr-1"></i>Pinned
+                        </span>
+                    </div>
+                    
+                    <h1 id="article-title" class="text-4xl md:text-5xl font-bold text-white mb-6 leading-tight">
+                        Loading...
+                    </h1>
+                    
+                    <p id="article-excerpt" class="text-xl text-gray-300 mb-8 leading-relaxed">
+                        <!-- Excerpt will be loaded here -->
+                    </p>
+                    
+                    <!-- Article Meta -->
+                    <div class="flex items-center justify-between">
+                        <div class="flex items-center space-x-6 text-gray-400">
+                            <span class="flex items-center">
+                                <i class="fas fa-user mr-2"></i>
+                                <span id="article-author">Deckport Team</span>
+                            </span>
+                            <span class="flex items-center">
+                                <i class="fas fa-calendar mr-2"></i>
+                                <span id="article-date">Loading...</span>
+                            </span>
+                            <span class="flex items-center">
+                                <i class="fas fa-eye mr-2"></i>
+                                <span id="article-views">0</span> views
+                            </span>
+                        </div>
+                        
+                        <!-- Share Buttons -->
+                        <div class="flex items-center space-x-3">
+                            <button onclick="shareArticle('twitter')" class="text-gray-400 hover:text-blue-400 transition-colors">
+                                <i class="fab fa-twitter text-xl"></i>
+                            </button>
+                            <button onclick="shareArticle('facebook')" class="text-gray-400 hover:text-blue-600 transition-colors">
+                                <i class="fab fa-facebook text-xl"></i>
+                            </button>
+                            <button onclick="shareArticle('linkedin')" class="text-gray-400 hover:text-blue-500 transition-colors">
+                                <i class="fab fa-linkedin text-xl"></i>
+                            </button>
+                            <button onclick="copyLink()" class="text-gray-400 hover:text-green-400 transition-colors">
+                                <i class="fas fa-link text-xl"></i>
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Article Body -->
+        <div class="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
+            <div class="prose prose-lg prose-invert max-w-none">
+                <div id="article-body" class="article-content text-gray-300 text-lg leading-relaxed">
+                    <!-- Article content will be loaded here -->
+                </div>
+            </div>
+            
+            <!-- Tags -->
+            <div id="article-tags-section" class="hidden mt-12 pt-8 border-t border-gray-700">
+                <h3 class="text-lg font-semibold text-white mb-4">Tags</h3>
+                <div id="article-tags" class="flex flex-wrap gap-2">
+                    <!-- Tags will be loaded here -->
+                </div>
+            </div>
+        </div>
+
+        <!-- Related Articles -->
+        <div class="bg-gray-800 py-16">
+            <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+                <h2 class="text-3xl font-bold text-white mb-8 text-center">Related Articles</h2>
+                <div id="related-articles" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+                    <!-- Related articles will be loaded here -->
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Footer -->
+    <footer class="bg-gray-900 border-t border-gray-800 py-12">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="text-center">
+                <div class="flex items-center justify-center mb-4">
+                    <div class="w-8 h-8 bg-gradient-to-r from-indigo-600 to-purple-600 rounded-lg flex items-center justify-center mr-2">
+                        <i class="fas fa-bolt text-white"></i>
+                    </div>
+                    <span class="text-xl font-bold gradient-text">Deckport</span>
+                </div>
+                <p class="text-gray-400">© 2024 Deckport. All rights reserved.</p>
+            </div>
+        </div>
+    </footer>
+
+    <script>
+        let currentArticle = null;
+
+        document.addEventListener('DOMContentLoaded', function() {
+            const pathParts = window.location.pathname.split('/');
+            const slug = pathParts[pathParts.length - 1];
+            
+            if (slug) {
+                loadArticle(slug);
+            } else {
+                showError();
+            }
+        });
+
+        async function loadArticle(slug) {
+            try {
+                const response = await fetch(`/v1/cms/news/${slug}`);
+                
+                if (response.ok) {
+                    const article = await response.json();
+                    currentArticle = article;
+                    renderArticle(article);
+                    loadRelatedArticles(article.content_type);
+                } else {
+                    showError();
+                }
+            } catch (error) {
+                console.error('Error loading article:', error);
+                showError();
+            }
+        }
+
+        function renderArticle(article) {
+            // Update page title and meta
+            document.getElementById('page-title').textContent = `${article.title} - Deckport`;
+            document.getElementById('page-description').content = article.meta_description || article.excerpt || '';
+            
+            // Update hero background
+            if (article.featured_image_url) {
+                document.getElementById('hero-background').style.backgroundImage = `url(${article.featured_image_url})`;
+                document.getElementById('hero-background').style.backgroundSize = 'cover';
+                document.getElementById('hero-background').style.backgroundPosition = 'center';
+            }
+            
+            // Update article content
+            document.getElementById('breadcrumb-title').textContent = article.title;
+            document.getElementById('article-type').textContent = article.content_type.replace('_', ' ').toUpperCase();
+            document.getElementById('article-title').textContent = article.title;
+            document.getElementById('article-excerpt').textContent = article.excerpt || '';
+            document.getElementById('article-date').textContent = new Date(article.published_at).toLocaleDateString('en-US', {
+                year: 'numeric',
+                month: 'long',
+                day: 'numeric'
+            });
+            document.getElementById('article-views').textContent = article.view_count;
+            document.getElementById('article-body').innerHTML = formatArticleContent(article.content);
+            
+            // Show/hide badges
+            if (article.is_featured) {
+                document.getElementById('article-featured').classList.remove('hidden');
+            }
+            if (article.is_pinned) {
+                document.getElementById('article-pinned').classList.remove('hidden');
+            }
+            
+            // Update tags
+            if (article.tags && article.tags.length > 0) {
+                const tagsContainer = document.getElementById('article-tags');
+                tagsContainer.innerHTML = article.tags.map(tag => 
+                    `<span class="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium bg-gray-700 text-gray-300 hover:bg-gray-600 transition-colors cursor-pointer">
+                        #${tag}
+                    </span>`
+                ).join('');
+                document.getElementById('article-tags-section').classList.remove('hidden');
+            }
+            
+            // Show article content
+            document.getElementById('loading-state').classList.add('hidden');
+            document.getElementById('article-content').classList.remove('hidden');
+        }
+
+        function formatArticleContent(content) {
+            // Convert line breaks to paragraphs
+            return content
+                .split('\n\n')
+                .map(paragraph => paragraph.trim())
+                .filter(paragraph => paragraph.length > 0)
+                .map(paragraph => `<p>${paragraph.replace(/\n/g, '<br>')}</p>`)
+                .join('');
+        }
+
+        async function loadRelatedArticles(contentType) {
+            try {
+                const response = await fetch(`/v1/cms/news?type=${contentType}&page_size=3`);
+                
+                if (response.ok) {
+                    const data = await response.json();
+                    const relatedArticles = data.articles.filter(article => 
+                        currentArticle && article.id !== currentArticle.id
+                    ).slice(0, 3);
+                    
+                    if (relatedArticles.length > 0) {
+                        renderRelatedArticles(relatedArticles);
+                    }
+                }
+            } catch (error) {
+                console.error('Error loading related articles:', error);
+            }
+        }
+
+        function renderRelatedArticles(articles) {
+            const container = document.getElementById('related-articles');
+            container.innerHTML = articles.map(article => {
+                const publishedDate = new Date(article.published_at).toLocaleDateString('en-US', {
+                    year: 'numeric',
+                    month: 'long',
+                    day: 'numeric'
+                });
+                
+                return `
+                    <div class="bg-gray-900 rounded-xl overflow-hidden hover:transform hover:scale-105 transition-all duration-300 cursor-pointer" onclick="window.location.href='/news/${article.slug}'">
+                        <div class="aspect-video bg-gray-700 overflow-hidden">
+                            ${article.featured_image_url ? 
+                                `<img src="${article.featured_image_url}" alt="${article.title}" class="w-full h-full object-cover">` :
+                                `<div class="w-full h-full flex items-center justify-center">
+                                    <i class="fas fa-newspaper text-4xl text-gray-500"></i>
+                                </div>`
+                            }
+                        </div>
+                        <div class="p-6">
+                            <div class="flex items-center mb-3">
+                                <span class="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-indigo-600 text-white">
+                                    ${article.content_type.replace('_', ' ')}
+                                </span>
+                                ${article.is_featured ? 
+                                    '<span class="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-red-600 text-white ml-2"><i class="fas fa-star mr-1"></i>Featured</span>' : 
+                                    ''
+                                }
+                            </div>
+                            <h3 class="text-xl font-bold text-white mb-2 line-clamp-2">${article.title}</h3>
+                            <p class="text-gray-400 text-sm mb-4 line-clamp-2">${article.excerpt || ''}</p>
+                            <div class="flex items-center justify-between text-xs text-gray-500">
+                                <span>${publishedDate}</span>
+                                <span><i class="fas fa-eye mr-1"></i>${article.view_count}</span>
+                            </div>
+                        </div>
+                    </div>
+                `;
+            }).join('');
+        }
+
+        function showError() {
+            document.getElementById('loading-state').classList.add('hidden');
+            document.getElementById('error-state').classList.remove('hidden');
+        }
+
+        function shareArticle(platform) {
+            if (!currentArticle) return;
+            
+            const url = encodeURIComponent(window.location.href);
+            const title = encodeURIComponent(currentArticle.title);
+            const text = encodeURIComponent(currentArticle.excerpt || '');
+            
+            let shareUrl = '';
+            
+            switch (platform) {
+                case 'twitter':
+                    shareUrl = `https://twitter.com/intent/tweet?url=${url}&text=${title}`;
+                    break;
+                case 'facebook':
+                    shareUrl = `https://www.facebook.com/sharer/sharer.php?u=${url}`;
+                    break;
+                case 'linkedin':
+                    shareUrl = `https://www.linkedin.com/sharing/share-offsite/?url=${url}`;
+                    break;
+            }
+            
+            if (shareUrl) {
+                window.open(shareUrl, '_blank', 'width=600,height=400');
+            }
+        }
+
+        function copyLink() {
+            navigator.clipboard.writeText(window.location.href).then(() => {
+                // Show a temporary notification
+                const button = event.target.closest('button');
+                const originalIcon = button.innerHTML;
+                button.innerHTML = '<i class="fas fa-check text-xl"></i>';
+                button.classList.add('text-green-400');
+                
+                setTimeout(() => {
+                    button.innerHTML = originalIcon;
+                    button.classList.remove('text-green-400');
+                }, 2000);
+            });
+        }
+    </script>
+
+    <style>
+        .line-clamp-2 {
+            display: -webkit-box;
+            -webkit-line-clamp: 2;
+            -webkit-box-orient: vertical;
+            overflow: hidden;
+        }
+    </style>
+</body>
+</html>

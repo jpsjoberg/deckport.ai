@@ -1,0 +1,134 @@
+{% extends "admin/base.html" %}
+
+{% block title %}Player Support - Deckport Admin{% endblock %}
+
+{% block content %}
+<div class="p-6">
+    <div class="flex items-center justify-between mb-6">
+        <div>
+            <h1 class="text-2xl font-bold text-white">Player Support</h1>
+            <p class="text-gray-400 mt-1">Manage support tickets and player assistance</p>
+        </div>
+        <div class="flex space-x-3">
+            <button class="px-4 py-2 bg-blue-600 hover:bg-blue-700 rounded font-medium text-sm">
+                <i class="fas fa-plus mr-2"></i>New Ticket
+            </button>
+        </div>
+    </div>
+
+    <!-- Support Statistics -->
+    <div class="grid grid-cols-1 md:grid-cols-4 gap-6 mb-6">
+        <div class="bg-gray-800 p-6 rounded-lg">
+            <div class="flex items-center">
+                <div class="p-3 bg-red-500 bg-opacity-20 rounded-lg">
+                    <i class="fas fa-exclamation-triangle text-red-400 text-xl"></i>
+                </div>
+                <div class="ml-4">
+                    <p class="text-sm text-gray-400">Open Tickets</p>
+                    <p class="text-2xl font-bold text-white">{{ tickets|length or 0 }}</p>
+                </div>
+            </div>
+        </div>
+        
+        <div class="bg-gray-800 p-6 rounded-lg">
+            <div class="flex items-center">
+                <div class="p-3 bg-yellow-500 bg-opacity-20 rounded-lg">
+                    <i class="fas fa-clock text-yellow-400 text-xl"></i>
+                </div>
+                <div class="ml-4">
+                    <p class="text-sm text-gray-400">Pending</p>
+                    <p class="text-2xl font-bold text-white">0</p>
+                </div>
+            </div>
+        </div>
+        
+        <div class="bg-gray-800 p-6 rounded-lg">
+            <div class="flex items-center">
+                <div class="p-3 bg-green-500 bg-opacity-20 rounded-lg">
+                    <i class="fas fa-check-circle text-green-400 text-xl"></i>
+                </div>
+                <div class="ml-4">
+                    <p class="text-sm text-gray-400">Resolved Today</p>
+                    <p class="text-2xl font-bold text-white">0</p>
+                </div>
+            </div>
+        </div>
+        
+        <div class="bg-gray-800 p-6 rounded-lg">
+            <div class="flex items-center">
+                <div class="p-3 bg-blue-500 bg-opacity-20 rounded-lg">
+                    <i class="fas fa-headset text-blue-400 text-xl"></i>
+                </div>
+                <div class="ml-4">
+                    <p class="text-sm text-gray-400">Avg Response</p>
+                    <p class="text-2xl font-bold text-white">2.4h</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Support Tickets Table -->
+    <div class="bg-gray-800 rounded-lg overflow-hidden">
+        <div class="p-6 border-b border-gray-700">
+            <h2 class="text-lg font-semibold text-white">Support Tickets</h2>
+        </div>
+        
+        <div class="p-6">
+            {% if tickets %}
+                <div class="overflow-x-auto">
+                    <table class="w-full">
+                        <thead>
+                            <tr class="text-left text-gray-400 text-sm">
+                                <th class="pb-3">Ticket ID</th>
+                                <th class="pb-3">Player</th>
+                                <th class="pb-3">Subject</th>
+                                <th class="pb-3">Priority</th>
+                                <th class="pb-3">Status</th>
+                                <th class="pb-3">Created</th>
+                                <th class="pb-3">Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for ticket in tickets %}
+                            <tr class="border-t border-gray-700">
+                                <td class="py-3 text-white">#{{ ticket.id }}</td>
+                                <td class="py-3 text-white">{{ ticket.player_name }}</td>
+                                <td class="py-3 text-white">{{ ticket.subject }}</td>
+                                <td class="py-3">
+                                    <span class="px-2 py-1 text-xs rounded-full 
+                                        {% if ticket.priority == 'high' %}bg-red-500 bg-opacity-20 text-red-400
+                                        {% elif ticket.priority == 'medium' %}bg-yellow-500 bg-opacity-20 text-yellow-400
+                                        {% else %}bg-green-500 bg-opacity-20 text-green-400{% endif %}">
+                                        {{ ticket.priority|title }}
+                                    </span>
+                                </td>
+                                <td class="py-3">
+                                    <span class="px-2 py-1 text-xs rounded-full bg-blue-500 bg-opacity-20 text-blue-400">
+                                        {{ ticket.status|title }}
+                                    </span>
+                                </td>
+                                <td class="py-3 text-gray-400">{{ ticket.created_at }}</td>
+                                <td class="py-3">
+                                    <button class="text-blue-400 hover:text-blue-300 mr-3">
+                                        <i class="fas fa-eye"></i>
+                                    </button>
+                                    <button class="text-green-400 hover:text-green-300">
+                                        <i class="fas fa-reply"></i>
+                                    </button>
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            {% else %}
+                <div class="text-center py-12">
+                    <i class="fas fa-inbox text-6xl text-gray-400 mb-4"></i>
+                    <h3 class="text-xl font-semibold text-white mb-2">No Support Tickets</h3>
+                    <p class="text-gray-400">All caught up! No pending support tickets at the moment.</p>
+                </div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+{% endblock %}

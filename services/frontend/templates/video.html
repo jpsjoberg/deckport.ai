@@ -1,0 +1,562 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title id="page-title">Loading... - Deckport</title>
+    <meta name="description" id="page-description" content="Deckport - The Future of Trading Card Gaming">
+    
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    
+    <!-- Font Awesome -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    
+    <!-- Custom styles -->
+    <style>
+        .gradient-text {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+        
+        .video-container {
+            position: relative;
+            width: 100%;
+            height: 0;
+            padding-bottom: 56.25%; /* 16:9 aspect ratio */
+        }
+        
+        .video-container iframe {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            border-radius: 0.75rem;
+        }
+        
+        .description-content p {
+            margin-bottom: 1rem;
+            line-height: 1.7;
+        }
+        
+        .description-content ul, .description-content ol {
+            margin: 1rem 0;
+            padding-left: 2rem;
+        }
+        
+        .description-content li {
+            margin-bottom: 0.5rem;
+            line-height: 1.6;
+        }
+        
+        .description-content a {
+            color: #667eea;
+            text-decoration: underline;
+        }
+        
+        .description-content a:hover {
+            color: #764ba2;
+        }
+    </style>
+</head>
+<body class="bg-gray-900 text-gray-100 min-h-screen">
+    <!-- Navigation -->
+    <nav class="bg-gray-800 border-b border-gray-700 sticky top-0 z-50">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="flex justify-between items-center h-16">
+                <!-- Logo -->
+                <div class="flex items-center">
+                    <a href="/" class="flex items-center">
+                        <div class="w-10 h-10 bg-gradient-to-r from-indigo-600 to-purple-600 rounded-lg flex items-center justify-center mr-3">
+                            <i class="fas fa-bolt text-white text-xl"></i>
+                        </div>
+                        <span class="text-xl font-bold gradient-text">Deckport</span>
+                    </a>
+                </div>
+                
+                <!-- Navigation Links -->
+                <div class="hidden md:flex items-center space-x-8">
+                    <a href="/" class="text-gray-300 hover:text-white transition-colors">Home</a>
+                    <a href="/news" class="text-gray-300 hover:text-white transition-colors">News</a>
+                    <a href="/videos" class="text-purple-400 font-medium">Videos</a>
+                    <a href="#" class="text-gray-300 hover:text-white transition-colors">Play</a>
+                    <a href="#" class="text-gray-300 hover:text-white transition-colors">Shop</a>
+                </div>
+                
+                <!-- Mobile menu button -->
+                <div class="md:hidden">
+                    <button class="text-gray-400 hover:text-white">
+                        <i class="fas fa-bars text-xl"></i>
+                    </button>
+                </div>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Loading State -->
+    <div id="loading-state" class="flex items-center justify-center min-h-screen">
+        <div class="text-center">
+            <div class="animate-spin rounded-full h-16 w-16 border-b-2 border-purple-400 mx-auto mb-4"></div>
+            <p class="text-gray-400 text-lg">Loading video...</p>
+        </div>
+    </div>
+
+    <!-- Error State -->
+    <div id="error-state" class="hidden flex items-center justify-center min-h-screen">
+        <div class="text-center">
+            <i class="fas fa-exclamation-triangle text-6xl text-red-400 mb-6"></i>
+            <h1 class="text-3xl font-bold text-white mb-4">Video Not Found</h1>
+            <p class="text-gray-400 text-lg mb-8">The video you're looking for doesn't exist or has been removed.</p>
+            <a href="/videos" class="bg-purple-600 hover:bg-purple-700 text-white px-6 py-3 rounded-lg font-medium transition-colors">
+                <i class="fas fa-arrow-left mr-2"></i>Back to Videos
+            </a>
+        </div>
+    </div>
+
+    <!-- Video Content -->
+    <div id="video-content" class="hidden">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+            <!-- Breadcrumb -->
+            <nav class="mb-8">
+                <ol class="flex items-center space-x-2 text-sm">
+                    <li><a href="/" class="text-gray-400 hover:text-white">Home</a></li>
+                    <li><i class="fas fa-chevron-right text-gray-500 text-xs"></i></li>
+                    <li><a href="/videos" class="text-gray-400 hover:text-white">Videos</a></li>
+                    <li><i class="fas fa-chevron-right text-gray-500 text-xs"></i></li>
+                    <li class="text-purple-400" id="breadcrumb-title">Video</li>
+                </ol>
+            </nav>
+
+            <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
+                <!-- Main Video Column -->
+                <div class="lg:col-span-2">
+                    <!-- Video Player -->
+                    <div class="bg-gray-800 rounded-xl overflow-hidden mb-6">
+                        <div id="video-player" class="video-container">
+                            <!-- Video embed will be inserted here -->
+                        </div>
+                    </div>
+
+                    <!-- Video Info -->
+                    <div class="mb-8">
+                        <!-- Badges -->
+                        <div class="flex items-center space-x-3 mb-4">
+                            <span id="video-type" class="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium bg-purple-600 text-white">
+                                Tutorial
+                            </span>
+                            <span id="video-platform" class="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium bg-gray-600 text-white">
+                                <i class="fab fa-youtube mr-1"></i>YouTube
+                            </span>
+                            <span id="video-featured" class="hidden inline-flex items-center px-3 py-1 rounded-full text-sm font-medium bg-red-600 text-white">
+                                <i class="fas fa-star mr-1"></i>Featured
+                            </span>
+                            <span id="video-trending" class="hidden inline-flex items-center px-3 py-1 rounded-full text-sm font-medium bg-orange-600 text-white">
+                                <i class="fas fa-fire mr-1"></i>Trending
+                            </span>
+                        </div>
+
+                        <!-- Title -->
+                        <h1 id="video-title" class="text-3xl md:text-4xl font-bold text-white mb-4 leading-tight">
+                            Loading...
+                        </h1>
+
+                        <!-- Meta Info -->
+                        <div class="flex items-center justify-between mb-6">
+                            <div class="flex items-center space-x-6 text-gray-400">
+                                <span class="flex items-center">
+                                    <i class="fas fa-eye mr-2"></i>
+                                    <span id="video-views">0</span> views
+                                </span>
+                                <span class="flex items-center">
+                                    <i class="fas fa-calendar mr-2"></i>
+                                    <span id="video-date">Loading...</span>
+                                </span>
+                                <span id="video-duration-display" class="flex items-center">
+                                    <i class="fas fa-clock mr-2"></i>
+                                    <span id="video-duration">0:00</span>
+                                </span>
+                            </div>
+                            
+                            <!-- Action Buttons -->
+                            <div class="flex items-center space-x-3">
+                                <button onclick="likeVideo()" class="flex items-center space-x-2 text-gray-400 hover:text-red-400 transition-colors">
+                                    <i class="fas fa-heart"></i>
+                                    <span id="video-likes">0</span>
+                                </button>
+                                <button onclick="shareVideo('twitter')" class="text-gray-400 hover:text-blue-400 transition-colors">
+                                    <i class="fab fa-twitter text-xl"></i>
+                                </button>
+                                <button onclick="shareVideo('facebook')" class="text-gray-400 hover:text-blue-600 transition-colors">
+                                    <i class="fab fa-facebook text-xl"></i>
+                                </button>
+                                <button onclick="copyVideoLink()" class="text-gray-400 hover:text-green-400 transition-colors">
+                                    <i class="fas fa-link text-xl"></i>
+                                </button>
+                            </div>
+                        </div>
+
+                        <!-- Description -->
+                        <div class="bg-gray-800 rounded-lg p-6">
+                            <h3 class="text-lg font-semibold text-white mb-4">About this video</h3>
+                            <div id="video-description" class="description-content text-gray-300 leading-relaxed">
+                                <!-- Description will be loaded here -->
+                            </div>
+                        </div>
+
+                        <!-- Tags -->
+                        <div id="video-tags-section" class="hidden mt-6">
+                            <h3 class="text-lg font-semibold text-white mb-4">Tags</h3>
+                            <div id="video-tags" class="flex flex-wrap gap-2">
+                                <!-- Tags will be loaded here -->
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Sidebar -->
+                <div class="lg:col-span-1">
+                    <!-- Related Videos -->
+                    <div class="bg-gray-800 rounded-lg p-6 mb-6">
+                        <h3 class="text-lg font-semibold text-white mb-4">Related Videos</h3>
+                        <div id="related-videos" class="space-y-4">
+                            <div class="text-center py-4">
+                                <div class="animate-spin rounded-full h-6 w-6 border-b-2 border-purple-400 mx-auto"></div>
+                                <p class="text-gray-400 mt-2 text-sm">Loading...</p>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Video Stats -->
+                    <div class="bg-gray-800 rounded-lg p-6">
+                        <h3 class="text-lg font-semibold text-white mb-4">Video Stats</h3>
+                        <div class="space-y-3">
+                            <div class="flex items-center justify-between">
+                                <span class="text-gray-400">Views</span>
+                                <span class="text-white font-medium" id="sidebar-views">0</span>
+                            </div>
+                            <div class="flex items-center justify-between">
+                                <span class="text-gray-400">Likes</span>
+                                <span class="text-white font-medium" id="sidebar-likes">0</span>
+                            </div>
+                            <div class="flex items-center justify-between">
+                                <span class="text-gray-400">Published</span>
+                                <span class="text-white font-medium" id="sidebar-date">Loading...</span>
+                            </div>
+                            <div class="flex items-center justify-between">
+                                <span class="text-gray-400">Duration</span>
+                                <span class="text-white font-medium" id="sidebar-duration">0:00</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Footer -->
+    <footer class="bg-gray-900 border-t border-gray-800 py-12">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="text-center">
+                <div class="flex items-center justify-center mb-4">
+                    <div class="w-8 h-8 bg-gradient-to-r from-indigo-600 to-purple-600 rounded-lg flex items-center justify-center mr-2">
+                        <i class="fas fa-bolt text-white"></i>
+                    </div>
+                    <span class="text-xl font-bold gradient-text">Deckport</span>
+                </div>
+                <p class="text-gray-400">© 2024 Deckport. All rights reserved.</p>
+            </div>
+        </div>
+    </footer>
+
+    <script>
+        let currentVideo = null;
+
+        document.addEventListener('DOMContentLoaded', function() {
+            const pathParts = window.location.pathname.split('/');
+            const slug = pathParts[pathParts.length - 1];
+            
+            if (slug) {
+                loadVideo(slug);
+            } else {
+                showError();
+            }
+        });
+
+        async function loadVideo(slug) {
+            try {
+                const response = await fetch(`/v1/cms/videos/${slug}`);
+                
+                if (response.ok) {
+                    const video = await response.json();
+                    currentVideo = video;
+                    renderVideo(video);
+                    loadRelatedVideos(video.video_type);
+                } else {
+                    showError();
+                }
+            } catch (error) {
+                console.error('Error loading video:', error);
+                showError();
+            }
+        }
+
+        function renderVideo(video) {
+            // Update page title and meta
+            document.getElementById('page-title').textContent = `${video.title} - Deckport`;
+            document.getElementById('page-description').content = video.meta_description || video.description || '';
+            
+            // Update breadcrumb
+            document.getElementById('breadcrumb-title').textContent = video.title;
+            
+            // Update video player
+            renderVideoPlayer(video);
+            
+            // Update video info
+            document.getElementById('video-type').textContent = video.video_type.replace('_', ' ').toUpperCase();
+            document.getElementById('video-title').textContent = video.title;
+            document.getElementById('video-views').textContent = video.view_count;
+            document.getElementById('video-likes').textContent = video.like_count;
+            document.getElementById('video-date').textContent = new Date(video.published_at).toLocaleDateString('en-US', {
+                year: 'numeric',
+                month: 'long',
+                day: 'numeric'
+            });
+            
+            if (video.duration_formatted) {
+                document.getElementById('video-duration').textContent = video.duration_formatted;
+            } else {
+                document.getElementById('video-duration-display').style.display = 'none';
+            }
+            
+            // Update platform badge
+            const platformBadge = document.getElementById('video-platform');
+            const platformIcons = {
+                youtube: 'fab fa-youtube',
+                vimeo: 'fab fa-vimeo',
+                twitch: 'fab fa-twitch',
+                direct: 'fas fa-video'
+            };
+            platformBadge.innerHTML = `<i class="${platformIcons[video.platform] || 'fas fa-video'} mr-1"></i>${video.platform.charAt(0).toUpperCase() + video.platform.slice(1)}`;
+            
+            // Show/hide badges
+            if (video.is_featured) {
+                document.getElementById('video-featured').classList.remove('hidden');
+            }
+            if (video.is_trending) {
+                document.getElementById('video-trending').classList.remove('hidden');
+            }
+            
+            // Update description
+            document.getElementById('video-description').innerHTML = formatDescription(video.description || 'No description available.');
+            
+            // Update tags
+            if (video.tags && video.tags.length > 0) {
+                const tagsContainer = document.getElementById('video-tags');
+                tagsContainer.innerHTML = video.tags.map(tag => 
+                    `<span class="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium bg-gray-700 text-gray-300 hover:bg-gray-600 transition-colors cursor-pointer">
+                        #${tag}
+                    </span>`
+                ).join('');
+                document.getElementById('video-tags-section').classList.remove('hidden');
+            }
+            
+            // Update sidebar stats
+            document.getElementById('sidebar-views').textContent = video.view_count;
+            document.getElementById('sidebar-likes').textContent = video.like_count;
+            document.getElementById('sidebar-date').textContent = new Date(video.published_at).toLocaleDateString();
+            document.getElementById('sidebar-duration').textContent = video.duration_formatted || 'Unknown';
+            
+            // Show video content
+            document.getElementById('loading-state').classList.add('hidden');
+            document.getElementById('video-content').classList.remove('hidden');
+        }
+
+        function renderVideoPlayer(video) {
+            const playerContainer = document.getElementById('video-player');
+            
+            if (video.embed_code) {
+                // Use custom embed code if provided
+                playerContainer.innerHTML = video.embed_code;
+            } else {
+                // Generate embed based on platform and URL
+                let embedHTML = '';
+                
+                switch (video.platform) {
+                    case 'youtube':
+                        const youtubeId = extractYouTubeId(video.video_url);
+                        if (youtubeId) {
+                            embedHTML = `<iframe src="https://www.youtube.com/embed/${youtubeId}" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowfullscreen></iframe>`;
+                        }
+                        break;
+                    case 'vimeo':
+                        const vimeoId = extractVimeoId(video.video_url);
+                        if (vimeoId) {
+                            embedHTML = `<iframe src="https://player.vimeo.com/video/${vimeoId}" frameborder="0" allow="autoplay; fullscreen; picture-in-picture" allowfullscreen></iframe>`;
+                        }
+                        break;
+                    case 'direct':
+                        embedHTML = `<video controls class="w-full h-full rounded-xl"><source src="${video.video_url}" type="video/mp4">Your browser does not support the video tag.</video>`;
+                        break;
+                    default:
+                        embedHTML = `<div class="w-full h-full flex items-center justify-center bg-gray-700 rounded-xl">
+                            <div class="text-center">
+                                <i class="fas fa-play-circle text-6xl text-gray-500 mb-4"></i>
+                                <p class="text-gray-400">Video player not available</p>
+                                <a href="${video.video_url}" target="_blank" class="text-purple-400 hover:text-purple-300 mt-2 inline-block">
+                                    Watch on ${video.platform} <i class="fas fa-external-link-alt ml-1"></i>
+                                </a>
+                            </div>
+                        </div>`;
+                }
+                
+                playerContainer.innerHTML = embedHTML;
+            }
+        }
+
+        function extractYouTubeId(url) {
+            const regex = /(?:youtube\.com\/(?:[^\/]+\/.+\/|(?:v|e(?:mbed)?)\/|.*[?&]v=)|youtu\.be\/)([^"&?\/\s]{11})/;
+            const match = url.match(regex);
+            return match ? match[1] : null;
+        }
+
+        function extractVimeoId(url) {
+            const regex = /(?:vimeo\.com\/)([0-9]+)/;
+            const match = url.match(regex);
+            return match ? match[1] : null;
+        }
+
+        function formatDescription(description) {
+            return description
+                .split('\n\n')
+                .map(paragraph => paragraph.trim())
+                .filter(paragraph => paragraph.length > 0)
+                .map(paragraph => `<p>${paragraph.replace(/\n/g, '<br>')}</p>`)
+                .join('');
+        }
+
+        async function loadRelatedVideos(videoType) {
+            try {
+                const response = await fetch(`/v1/cms/videos?type=${videoType}&page_size=5`);
+                
+                if (response.ok) {
+                    const data = await response.json();
+                    const relatedVideos = data.videos.filter(video => 
+                        currentVideo && video.id !== currentVideo.id
+                    ).slice(0, 4);
+                    
+                    if (relatedVideos.length > 0) {
+                        renderRelatedVideos(relatedVideos);
+                    } else {
+                        document.getElementById('related-videos').innerHTML = `
+                            <div class="text-center py-4 text-gray-400">
+                                <i class="fas fa-video text-2xl mb-2"></i>
+                                <p class="text-sm">No related videos found</p>
+                            </div>
+                        `;
+                    }
+                }
+            } catch (error) {
+                console.error('Error loading related videos:', error);
+            }
+        }
+
+        function renderRelatedVideos(videos) {
+            const container = document.getElementById('related-videos');
+            container.innerHTML = videos.map(video => {
+                return `
+                    <div class="flex space-x-3 p-2 rounded-lg hover:bg-gray-700 transition-colors cursor-pointer" onclick="window.location.href='/videos/${video.slug}'">
+                        <div class="flex-shrink-0 w-24 h-16 bg-gray-700 rounded overflow-hidden">
+                            ${video.thumbnail_url ? 
+                                `<img src="${video.thumbnail_url}" alt="${video.title}" class="w-full h-full object-cover">` :
+                                `<div class="w-full h-full flex items-center justify-center">
+                                    <i class="fas fa-play text-gray-500"></i>
+                                </div>`
+                            }
+                            ${video.duration_formatted ? 
+                                `<div class="absolute bottom-1 right-1 bg-black bg-opacity-75 text-white text-xs px-1 rounded">
+                                    ${video.duration_formatted}
+                                </div>` : ''
+                            }
+                        </div>
+                        <div class="flex-1 min-w-0">
+                            <h4 class="text-sm font-medium text-white line-clamp-2 mb-1">${video.title}</h4>
+                            <p class="text-xs text-gray-400">${video.view_count} views</p>
+                        </div>
+                    </div>
+                `;
+            }).join('');
+        }
+
+        function showError() {
+            document.getElementById('loading-state').classList.add('hidden');
+            document.getElementById('error-state').classList.remove('hidden');
+        }
+
+        function likeVideo() {
+            // Placeholder for like functionality
+            const likesElement = document.getElementById('video-likes');
+            const sidebarLikes = document.getElementById('sidebar-likes');
+            const currentLikes = parseInt(likesElement.textContent);
+            const newLikes = currentLikes + 1;
+            
+            likesElement.textContent = newLikes;
+            sidebarLikes.textContent = newLikes;
+            
+            // Show feedback
+            const button = event.target.closest('button');
+            button.classList.add('text-red-400');
+            setTimeout(() => {
+                button.classList.remove('text-red-400');
+            }, 1000);
+        }
+
+        function shareVideo(platform) {
+            if (!currentVideo) return;
+            
+            const url = encodeURIComponent(window.location.href);
+            const title = encodeURIComponent(currentVideo.title);
+            
+            let shareUrl = '';
+            
+            switch (platform) {
+                case 'twitter':
+                    shareUrl = `https://twitter.com/intent/tweet?url=${url}&text=${title}`;
+                    break;
+                case 'facebook':
+                    shareUrl = `https://www.facebook.com/sharer/sharer.php?u=${url}`;
+                    break;
+            }
+            
+            if (shareUrl) {
+                window.open(shareUrl, '_blank', 'width=600,height=400');
+            }
+        }
+
+        function copyVideoLink() {
+            navigator.clipboard.writeText(window.location.href).then(() => {
+                const button = event.target.closest('button');
+                const originalIcon = button.innerHTML;
+                button.innerHTML = '<i class="fas fa-check text-xl"></i>';
+                button.classList.add('text-green-400');
+                
+                setTimeout(() => {
+                    button.innerHTML = originalIcon;
+                    button.classList.remove('text-green-400');
+                }, 2000);
+            });
+        }
+    </script>
+
+    <style>
+        .line-clamp-2 {
+            display: -webkit-box;
+            -webkit-line-clamp: 2;
+            -webkit-box-orient: vertical;
+            overflow: hidden;
+        }
+    </style>
+</body>
+</html>

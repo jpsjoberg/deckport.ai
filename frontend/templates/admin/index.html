@@ -6,23 +6,8 @@
 
 {% block content %}
 <!-- Critical Alerts Section -->
-<div class="mb-6">
-    <div class="bg-red-900 border-l-4 border-red-500 p-4 mb-4" id="critical-alerts">
-        <div class="flex">
-            <div class="flex-shrink-0">
-                <i class="fas fa-exclamation-triangle text-red-400"></i>
-            </div>
-            <div class="ml-3">
-                <h3 class="text-sm font-medium text-red-300">Critical Alerts (2)</h3>
-                <div class="mt-2 text-sm text-red-200">
-                    <ul class="list-disc pl-5 space-y-1">
-                        <li>Console DECK_NYC_01 offline for 2 hours</li>
-                        <li>Payment gateway experiencing 3% failure rate</li>
-                    </ul>
-                </div>
-            </div>
-        </div>
-    </div>
+<div class="mb-6" id="alerts-section">
+    <!-- Dynamic alerts will be loaded here -->
 </div>
 
 <!-- Key Metrics Grid -->
@@ -36,10 +21,10 @@
             <div class="ml-4 flex-1">
                 <h3 class="text-lg font-semibold text-white">Active Consoles</h3>
                 <div class="flex items-baseline">
-                    <span class="text-3xl font-bold text-blue-400" id="console-count">47</span>
-                    <span class="text-lg text-gray-400 ml-1">/50</span>
+                    <span class="text-3xl font-bold text-blue-400" id="console-count">-</span>
+                    <span class="text-lg text-gray-400 ml-1" id="console-total">/-</span>
                 </div>
-                <p class="text-sm text-green-400">94% uptime</p>
+                <p class="text-sm text-green-400" id="console-uptime">Loading...</p>
             </div>
         </div>
     </div>
@@ -53,9 +38,9 @@
             <div class="ml-4 flex-1">
                 <h3 class="text-lg font-semibold text-white">Live Matches</h3>
                 <div class="flex items-baseline">
-                    <span class="text-3xl font-bold text-green-400" id="match-count">23</span>
+                    <span class="text-3xl font-bold text-green-400" id="match-count">-</span>
                 </div>
-                <p class="text-sm text-gray-400">Avg 8.4 min/match</p>
+                <p class="text-sm text-gray-400" id="match-avg-duration">Loading...</p>
             </div>
         </div>
     </div>
@@ -69,9 +54,9 @@
             <div class="ml-4 flex-1">
                 <h3 class="text-lg font-semibold text-white">Online Players</h3>
                 <div class="flex items-baseline">
-                    <span class="text-3xl font-bold text-purple-400" id="player-count">1,247</span>
+                    <span class="text-3xl font-bold text-purple-400" id="player-count">-</span>
                 </div>
-                <p class="text-sm text-green-400">+12% vs yesterday</p>
+                <p class="text-sm text-green-400" id="player-growth">Loading...</p>
             </div>
         </div>
     </div>
@@ -85,9 +70,9 @@
             <div class="ml-4 flex-1">
                 <h3 class="text-lg font-semibold text-white">Today's Revenue</h3>
                 <div class="flex items-baseline">
-                    <span class="text-3xl font-bold text-yellow-400" id="revenue-count">$2,341</span>
+                    <span class="text-3xl font-bold text-yellow-400" id="revenue-count">$-</span>
                 </div>
-                <p class="text-sm text-green-400">+18% vs avg</p>
+                <p class="text-sm text-green-400" id="revenue-growth">Loading...</p>
             </div>
         </div>
     </div>
@@ -224,12 +209,151 @@
 {% endblock %}
 
 {% block scripts %}
-<script src="{{ url_for('static', filename='admin/js/dashboard.js') }}"></script>
 <script>
+// Load dynamic alerts
+async function loadAlerts() {
+    try {
+        const response = await fetch('/v1/admin/alerts/summary');
+        const data = await response.json();
+        
+        const alertsSection = document.getElementById('alerts-section');
+        
+        if (data.critical_alerts && data.critical_alerts.length > 0) {
+            const alertsHtml = `
+                <div class="bg-red-900 border-l-4 border-red-500 p-4 mb-4">
+                    <div class="flex">
+                        <div class="flex-shrink-0">
+                            <i class="fas fa-exclamation-triangle text-red-400"></i>
+                        </div>
+                        <div class="ml-3">
+                            <h3 class="text-sm font-medium text-red-300">Critical Alerts (${data.critical_alerts.length})</h3>
+                            <div class="mt-2 text-sm text-red-200">
+                                <ul class="list-disc pl-5 space-y-1">
+                                    ${data.critical_alerts.map(alert => `<li>${alert.message}</li>`).join('')}
+                                </ul>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            `;
+            alertsSection.innerHTML = alertsHtml;
+        } else if (data.system_status === 'warning') {
+            alertsSection.innerHTML = `
+                <div class="bg-yellow-900 border-l-4 border-yellow-500 p-4 mb-4">
+                    <div class="flex">
+                        <div class="flex-shrink-0">
+                            <i class="fas fa-exclamation-circle text-yellow-400"></i>
+                        </div>
+                        <div class="ml-3">
+                            <h3 class="text-sm font-medium text-yellow-300">System Status: Warning</h3>
+                            <p class="text-sm text-yellow-200 mt-1">Some components may be experiencing issues.</p>
+                        </div>
+                    </div>
+                </div>
+            `;
+        } else {
+            alertsSection.innerHTML = `
+                <div class="bg-green-900 border-l-4 border-green-500 p-4 mb-4">
+                    <div class="flex">
+                        <div class="flex-shrink-0">
+                            <i class="fas fa-check-circle text-green-400"></i>
+                        </div>
+                        <div class="ml-3">
+                            <h3 class="text-sm font-medium text-green-300">All Systems Operational</h3>
+                            <p class="text-sm text-green-200 mt-1">No critical issues detected.</p>
+                        </div>
+                    </div>
+                </div>
+            `;
+        }
+        
+    } catch (error) {
+        console.error('Failed to load alerts:', error);
+        document.getElementById('alerts-section').innerHTML = `
+            <div class="bg-gray-900 border-l-4 border-gray-500 p-4 mb-4">
+                <div class="flex">
+                    <div class="flex-shrink-0">
+                        <i class="fas fa-exclamation-triangle text-gray-400"></i>
+                    </div>
+                    <div class="ml-3">
+                        <h3 class="text-sm font-medium text-gray-300">Alert System Unavailable</h3>
+                        <p class="text-sm text-gray-400 mt-1">Unable to load system alerts.</p>
+                    </div>
+                </div>
+            </div>
+        `;
+    }
+}
+
+// Load real-time dashboard stats
+async function loadDashboardStats() {
+    try {
+        const response = await fetch('https://api.deckport.ai/v1/admin/dashboard/stats', {
+            headers: {
+                // No authorization header needed - using same-origin cookies
+            }
+        });
+        const data = await response.json();
+        
+        if (data.error) {
+            console.error('Dashboard stats error:', data.error);
+            return;
+        }
+        
+        // Update header stats
+        const activeConsolesHeader = document.getElementById('active-consoles');
+        const liveMatchesHeader = document.getElementById('live-matches');
+        
+        if (activeConsolesHeader) activeConsolesHeader.textContent = data.consoles?.active || 0;
+        if (liveMatchesHeader) liveMatchesHeader.textContent = data.matches?.live || 0;
+        
+        // Update dashboard cards
+        const consoleCount = document.getElementById('console-count');
+        const consoleTotal = document.getElementById('console-total');
+        const consoleUptime = document.getElementById('console-uptime');
+        const matchCount = document.getElementById('match-count');
+        const matchAvgDuration = document.getElementById('match-avg-duration');
+        const playerCount = document.getElementById('player-count');
+        const playerGrowth = document.getElementById('player-growth');
+        const revenueCount = document.getElementById('revenue-count');
+        const revenueGrowth = document.getElementById('revenue-growth');
+        
+        if (consoleCount) consoleCount.textContent = data.consoles?.active || 0;
+        if (consoleTotal) consoleTotal.textContent = `/${data.consoles?.total || 0}`;
+        if (consoleUptime) consoleUptime.textContent = `${data.consoles?.health_ratio || 0}% uptime`;
+        
+        if (matchCount) matchCount.textContent = data.matches?.live || 0;
+        if (matchAvgDuration) matchAvgDuration.textContent = `${data.matches?.today || 0} matches today`;
+        
+        if (playerCount) playerCount.textContent = (data.players?.active_today || 0).toLocaleString();
+        if (playerGrowth) playerGrowth.textContent = `${data.players?.total || 0} total players`;
+        
+        if (revenueCount) revenueCount.textContent = `$${(data.revenue?.today || 0).toFixed(2)}`;
+        if (revenueGrowth) revenueGrowth.textContent = `Today's revenue`;
+        
+        console.log('Dashboard stats updated:', data);
+        
+    } catch (error) {
+        console.error('Failed to load dashboard stats:', error);
+        // Show error state
+        const elements = ['console-count', 'match-count', 'player-count', 'revenue-count'];
+        elements.forEach(id => {
+            const element = document.getElementById(id);
+            if (element) element.textContent = 'Error';
+        });
+    }
+}
+
 // Initialize dashboard
 document.addEventListener('DOMContentLoaded', function() {
-    initializeDashboard();
-    startRealTimeUpdates();
+    loadAlerts();
+    loadDashboardStats();
+    
+    // Auto-refresh every 30 seconds
+    setInterval(function() {
+        loadAlerts();
+        loadDashboardStats();
+    }, 30000);
 });
 </script>
 {% endblock %}
