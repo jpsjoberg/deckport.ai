@@ -271,6 +271,79 @@ class ComfyUIService:
             logger.error(f"Queue status request error: {e}")
             return None
     
+    def generate_arena_video(self, image_path: str, motion_type: str = "zoom_in", 
+                           motion_strength: float = 0.3, duration_frames: int = 150,
+                           workflow_path: str = None) -> Optional[str]:
+        """
+        Generate video clip from arena image using ComfyUI video workflow
+        
+        Args:
+            image_path: Path to input arena image
+            motion_type: Type of camera motion (zoom_in, pan_left, etc.)
+            motion_strength: Strength of motion effect (0.1-1.0)
+            duration_frames: Video length in frames (150 = 5s at 30fps)
+            workflow_path: Path to ComfyUI video workflow JSON
+            
+        Returns:
+            Path to generated video file, or None if failed
+        """
+        try:
+            # Load video workflow template
+            if not workflow_path:
+                workflow_path = "/home/jp/deckport.ai/workflows/arena-video-generation.json"
+            
+            workflow = self.load_workflow_template(workflow_path)
+            if not workflow:
+                logger.error("Failed to load video workflow template")
+                return None
+            
+            # Configure workflow for arena video generation
+            # Set input image
+            if "1" in workflow and "inputs" in workflow["1"]:
+                workflow["1"]["inputs"]["image"] = image_path
+            
+            # Set motion parameters
+            motion_prompt = f"""
+            Cinematic {motion_type} camera movement for fantasy arena environment.
+            Smooth, professional cinematography, atmospheric depth, subtle movement.
+            High-quality video generation, motion strength: {motion_strength}.
+            """
+            
+            if "2" in workflow and "inputs" in workflow["2"]:
+                workflow["2"]["inputs"]["text"] = motion_prompt
+            
+            # Configure video settings
+            if "4" in workflow and "inputs" in workflow["4"]:
+                workflow["4"]["inputs"]["video_frames"] = duration_frames
+                workflow["4"]["inputs"]["motion_bucket_id"] = int(motion_strength * 255)
+            
+            # Submit to ComfyUI
+            prompt_id = self.submit_prompt(workflow)
+            if not prompt_id:
+                logger.error("Failed to submit video generation prompt to ComfyUI")
+                return None
+            
+            # Wait for video completion (longer timeout for video)
+            video_data = self.wait_for_completion(prompt_id, max_wait=300)
+            if not video_data:
+                logger.error("Failed to generate arena video")
+                return None
+            
+            # Return path to generated video (ComfyUI saves it automatically)
+            output_filename = workflow.get("7", {}).get("inputs", {}).get("filename_prefix", "arena_video")
+            video_path = f"/tmp/ComfyUI_output/{output_filename}.mp4"
+            
+            if os.path.exists(video_path):
+                logger.info(f"Successfully generated arena video: {video_path}")
+                return video_path
+            else:
+                logger.error("Video file not found after generation")
+                return None
+            
+        except Exception as e:
+            logger.error(f"Arena video generation failed: {e}")
+            return None
+    
     def clear_queue(self) -> bool:
         """Clear the ComfyUI queue"""
         try:

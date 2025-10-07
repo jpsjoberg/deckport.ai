@@ -13,7 +13,7 @@ from . import dashboard
 from . import card_management
 from . import nfc_management
 from . import shop_management
-# Temporarily disabled - fixing imports
+# Temporarily disabled - fixing import issues
 # from . import card_generation_ai
 # from . import card_set_generator_ai
 from . import console_management
@@ -26,3 +26,7 @@ from . import system_admin
 # Temporarily disabled - import error
 # from . import security_monitoring
 from . import cms
+from . import console_logs
+from . import asset_generation
+# from . import card_batch_production  # Temporarily disabled - has shared import issues
+# from . import card_database_production  # Temporarily disabled - has shared import issues

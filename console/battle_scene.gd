@@ -1,69 +1,196 @@
 extends Control
 
-# Battle Scene - Physical card battle with video streaming
-# Players scan real NFC cards to play, attack, and defend
+##
+## Battle Scene - Physical Card Battle System
+##
+## This is the core gameplay scene where players engage in real-time card battles
+## using physical NFC cards. Handles turn management, card scanning, ability execution,
+## arena effects, and live video streaming between players.
+##
+## Key Features:
+## - Real-time multiplayer battle synchronization
+## - Physical NFC card scanning and validation
+## - Turn-based gameplay with timer management
+## - Arena effects and environmental bonuses
+## - Card ability execution with video playback
+## - Live video streaming between opponents
+## - Comprehensive battle state management
+##
+## Dependencies:
+## - ArenaManager: Handles arena selection and effects
+## - ResourceManager: Manages mana and energy systems
+## - CardAbilitiesCatalog: Card ability definitions and execution
+## - CardDisplayManager: UI display for scanned cards
+## - VideoBackgroundManager: Arena background videos
+## - GameStateManager: Overall game state coordination
+## - NetworkClient: Real-time multiplayer communication
+## - NFCManager: Physical card scanning hardware interface
+##
+## @author Deckport.ai Development Team
+## @version 1.0
+## @since 2024-12-28
+##
 
-# UI Components
-@onready var title_label = $VBoxContainer/TitleLabel
-@onready var status_label = $VBoxContainer/StatusLabel
-@onready var arena_info_label = $VBoxContainer/ArenaInfoLabel
-@onready var battle_info_label = $VBoxContainer/BattleInfoLabel
-@onready var turn_timer_display = $VBoxContainer/TurnTimerDisplay
-@onready var card_scan_prompt = $VBoxContainer/CardScanPrompt
-@onready var pending_cards_display = $VBoxContainer/PendingCardsDisplay
-@onready var played_cards_display = $VBoxContainer/PlayedCardsDisplay
-@onready var video_container = $VBoxContainer/VideoContainer
-@onready var battle_controls = $VBoxContainer/BattleControls
-@onready var background_video = $BackgroundVideo
+#region UI Component References
+## Core UI elements for battle interface
+@onready var title_label = $VBoxContainer/TitleLabel                    ## Battle scene title display
+@onready var status_label = $VBoxContainer/StatusLabel                  ## Current battle status messages
+@onready var arena_info_label = $VBoxContainer/ArenaInfoLabel          ## Arena name and effects info
+@onready var battle_info_label = $VBoxContainer/BattleInfoLabel        ## Turn and player information
+@onready var turn_timer_display = $VBoxContainer/TurnTimerDisplay      ## Turn countdown timer
+@onready var card_scan_prompt = $VBoxContainer/CardScanPrompt          ## NFC card scanning instructions
+@onready var pending_cards_display = $VBoxContainer/PendingCardsDisplay ## Cards waiting to be played
+@onready var played_cards_display = $VBoxContainer/PlayedCardsDisplay  ## Cards played this turn
+@onready var video_container = $VBoxContainer/VideoContainer           ## Container for ability videos
+@onready var battle_controls = $VBoxContainer/BattleControls           ## Action buttons and controls
+@onready var background_video = $BackgroundVideo                       ## Arena background video player
+@onready var attack_button = $VBoxContainer/BattleControls/AttackButton ## Touch attack button
+@onready var end_turn_button = $VBoxContainer/BattleControls/EndTurnButton ## Touch end turn button
+@onready var forfeit_button = $VBoxContainer/BattleControls/ForfeitButton ## Touch forfeit button
+@onready var scan_card1_button = $VBoxContainer/CardScanButtons/ScanCard1 ## Touch card scan 1
+@onready var scan_card2_button = $VBoxContainer/CardScanButtons/ScanCard2 ## Touch card scan 2
+@onready var scan_card3_button = $VBoxContainer/CardScanButtons/ScanCard3 ## Touch card scan 3
+#endregion
 
-# Managers
-var arena_video_manager
-var video_stream_manager
-var device_connection_manager
-var game_state_manager
-var turn_timer_manager
-var server_logger
+#region Manager References
+## Core system managers for battle functionality
+var arena_manager                ## Handles arena effects and environmental bonuses
+var resource_manager             ## Manages mana, energy, and resource generation
+var card_abilities_catalog       ## Card ability definitions and execution logic
+var card_display_manager         ## UI management for card information display
+var video_background_manager     ## Arena background video playback
+var device_connection_manager    ## Console device authentication and connection
+var game_state_manager          ## Overall game state coordination and transitions
+var turn_timer_manager          ## Turn timing and countdown management
+var server_logger               ## Real-time logging to server for monitoring
+var player_session_manager      ## Player authentication and session data
+var network_client              ## Real-time multiplayer communication
+var arena_video_manager         ## Arena video management  
+var video_stream_manager        ## Video streaming management
+var current_battle_id: String = ""  ## Current battle identifier
+var opponent_console_id: String = "" ## Opponent console identifier
+#endregion
 
-# Battle state
-var current_arena_data: Dictionary = {}
-var current_battle_data: Dictionary = {}
-var opponent_data: Dictionary = {}
-var battle_stream_id: String = ""
-var video_streaming_enabled: bool = false
+#region Battle State Variables
+## Core battle data and match information
+var current_arena_data: Dictionary = {}      ## Active arena with effects and bonuses
+var current_battle_data: Dictionary = {}     ## Current battle session data
+var opponent_data: Dictionary = {}           ## Opponent player information and stats
+var battle_stream_id: String = ""           ## Video streaming session identifier
+var video_streaming_enabled: bool = false   ## Whether video streaming is active
 
-# Physical card battle state
-var is_my_turn: bool = false
-var my_health: int = 20
-var opponent_health: int = 20
-var my_mana: int = 1
-var opponent_mana: int = 1
-var turn_number: int = 1
-var played_cards_this_turn: Array[Dictionary] = []
-var scanned_card_queue: Array[Dictionary] = []
+## Arena system and environmental effects
+var arena_effects: Dictionary = {}          ## Active arena-specific effects and modifiers
+var hero_arena_bonuses: Dictionary = {}     ## Hero-specific bonuses in current arena
 
-# Player data
-var player_id: int = 0
-var player_name: String = "Player"
-var selected_hero: Dictionary = {}
+## Physical card battle state tracking
+var is_my_turn: bool = false                ## Whether it's currently this player's turn
+var my_health: int = 20                     ## Current player health points
+var opponent_health: int = 20               ## Opponent's current health points
+var turn_number: int = 1                    ## Current turn number in the battle
+var played_cards_this_turn: Array[Dictionary] = []  ## Cards played in current turn
+var scanned_card_queue: Array[Dictionary] = []      ## NFC cards scanned but not yet processed
 
+## Player identification and session data
+var player_id: int = 0                      ## Unique player identifier from server
+var player_name: String = "Player"         ## Display name for this player
+var selected_hero: Dictionary = {}          ## Hero card selected for this battle
+#endregion
+
+#region Initialization
+
+##
+## Initialize the battle scene and set up all required components
+## Called automatically when the scene is loaded
+##
 func _ready():
 	print("⚔️ Battle Scene initialized")
 	
-	# Initialize server logger
+	_initialize_logging()
+	_setup_manager_references()
+	_setup_turn_timer()
+	_setup_video_systems()
+	_setup_card_display()
+	_setup_nfc_scanning()
+	_setup_network_connections()
+	_initialize_battle_state()
+	_setup_touch_controls()
+	
+	print("✅ Battle Scene setup complete")
+
+##
+## Initialize server logging for real-time monitoring
+##
+func _initialize_logging():
 	server_logger = preload("res://server_logger.gd").new()
 	add_child(server_logger)
-	
-	# Get manager references
-	arena_video_manager = get_node("/root/ArenaVideoManager")
-	video_stream_manager = get_node("/root/VideoStreamManager")
+	server_logger.log_system_event("battle_scene_initialized", {
+		"scene": "battle",
+		"timestamp": Time.get_unix_time_from_system()
+	})
+
+##
+## Set up references to all required manager singletons
+##
+func _setup_manager_references():
+	arena_manager = get_node("/root/ArenaManager")
+	resource_manager = get_node("/root/ResourceManager")
+	card_abilities_catalog = get_node("/root/CardAbilitiesCatalog")
+	card_display_manager = get_node("/root/CardDisplayManager")
+	video_background_manager = get_node("/root/VideoBackgroundManager")
 	device_connection_manager = get_node("/root/DeviceConnectionManager")
 	game_state_manager = get_node("/root/GameStateManager")
+	player_session_manager = get_node("/root/PlayerSessionManager")
+	network_client = get_node("/root/NetworkClient")
 	
-	# Create turn timer manager
+	# Additional managers (create if not autoloaded)
+	arena_video_manager = get_node("/root/ArenaVideoManager")
+	if not arena_video_manager:
+		arena_video_manager = preload("res://arena_video_manager.gd").new()
+		add_child(arena_video_manager)
+	
+	video_stream_manager = get_node("/root/VideoStreamManager")
+	if not video_stream_manager:
+		video_stream_manager = preload("res://video_stream_manager.gd").new()
+		add_child(video_stream_manager)
+
+##
+## Set up turn timer management system
+##
+func _setup_turn_timer():
 	turn_timer_manager = preload("res://turn_timer_manager.gd").new()
 	add_child(turn_timer_manager)
-	
-	# Connect to NFC Manager for real card scanning
+	print("✅ Turn timer manager initialized")
+
+##
+## Initialize video systems for arena backgrounds and ability playback
+##
+func _setup_video_systems():
+	if video_background_manager:
+		video_background_manager.setup_video_player(background_video)
+		print("✅ Video background manager setup")
+
+##
+## Configure card display UI components and layout
+##
+func _setup_card_display():
+	if card_display_manager:
+		var display_components = {
+			"frame_container": $VBoxContainer/CardDisplayFrame,
+			"info_panel": $VBoxContainer/CardDisplayFrame/CardInfo,
+			"video_player": $VBoxContainer/CardDisplayFrame/AbilityVideo,
+			"name_label": $VBoxContainer/CardDisplayFrame/CardInfo/NameLabel,
+			"stats_label": $VBoxContainer/CardDisplayFrame/CardInfo/StatsLabel,
+			"abilities_label": $VBoxContainer/CardDisplayFrame/CardInfo/AbilitiesLabel,
+			"cost_label": $VBoxContainer/CardDisplayFrame/CardInfo/CostLabel
+		}
+		card_display_manager.setup_display_components(display_components)
+		print("✅ Card display manager setup")
+
+##
+## Connect to NFC hardware for physical card scanning
+##
+func _setup_nfc_scanning():
 	var nfc_manager = get_node("/root/NFCManager")
 	if nfc_manager:
 		nfc_manager.card_scanned.connect(_on_nfc_card_scanned)
@@ -71,72 +198,153 @@ func _ready():
 		print("✅ Connected to NFC Manager for card scanning")
 	else:
 		print("⚠️ NFC Manager not found - card scanning disabled")
+
+##
+## Set up network connections and signal handlers for real-time multiplayer
+##
+func _setup_network_connections():
+	if network_client:
+		network_client.match_state_updated.connect(_on_match_state_updated)
+		network_client.card_play_result.connect(_on_card_play_result)
+		network_client.error_occurred.connect(_on_network_error)
+		print("✅ Network client connected")
 	
-	# Get battle data from game state manager
+	# Connect resource manager signals for mana/energy updates
+	if resource_manager:
+		resource_manager.energy_changed.connect(_on_energy_changed)
+		resource_manager.mana_changed.connect(_on_mana_changed)
+		resource_manager.resource_insufficient.connect(_on_resource_insufficient)
+		print("✅ Resource manager signals connected")
+	
+	# Connect arena manager signals for environmental effects
+	if arena_manager:
+		arena_manager.arena_selected.connect(_on_arena_selected)
+		arena_manager.arena_effect_triggered.connect(_on_arena_effect_triggered)
+		arena_manager.mana_generated.connect(_on_mana_generated)
+		print("✅ Arena manager signals connected")
+	
+	connect_manager_signals()
+
+##
+## Initialize battle state from game session data
+##
+func _initialize_battle_state():
+	# Get player data from session manager
+	if player_session_manager and player_session_manager.is_session_valid():
+		player_id = player_session_manager.player_id
+		player_name = player_session_manager.display_name
+		print("👤 Player: ", player_name, " (ID: ", player_id, ")")
+	else:
+		print("❌ No valid player session found")
+		_show_error("Player authentication required")
+		return
+	
+	# Get battle/match data from game state manager
 	if game_state_manager:
-		current_battle_data = game_state_manager.get_battle_data()
+		current_battle_data = game_state_manager.get_current_match()
 		opponent_data = game_state_manager.get_opponent_data()
 		selected_hero = game_state_manager.get_selected_hero()
 		is_my_turn = game_state_manager.is_player_turn()
-		my_mana = game_state_manager.get_available_mana()
+		
+		# If no match data, this might be a direct battle scene load
+		if current_battle_data.is_empty():
+			print("⚠️ No match data found - this may be a test battle")
+			# Create test arena for development
+			if arena_manager:
+				current_arena_data = arena_manager.get_random_arena()
+				print("🏟️ Using test arena: ", current_arena_data.get("name", "Unknown"))
 	
-	# Connect signals
-	connect_manager_signals()
-	
-	# Setup UI
+	# Setup UI and start battle sequence
 	setup_battle_ui()
-	
-	# Load arena and start battle
 	start_battle_sequence()
 
+##
+## Setup touch controls for console touchscreen
+##
+func _setup_touch_controls():
+	"""Connect touch button signals for console interface"""
+	# Connect battle control buttons
+	if attack_button:
+		attack_button.pressed.connect(_on_attack_pressed)
+	if end_turn_button:
+		end_turn_button.pressed.connect(_on_end_turn_pressed)
+	if forfeit_button:
+		forfeit_button.pressed.connect(_on_forfeit_pressed)
+	
+	# Connect card scanning buttons
+	if scan_card1_button:
+		scan_card1_button.pressed.connect(func(): simulate_card_scan("CREATURE_GOBLIN_001", "Goblin Warrior"))
+	if scan_card2_button:
+		scan_card2_button.pressed.connect(func(): simulate_card_scan("SPELL_FIREBALL_001", "Fireball"))
+	if scan_card3_button:
+		scan_card3_button.pressed.connect(func(): simulate_card_scan("STRUCTURE_TOWER_001", "Guard Tower"))
+	
+	print("✅ Touch controls configured for console")
+
+##
+## Connect additional manager signals for video streaming and arena management
+##
 func connect_manager_signals():
-	"""Connect signals from various managers"""
+	# Connect arena video manager signals for background video management
 	if arena_video_manager:
 		arena_video_manager.arena_loaded.connect(_on_arena_loaded)
 		arena_video_manager.video_loaded.connect(_on_arena_video_loaded)
+		print("✅ Arena video manager signals connected")
 	
+	# Connect video streaming manager for live opponent video
 	if video_stream_manager:
 		video_stream_manager.stream_started.connect(_on_video_stream_started)
 		video_stream_manager.stream_joined.connect(_on_video_stream_joined)
 		video_stream_manager.participant_joined.connect(_on_participant_joined)
 		video_stream_manager.surveillance_detected.connect(_on_surveillance_detected)
+		print("✅ Video stream manager signals connected")
+
 	
+	# Connect game state manager signals for battle coordination
 	if game_state_manager:
 		game_state_manager.card_scanned.connect(_on_card_scanned)
 		game_state_manager.battle_ended.connect(_on_battle_ended)
+		print("✅ Game state manager signals connected")
 	
+	# Connect turn timer manager signals for timing events
 	if turn_timer_manager:
 		turn_timer_manager.turn_timer_updated.connect(_on_turn_timer_updated)
 		turn_timer_manager.turn_timer_expired.connect(_on_turn_timer_expired)
 		turn_timer_manager.card_timer_started.connect(_on_card_timer_started)
 		turn_timer_manager.card_timer_updated.connect(_on_card_timer_updated)
 		turn_timer_manager.card_timer_expired.connect(_on_card_timer_expired)
+		print("✅ Turn timer manager signals connected")
 
+#endregion
+
+#region UI Setup and Management
+
+##
+## Configure the physical card battle interface and UI elements
+##
 func setup_battle_ui():
-	"""Setup the physical card battle interface"""
+	# Initialize main UI labels
 	title_label.text = "PORTAL BATTLE"
 	status_label.text = "Preparing for battle..."
 	arena_info_label.text = ""
 	
-	# Setup battle info display
+	# Configure battle information displays
 	update_battle_info()
 	
-	# Setup turn timer display
+	# Initialize turn timer display
 	turn_timer_display.text = "TURN TIMER\n\nWaiting for turn..."
 	
-	# Setup card scanning prompt
+	# Set up card scanning interface
 	update_card_scan_prompt()
 	
-	# Setup pending cards display
+	# Initialize card status displays
 	pending_cards_display.text = "PENDING CARDS\n\nNo cards scanned"
-	
-	# Setup played cards display
 	played_cards_display.text = "PLAYED CARDS\n\nNo cards played yet"
 	
-	# Setup video container
+	# Configure video container (hidden initially)
 	video_container.visible = false
 	
-	# Setup battle controls
+	# Set up interactive battle controls
 	setup_battle_controls()
 	
 	print("🎮 Physical card battle UI configured")
@@ -145,16 +353,46 @@ func update_battle_info():
 	"""Update battle information display"""
 	var hero_name = selected_hero.get("name", "Unknown Hero")
 	var opponent_name = opponent_data.get("player_name", "Unknown Opponent")
+	var arena_name = current_arena_data.get("name", "Unknown Arena")
 	
-	battle_info_label.text = "BATTLE STATUS\n\n" + "Your Hero: " + hero_name + " (HP: " + str(my_health) + ")\n" + "Opponent: " + opponent_name + " (HP: " + str(opponent_health) + ")\n\n" + "Turn: " + str(turn_number) + " | Your Mana: " + str(my_mana) + "\n" + ("YOUR TURN" if is_my_turn else "OPPONENT'S TURN")
+	# Get resource status
+	var energy_status = resource_manager.get_energy_status() if resource_manager else {"current": 0, "maximum": 0}
+	var mana_status = resource_manager.get_mana_status() if resource_manager else {"total": 0, "colors": []}
+	
+	# Format mana display
+	var mana_text = "None"
+	if mana_status.total > 0:
+		var mana_parts = []
+		for color_data in mana_status.colors:
+			mana_parts.append(color_data.color + ":" + str(color_data.amount))
+		mana_text = " ".join(mana_parts)
+	
+	battle_info_label.text = "BATTLE STATUS\n\n" + \
+		"Arena: " + arena_name + "\n" + \
+		"Your Hero: " + hero_name + " (HP: " + str(my_health) + ")\n" + \
+		"Opponent: " + opponent_name + " (HP: " + str(opponent_health) + ")\n\n" + \
+		"Turn: " + str(turn_number) + "\n" + \
+		"⚡ Energy: " + str(energy_status.current) + "/" + str(energy_status.maximum) + "\n" + \
+		"🔮 Mana: " + mana_text + "\n\n" + \
+		("YOUR TURN" if is_my_turn else "OPPONENT'S TURN")
 
 func update_card_scan_prompt():
 	"""Update card scanning prompt"""
 	if is_my_turn:
-		if my_mana > 0:
-			card_scan_prompt.text = "🃏 YOUR TURN\n\nScan a card to play\n(Mana available: " + str(my_mana) + ")\n\nOr press SPACE to attack\nPress E to end turn"
+		var energy_status = resource_manager.get_energy_status() if resource_manager else {"current": 0}
+		var mana_status = resource_manager.get_mana_status() if resource_manager else {"total": 0}
+		
+		if energy_status.current > 0:
+			var prompt_text = "🃏 YOUR TURN\n\nScan a card to play\n"
+			prompt_text += "⚡ Energy: " + str(energy_status.current) + "\n"
+			if mana_status.total > 0:
+				prompt_text += "🔮 Mana available\n"
+			else:
+				prompt_text += "🔮 No mana (arena will generate)\n"
+			prompt_text += "\nOr press SPACE to attack\nPress E to end turn"
+			card_scan_prompt.text = prompt_text
 		else:
-			card_scan_prompt.text = "⚡ NO MANA\n\nPress SPACE to attack\nPress E to end turn"
+			card_scan_prompt.text = "⚡ NO ENERGY\n\nPress SPACE to attack\nPress E to end turn"
 	else:
 		card_scan_prompt.text = "⏳ OPPONENT'S TURN\n\nWaiting for opponent to play...\n\nWatch their moves on video stream"
 
@@ -165,7 +403,14 @@ func update_played_cards_display():
 	else:
 		var cards_text = "PLAYED CARDS THIS TURN\n\n"
 		for card in played_cards_this_turn:
-			cards_text += "• " + card.get("name", "Unknown") + " (Cost: " + str(card.get("mana_cost", 1)) + ")\n"
+			var energy_cost = card.get("energy_cost", 1)
+			var mana_costs = card.get("mana_cost", {})
+			var cost_text = "⚡" + str(energy_cost)
+			if not mana_costs.is_empty():
+				cost_text += " 🔮"
+				for color in mana_costs:
+					cost_text += color + ":" + str(mana_costs[color]) + " "
+			cards_text += "• " + card.get("name", "Unknown") + " (" + cost_text + ")\n"
 		played_cards_display.text = cards_text
 
 func update_pending_cards_display():
@@ -260,19 +505,22 @@ func start_battle_sequence():
 	"""Start the complete battle sequence"""
 	print("🚀 Starting battle sequence")
 	
-	# Generate battle ID
-	current_battle_id = "battle_" + str(Time.get_unix_time_from_system()) + "_" + str(randi() % 10000)
+	# Initialize arena if we have one
+	if not current_arena_data.is_empty():
+		initialize_arena_system()
+	else:
+		# Select random arena for testing
+		if arena_manager:
+			current_arena_data = arena_manager.get_random_arena()
+			initialize_arena_system()
 	
-	# For demo purposes, set opponent console ID
-	opponent_console_id = 999  # This would come from matchmaking
+	# Initialize resources for turn 1
+	if resource_manager:
+		var arena_mana = arena_manager.generate_turn_mana() if arena_manager else {}
+		resource_manager.start_new_turn(1, arena_mana)
 	
-	server_logger.log_system_event("battle_sequence_start", {
-		"battle_id": current_battle_id,
-		"opponent_console_id": opponent_console_id
-	})
-	
-	# Step 1: Get weighted arena
-	request_battle_arena()
+	# Setup battle ready state
+	setup_battle_ready()
 
 func request_battle_arena():
 	"""Request a weighted arena for the battle"""
@@ -669,8 +917,6 @@ func _on_end_turn_pressed():
 	
 	# Update local state
 	is_my_turn = false
-	turn_number += 1
-	my_mana = min(my_mana + 1, 10)  # Gain 1 mana per turn, max 10
 	played_cards_this_turn.clear()
 	
 	# Update UI
@@ -684,7 +930,7 @@ func _on_end_turn_pressed():
 	
 	server_logger.log_system_event("turn_ended", {
 		"battle_id": current_battle_data.get("battle_id", ""),
-		"turn": turn_number - 1,
+		"turn": turn_number,
 		"cards_played": played_cards_this_turn.size()
 	})
 	
@@ -704,16 +950,12 @@ func simulate_opponent_turn():
 	
 	print("🤖 Opponent's turn simulation")
 	
-	# Simulate opponent actions
-	opponent_mana = min(opponent_mana + 1, 10)
-	
 	# Random opponent action
 	var action = randi() % 3
 	match action:
 		0:
 			# Opponent plays a card
 			print("🃏 Opponent played a card")
-			opponent_mana -= 2
 			status_label.text = "Opponent played a card!"
 		1:
 			# Opponent attacks
@@ -732,18 +974,7 @@ func simulate_opponent_turn():
 	
 	# Return turn to player
 	await get_tree().create_timer(2.0).timeout
-	is_my_turn = true
-	
-	# Start player's turn timer
-	if turn_timer_manager:
-		turn_timer_manager.start_turn()
-	
-	# Update UI
-	update_battle_info()
-	update_card_scan_prompt()
-	update_turn_timer_display()
-	
-	status_label.text = "Your turn! Scan cards or take actions"
+	start_player_turn()
 
 func end_battle(player_won: bool):
 	"""End the battle with results"""
@@ -789,14 +1020,12 @@ func _input(event):
 	"""Handle input events for physical card battle"""
 	if event is InputEventKey and event.pressed:
 		# Card scanning simulation (for testing)
-		if event.keycode == KEY_1:
+		if event.keycode == KEY_Q:
 			simulate_card_scan("CREATURE_GOBLIN_001", "Goblin Warrior")
-		elif event.keycode == KEY_2:
+		elif event.keycode == KEY_W:
 			simulate_card_scan("SPELL_FIREBALL_001", "Fireball")
-		elif event.keycode == KEY_3:
+		elif event.keycode == KEY_E:
 			simulate_card_scan("STRUCTURE_TOWER_001", "Guard Tower")
-		elif event.keycode == KEY_4:
-			simulate_card_scan("CREATURE_DRAGON_001", "Fire Dragon")
 		
 		# Battle actions
 		elif event.keycode == KEY_SPACE:
@@ -899,6 +1128,16 @@ func create_test_card_data(sku: String, name: String) -> Dictionary:
 	
 	return card_data
 
+func simulate_card_scan(card_sku: String, card_name: String = ""):
+	"""Simulate NFC card scanning for testing"""
+	print("🃏 Simulating card scan: ", card_sku)
+	
+	# Create test card data
+	var card_data = create_test_card_data(card_sku, card_name)
+	
+	# Process as if it was a real NFC scan
+	_on_nfc_card_scanned(card_data)
+
 func _on_card_validated(card_data: Dictionary, is_valid: bool):
 	"""Handle card validation response"""
 	if is_valid:
@@ -919,19 +1158,33 @@ func _on_card_validated(card_data: Dictionary, is_valid: bool):
 
 func try_play_card(card_data: Dictionary) -> bool:
 	"""Try to play a validated card"""
-	var mana_cost = card_data.get("mana_cost", 1)
+	if not resource_manager:
+		print("❌ Resource manager not available")
+		return false
 	
-	# Check if we have enough mana
-	if my_mana < mana_cost:
+	# Check if we can afford the card
+	var cost_check = resource_manager.can_afford_card_cost(card_data)
+	if not cost_check.can_afford:
+		print("❌ Cannot afford card: ", card_data.get("name", "Unknown"))
+		for resource in cost_check.missing_resources:
+			print("  Missing ", resource.type, ": ", resource.required, "/", resource.available)
 		return false
 	
 	# Stop the card timer (card is being played)
 	if turn_timer_manager:
 		turn_timer_manager.play_card(card_data)
 	
-	# Play the card
-	my_mana -= mana_cost
+	# Spend resources
+	if not resource_manager.spend_card_resources(card_data):
+		return false
+	
+	# Add to played cards
 	played_cards_this_turn.append(card_data)
+	
+	# Display the card with animations
+	if card_display_manager:
+		var ability_videos = card_display_manager.get_ability_videos_for_card(card_data)
+		card_display_manager.display_played_card(card_data, ability_videos)
 	
 	# Apply card effects
 	apply_card_effects(card_data)
@@ -945,7 +1198,8 @@ func try_play_card(card_data: Dictionary) -> bool:
 	# Log the play
 	server_logger.log_nfc_scan(card_data.get("sku", ""), true, {
 		"card_name": card_data.get("name", ""),
-		"mana_cost": mana_cost,
+		"energy_cost": card_data.get("energy_cost", 1),
+		"mana_cost": card_data.get("mana_cost", {}),
 		"battle_id": current_battle_data.get("battle_id", ""),
 		"turn": turn_number
 	})
@@ -976,3 +1230,211 @@ func apply_card_effects(card_data: Dictionary):
 		end_battle(true)  # Player wins
 	elif my_health <= 0:
 		end_battle(false)  # Player loses
+
+# === NETWORK CLIENT SIGNAL HANDLERS ===
+
+func _on_match_state_updated(match_state: Dictionary):
+	"""Handle real-time match state updates"""
+	print("🔄 Match state updated: ", match_state)
+	
+	# Update battle state from server
+	if match_state.has("players"):
+		var players = match_state.players
+		if players.has("0") and players.has("1"):
+			# Determine which player is us
+			var my_team = 0 if players["0"].get("player_id") == player_id else 1
+			var opponent_team = 1 - my_team
+			
+			# Update health and mana
+			my_health = players[str(my_team)].get("health", 20)
+			opponent_health = players[str(opponent_team)].get("health", 20)
+			# Energy is now managed by ResourceManager, not directly here
+			
+			# Update turn state
+			var new_turn = match_state.get("turn", 1)
+			var new_is_my_turn = match_state.get("current_player", 0) == my_team
+			
+			# Check if it's a new turn
+			if new_turn > turn_number:
+				turn_number = new_turn
+				if new_is_my_turn:
+					start_player_turn()
+			
+			is_my_turn = new_is_my_turn
+			
+			# Update UI
+			update_battle_info()
+	
+	server_logger.log_system_event("match_state_updated", {
+		"match_id": match_state.get("match_id", ""),
+		"turn": turn_number,
+		"my_health": my_health,
+		"opponent_health": opponent_health
+	})
+
+func _on_card_play_result(result: Dictionary):
+	"""Handle card play result from server"""
+	print("🃏 Card play result: ", result)
+	
+	var success = result.get("success", false)
+	var message = result.get("message", "")
+	var card_id = result.get("card_id", "")
+	
+	if success:
+		card_scan_prompt.text = "✅ CARD PLAYED\n\n" + message
+		# Remove from scanned queue
+		for i in range(scanned_card_queue.size()):
+			if scanned_card_queue[i].get("product_sku", "") == card_id:
+				scanned_card_queue.remove_at(i)
+				break
+		update_pending_cards_display()
+	else:
+		card_scan_prompt.text = "❌ CARD REJECTED\n\n" + message
+	
+	server_logger.log_system_event("card_play_result", {
+		"success": success,
+		"card_id": card_id,
+		"message": message
+	})
+
+func _on_network_error(error_message: String):
+	"""Handle network errors during battle"""
+	print("❌ Network error during battle: ", error_message)
+	_show_error("Network error: " + error_message)
+
+func _show_error(error_message: String):
+	"""Show error message in battle UI"""
+	status_label.text = "❌ " + error_message
+	card_scan_prompt.text = "❌ ERROR\n\n" + error_message
+
+# === ARENA AND RESOURCE MANAGEMENT ===
+
+func initialize_arena_system():
+	"""Initialize the arena system for the battle"""
+	if not arena_manager or current_arena_data.is_empty():
+		print("⚠️ Cannot initialize arena system")
+		return
+	
+	print("🏟️ Initializing arena: ", current_arena_data.get("name", "Unknown"))
+	
+	# Select the arena in arena manager
+	var arena_id = current_arena_data.get("id", 1)
+	arena_manager.select_arena(arena_id)
+	
+	# Calculate hero arena effects
+	var hero_mana_affinity = selected_hero.get("mana_affinity", "AETHER")
+	hero_arena_bonuses = arena_manager.calculate_hero_arena_effects(hero_mana_affinity)
+	
+	if not hero_arena_bonuses.is_empty():
+		print("🦸 Hero arena effects: ", hero_arena_bonuses)
+		# Apply hero bonuses/penalties here
+		apply_hero_arena_effects()
+	
+	# Setup video background
+	if video_background_manager:
+		video_background_manager.play_arena_background(current_arena_data)
+	
+	# Update arena info display
+	var arena_name = current_arena_data.get("name", "Unknown Arena")
+	var mana_color = current_arena_data.get("mana_color", "AETHER")
+	arena_info_label.text = "🏟️ Arena: " + arena_name + "\n🔮 Mana: " + mana_color
+
+func apply_hero_arena_effects():
+	"""Apply arena bonuses/penalties to hero"""
+	if hero_arena_bonuses.is_empty():
+		return
+	
+	var attack_bonus = hero_arena_bonuses.get("attack", 0)
+	var defense_bonus = hero_arena_bonuses.get("defense", 0)
+	var abilities = hero_arena_bonuses.get("abilities", [])
+	var penalties = hero_arena_bonuses.get("penalties", [])
+	
+	print("🦸 Applying hero arena effects:")
+	if attack_bonus != 0:
+		print("  ⚔️ Attack: ", ("+" if attack_bonus > 0 else ""), attack_bonus)
+	if defense_bonus != 0:
+		print("  🛡️ Defense: ", ("+" if defense_bonus > 0 else ""), defense_bonus)
+	if not abilities.is_empty():
+		print("  ✨ Abilities: ", abilities)
+	if not penalties.is_empty():
+		print("  ⚠️ Penalties: ", penalties)
+
+func start_player_turn():
+	"""Start a new player turn with resource generation"""
+	is_my_turn = true
+	turn_number += 1
+	
+	print("🎯 Starting player turn ", turn_number)
+	
+	# Generate resources for the turn
+	if resource_manager and arena_manager:
+		var arena_mana = arena_manager.generate_turn_mana()
+		resource_manager.start_new_turn(turn_number, arena_mana)
+	
+	# Start turn timer
+	if turn_timer_manager:
+		turn_timer_manager.start_turn()
+	
+	# Trigger arena effects for turn start
+	if arena_manager:
+		arena_manager.trigger_arena_effect("turn_start", {"turn": turn_number, "player_id": player_id})
+	
+	# Update UI
+	update_battle_info()
+	update_card_scan_prompt()
+	update_turn_timer_display()
+	
+	status_label.text = "Your turn! Scan cards or take actions"
+
+# === RESOURCE MANAGER SIGNAL HANDLERS ===
+
+func _on_energy_changed(current: int, maximum: int):
+	"""Handle energy changes"""
+	print("⚡ Energy changed: ", current, "/", maximum)
+	update_battle_info()
+	update_card_scan_prompt()
+
+func _on_mana_changed(mana_pool: Dictionary):
+	"""Handle mana changes"""
+	print("🔮 Mana changed: ", mana_pool)
+	update_battle_info()
+	update_card_scan_prompt()
+
+func _on_resource_insufficient(resource_type: String, required: int, available: int):
+	"""Handle insufficient resources"""
+	print("❌ Insufficient ", resource_type, ": need ", required, ", have ", available)
+	var message = "Not enough " + resource_type.replace("_", " ") + "!"
+	card_scan_prompt.text = "❌ " + message.to_upper() + "\n\nRequired: " + str(required) + "\nAvailable: " + str(available)
+	
+	# Reset prompt after a moment
+	await get_tree().create_timer(2.0).timeout
+	update_card_scan_prompt()
+
+# === ARENA MANAGER SIGNAL HANDLERS ===
+
+func _on_arena_selected(arena_data: Dictionary):
+	"""Handle arena selection"""
+	print("🏟️ Arena selected signal: ", arena_data.get("name", "Unknown"))
+	current_arena_data = arena_data
+	initialize_arena_system()
+
+func _on_arena_effect_triggered(effect_name: String, effect_data: Dictionary):
+	"""Handle arena effects"""
+	print("🏟️ Arena effect triggered: ", effect_name)
+	
+	# Show arena effect in UI
+	status_label.text = "🏟️ Arena Effect: " + effect_name
+	
+	# Play arena effect video if available
+	if video_background_manager:
+		var clip_path = arena_manager.get_arena_clip(effect_name)
+		if clip_path != "":
+			video_background_manager.trigger_special_video(effect_name, 2.0)
+
+func _on_mana_generated(color: String, amount: int):
+	"""Handle mana generation from arena"""
+	print("🔮 Arena generated ", amount, " ", color, " mana")
+	
+	# This is handled by ResourceManager, but we can show feedback
+	var feedback_text = "🔮 +" + str(amount) + " " + color + " mana"
+	# Could show this as a temporary overlay

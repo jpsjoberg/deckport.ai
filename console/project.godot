@@ -20,8 +20,30 @@ boot_splash/fullsize=false
 boot_splash/use_filter=false
 # config/icon="res://assets/logos/deckport_logo.png"  # Optional - uses default if missing
 
-# [autoload] - Disabled due to Godot 4.4.1 compatibility issues
-# Using manual singleton pattern instead
+[gui]
+
+theme/custom="res://console_theme.tres"
+
+[autoload]
+
+# Core managers for the battle system
+ArenaManager="*res://arena_manager.gd"
+ResourceManager="*res://resource_manager.gd"
+CardAbilitiesCatalog="*res://card_abilities_catalog.gd"
+CardDisplayManager="*res://card_display_manager.gd"
+VideoBackgroundManager="*res://video_background_manager.gd"
+ArenaVideoManager="*res://arena_video_manager.gd"
+VideoStreamManager="*res://video_stream_manager.gd"
+TurnTimerManager="*res://turn_timer_manager.gd"
+
+# Existing managers
+DeviceConnectionManager="*res://device_connection_manager.gd"
+PlayerSessionManager="*res://player_session_manager.gd"
+GameStateManager="*res://game_state_manager.gd"
+NetworkClient="*res://scripts/NetworkClient.gd"
+
+# Console hardware managers
+BatteryManager="*res://battery_manager.gd"
 
 [display]
 

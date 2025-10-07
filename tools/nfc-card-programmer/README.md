@@ -68,12 +68,15 @@ python nfc_card_programmer.py \
 
 ## 🛠️ **Hardware Requirements**
 
-### **NFC Readers (Choose One)**
-| Reader | Price | Notes |
-|--------|-------|-------|
-| **ACR122U** | ~$40 | USB, most popular, excellent compatibility |
-| **PN532** | ~$15 | Arduino/Pi module, budget option |
-| **ACR1252U** | ~$60 | USB contactless, premium option |
+### **NFC Readers**
+| Reader | Status | Notes |
+|--------|--------|-------|
+| **OMNIKEY 5422** | ✅ **RECOMMENDED** | Professional grade, 076b:5422, enterprise security |
+| **ACR122U** | ✅ Compatible | USB, popular, good compatibility |
+| **PN532** | ✅ Compatible | Arduino/Pi module, budget option |
+| **ACR1252U** | ✅ Compatible | USB contactless, premium option |
+
+**🎯 Optimized for OMNIKEY 5422 (your hardware)**
 
 ### **Cards**
 - **NTAG 424 DNA** blank cards (required for security features)

@@ -1,0 +1,507 @@
+{% extends "admin/base.html" %}
+
+{% block title %}Console Fleet Management - Deckport Admin{% endblock %}
+{% block page_title %}Console Fleet Management{% endblock %}
+{% block page_subtitle %}Monitor and manage your gaming console network{% endblock %}
+
+{% block content %}
+<!-- Fleet Overview Cards -->
+<div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+    <!-- Total Consoles -->
+    <div class="metric-card">
+        <div class="flex items-center justify-between mb-4">
+            <div class="w-12 h-12 rounded-xl flex items-center justify-center" style="background: linear-gradient(135deg, #3b82f6 0%, #1d4ed8 100%);">
+                <i class="fas fa-desktop text-xl text-white"></i>
+            </div>
+            <i class="fas fa-arrow-up text-green-400"></i>
+        </div>
+        <div class="flex items-baseline">
+            <span class="text-3xl font-bold text-blue-400" id="total-consoles">{{ total_consoles or 0 }}</span>
+        </div>
+        <p class="text-sm text-gray-400 mt-1">Total Consoles</p>
+    </div>
+
+    <!-- Active Consoles -->
+    <div class="metric-card">
+        <div class="flex items-center justify-between mb-4">
+            <div class="w-12 h-12 rounded-xl flex items-center justify-center" style="background: linear-gradient(135deg, #10b981 0%, #059669 100%);">
+                <i class="fas fa-power-off text-xl text-white"></i>
+            </div>
+            <span class="status-indicator status-healthy"></span>
+        </div>
+        <div class="flex items-baseline">
+            <span class="text-3xl font-bold text-green-400" id="active-consoles">{{ active_consoles or 0 }}</span>
+        </div>
+        <p class="text-sm text-gray-400 mt-1">Online Now</p>
+    </div>
+
+    <!-- Pending Approval -->
+    <div class="metric-card">
+        <div class="flex items-center justify-between mb-4">
+            <div class="w-12 h-12 rounded-xl flex items-center justify-center" style="background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%);">
+                <i class="fas fa-clock text-xl text-white"></i>
+            </div>
+            {% if pending_consoles and pending_consoles|length > 0 %}
+                <span class="status-indicator status-warning"></span>
+            {% else %}
+                <span class="status-indicator status-healthy"></span>
+            {% endif %}
+        </div>
+        <div class="flex items-baseline">
+            <span class="text-3xl font-bold text-yellow-400" id="pending-consoles">{{ pending_count or 0 }}</span>
+        </div>
+        <p class="text-sm text-gray-400 mt-1">Pending Approval</p>
+    </div>
+
+    <!-- Health Issues -->
+    <div class="metric-card">
+        <div class="flex items-center justify-between mb-4">
+            <div class="w-12 h-12 rounded-xl flex items-center justify-center" style="background: linear-gradient(135deg, #ef4444 0%, #dc2626 100%);">
+                <i class="fas fa-exclamation-triangle text-xl text-white"></i>
+            </div>
+            <span class="status-indicator status-healthy"></span>
+        </div>
+        <div class="flex items-baseline">
+            <span class="text-3xl font-bold text-red-400" id="health-issues">0</span>
+        </div>
+        <p class="text-sm text-gray-400 mt-1">Health Issues</p>
+    </div>
+</div>
+
+<!-- Actions Bar -->
+<div class="admin-card p-4 mb-8">
+    <div class="flex items-center justify-between">
+        <div class="flex items-center space-x-4">
+            <h2 class="text-xl font-bold text-white flex items-center">
+                <i class="fas fa-desktop mr-3 text-blue-400"></i>
+                Console Fleet
+            </h2>
+            <div class="flex items-center space-x-2">
+                <button onclick="refreshConsoles()" class="btn-secondary text-sm px-4 py-2">
+                    <i class="fas fa-sync-alt mr-2"></i>Refresh
+                </button>
+                <button onclick="showRegisterModal()" class="btn-primary text-sm px-4 py-2">
+                    <i class="fas fa-plus mr-2"></i>Register Console
+                </button>
+            </div>
+        </div>
+        
+        <!-- Filters -->
+        <div class="flex items-center space-x-3">
+            <select id="statusFilter" class="form-input text-sm" onchange="filterConsoles()">
+                <option value="">All Status</option>
+                <option value="active">Active</option>
+                <option value="pending">Pending</option>
+                <option value="revoked">Revoked</option>
+            </select>
+            <select id="healthFilter" class="form-input text-sm" onchange="filterConsoles()">
+                <option value="">All Health</option>
+                <option value="healthy">Healthy</option>
+                <option value="warning">Warning</option>
+                <option value="critical">Critical</option>
+            </select>
+        </div>
+    </div>
+</div>
+
+<!-- Console Grid -->
+<div class="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-6" id="console-grid">
+    {% for console in consoles %}
+    <div class="admin-card p-6 console-card" data-status="{{ console.status }}" data-health="{{ console.health.status if console.health else 'unknown' }}">
+        <!-- Console Header -->
+        <div class="flex items-center justify-between mb-4">
+            <div class="flex items-center">
+                <div class="w-12 h-12 rounded-xl flex items-center justify-center mr-4" 
+                     style="background: linear-gradient(135deg, 
+                     {% if console.is_online %}#10b981 0%, #059669 100%
+                     {% elif console.status == 'pending' %}#f59e0b 0%, #d97706 100%
+                     {% else %}#6b7280 0%, #4b5563 100%{% endif %});">
+                    <i class="fas fa-desktop text-xl text-white"></i>
+                </div>
+                <div>
+                    <h3 class="text-lg font-bold text-white">{{ console.device_uid[:12] }}...</h3>
+                    <p class="text-sm text-gray-400">{{ console.location.name if console.location and console.location.name else 'Location Unknown' }}</p>
+                </div>
+            </div>
+            
+            <!-- Status Badges -->
+            <div class="flex flex-col items-end space-y-1">
+                <span class="px-3 py-1 text-xs font-medium rounded-full
+                    {% if console.status == 'active' %}bg-green-900 text-green-300 border border-green-700
+                    {% elif console.status == 'pending' %}bg-yellow-900 text-yellow-300 border border-yellow-700
+                    {% else %}bg-red-900 text-red-300 border border-red-700{% endif %}">
+                    {{ console.status.title() }}
+                </span>
+                {% if console.health %}
+                <span class="px-3 py-1 text-xs font-medium rounded-full
+                    {% if console.health.status == 'healthy' %}bg-green-900 text-green-300 border border-green-700
+                    {% elif console.health.status == 'warning' %}bg-yellow-900 text-yellow-300 border border-yellow-700
+                    {% elif console.health.status == 'critical' %}bg-red-900 text-red-300 border border-red-700
+                    {% else %}bg-gray-900 text-gray-300 border border-gray-700{% endif %}">
+                    {{ console.health.status.title() if console.health.status else 'Unknown' }}
+                </span>
+                {% endif %}
+            </div>
+        </div>
+
+        <!-- Console Details -->
+        <div class="space-y-3 mb-6">
+            <!-- Version Info -->
+            {% if console.versions %}
+            <div class="flex items-center justify-between">
+                <span class="text-sm text-gray-400">Software</span>
+                <span class="text-sm font-mono text-white">{{ console.versions.software or 'Unknown' }}</span>
+            </div>
+            {% endif %}
+            
+            <!-- Location -->
+            {% if console.location and (console.location.latitude or console.location.name) %}
+            <div class="flex items-center justify-between">
+                <span class="text-sm text-gray-400">Location</span>
+                <span class="text-sm text-white">
+                    {% if console.location.name %}
+                        {{ console.location.name }}
+                    {% elif console.location.latitude %}
+                        {{ "%.4f"|format(console.location.latitude) }}, {{ "%.4f"|format(console.location.longitude) }}
+                    {% endif %}
+                </span>
+            </div>
+            {% endif %}
+            
+            <!-- Last Seen -->
+            <div class="flex items-center justify-between">
+                <span class="text-sm text-gray-400">Last Seen</span>
+                <span class="text-sm text-white">
+                    {% if console.last_seen_minutes is not none %}
+                        {% if console.last_seen_minutes < 1 %}Just now
+                        {% elif console.last_seen_minutes < 60 %}{{ console.last_seen_minutes }}m ago
+                        {% elif console.last_seen_minutes < 1440 %}{{ (console.last_seen_minutes // 60) }}h ago
+                        {% else %}{{ (console.last_seen_minutes // 1440) }}d ago{% endif %}
+                    {% else %}Never{% endif %}
+                </span>
+            </div>
+            
+            <!-- Health Metrics -->
+            {% if console.health and console.health.cpu_usage_percent %}
+            <div class="grid grid-cols-2 gap-3 pt-2 border-t border-gray-700 border-opacity-50">
+                <div class="text-center">
+                    <p class="text-xs text-gray-400">CPU</p>
+                    <p class="text-sm font-bold text-white">{{ "%.1f"|format(console.health.cpu_usage_percent) }}%</p>
+                </div>
+                <div class="text-center">
+                    <p class="text-xs text-gray-400">Memory</p>
+                    <p class="text-sm font-bold text-white">{{ "%.1f"|format(console.health.memory_usage_percent) if console.health.memory_usage_percent else 'N/A' }}%</p>
+                </div>
+            </div>
+            {% endif %}
+        </div>
+
+        <!-- Action Buttons -->
+        <div class="flex space-x-2">
+            <a href="/admin/consoles/{{ console.id }}" class="flex-1 btn-primary text-center text-sm py-2">
+                <i class="fas fa-cog mr-2"></i>Manage
+            </a>
+            {% if console.status == 'pending' %}
+            <button onclick="approveConsole({{ console.id }})" class="btn-secondary text-sm px-3 py-2">
+                <i class="fas fa-check"></i>
+            </button>
+            {% endif %}
+        </div>
+    </div>
+    {% endfor %}
+</div>
+
+<!-- Empty State -->
+{% if not consoles %}
+<div class="admin-card p-12 text-center">
+    <i class="fas fa-desktop text-6xl text-gray-600 mb-6"></i>
+    <h3 class="text-2xl font-bold text-white mb-4">No Consoles Found</h3>
+    <p class="text-gray-400 mb-6">Get started by registering your first gaming console</p>
+    <button onclick="showRegisterModal()" class="btn-primary">
+        <i class="fas fa-plus mr-2"></i>Register First Console
+    </button>
+</div>
+{% endif %}
+
+<!-- Register Console Modal -->
+<div id="registerModal" class="fixed inset-0 bg-black bg-opacity-50 backdrop-blur-sm hidden items-center justify-center z-50">
+    <div class="admin-card p-8 rounded-xl max-w-md w-full mx-4">
+        <div class="flex items-center justify-between mb-6">
+            <h3 class="text-xl font-bold gradient-text">Register New Console</h3>
+            <button onclick="hideRegisterModal()" class="text-gray-400 hover:text-white">
+                <i class="fas fa-times"></i>
+            </button>
+        </div>
+        
+        <form id="registerForm" class="space-y-4">
+            <div>
+                <label class="form-label">Device UID</label>
+                <input type="text" name="device_uid" class="form-input" placeholder="Enter device unique identifier" required>
+            </div>
+            
+            <div>
+                <label class="form-label">Location Name</label>
+                <input type="text" name="location_name" class="form-input" placeholder="e.g., Arcade Main Floor">
+            </div>
+            
+            <div>
+                <label class="form-label">Location Address</label>
+                <textarea name="location_address" class="form-input" rows="2" placeholder="Full address (optional)"></textarea>
+            </div>
+            
+            <div class="grid grid-cols-2 gap-3">
+                <div>
+                    <label class="form-label">Latitude</label>
+                    <input type="number" name="latitude" step="any" class="form-input" placeholder="40.7128">
+                </div>
+                <div>
+                    <label class="form-label">Longitude</label>
+                    <input type="number" name="longitude" step="any" class="form-input" placeholder="-74.0060">
+                </div>
+            </div>
+            
+            <div class="flex space-x-3 pt-4">
+                <button type="button" onclick="hideRegisterModal()" class="flex-1 btn-secondary">Cancel</button>
+                <button type="submit" class="flex-1 btn-primary">Register Console</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<!-- Console Detail Modal -->
+<div id="consoleDetailModal" class="fixed inset-0 bg-black bg-opacity-50 backdrop-blur-sm hidden items-center justify-center z-50">
+    <div class="admin-card p-8 rounded-xl max-w-4xl w-full mx-4 max-h-screen overflow-y-auto">
+        <div class="flex items-center justify-between mb-6">
+            <h3 class="text-xl font-bold gradient-text" id="modal-console-title">Console Details</h3>
+            <button onclick="hideConsoleDetailModal()" class="text-gray-400 hover:text-white">
+                <i class="fas fa-times"></i>
+            </button>
+        </div>
+        
+        <div id="console-detail-content">
+            <!-- Content will be loaded dynamically -->
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+// Console management functions
+let consoles = {{ consoles | tojson if consoles else '[]' }};
+
+// Filter consoles
+function filterConsoles() {
+    const statusFilter = document.getElementById('statusFilter').value;
+    const healthFilter = document.getElementById('healthFilter').value;
+    const consoleCards = document.querySelectorAll('.console-card');
+    
+    consoleCards.forEach(card => {
+        const status = card.dataset.status;
+        const health = card.dataset.health;
+        
+        const statusMatch = !statusFilter || status === statusFilter;
+        const healthMatch = !healthFilter || health === healthFilter;
+        
+        if (statusMatch && healthMatch) {
+            card.style.display = 'block';
+        } else {
+            card.style.display = 'none';
+        }
+    });
+}
+
+// Refresh console data
+async function refreshConsoles() {
+    try {
+        showLoading();
+        const data = await apiCall('/v1/admin/devices');
+        
+        if (data && data.devices) {
+            // Update metrics
+            document.getElementById('total-consoles').textContent = data.total || 0;
+            
+            const activeCount = data.devices.filter(c => c.is_online).length;
+            const pendingCount = data.devices.filter(c => c.status === 'pending').length;
+            
+            document.getElementById('active-consoles').textContent = activeCount;
+            document.getElementById('pending-consoles').textContent = pendingCount;
+            
+            showAlert('Console data refreshed successfully', 'success');
+            
+            // Optionally reload the page to update the grid
+            setTimeout(() => window.location.reload(), 1000);
+        }
+    } catch (error) {
+        showAlert('Failed to refresh console data: ' + error.message, 'error');
+    }
+}
+
+// Show register modal
+function showRegisterModal() {
+    document.getElementById('registerModal').classList.remove('hidden');
+    document.getElementById('registerModal').classList.add('flex');
+}
+
+// Hide register modal
+function hideRegisterModal() {
+    document.getElementById('registerModal').classList.add('hidden');
+    document.getElementById('registerModal').classList.remove('flex');
+}
+
+// Show console detail modal
+function showConsoleDetail(consoleId) {
+    // Load console details
+    loadConsoleDetails(consoleId);
+    document.getElementById('consoleDetailModal').classList.remove('hidden');
+    document.getElementById('consoleDetailModal').classList.add('flex');
+}
+
+// Hide console detail modal
+function hideConsoleDetailModal() {
+    document.getElementById('consoleDetailModal').classList.add('hidden');
+    document.getElementById('consoleDetailModal').classList.remove('flex');
+}
+
+// Load console details
+async function loadConsoleDetails(consoleId) {
+    try {
+        const data = await apiCall(`/v1/admin/devices/${consoleId}`);
+        
+        if (data) {
+            document.getElementById('modal-console-title').textContent = `Console: ${data.device_uid}`;
+            
+            // Render console details
+            const detailHtml = `
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <div>
+                        <h4 class="text-lg font-bold text-white mb-4">Basic Information</h4>
+                        <div class="space-y-3">
+                            <div class="flex justify-between">
+                                <span class="text-gray-400">Device UID</span>
+                                <span class="text-white font-mono">${data.device_uid}</span>
+                            </div>
+                            <div class="flex justify-between">
+                                <span class="text-gray-400">Status</span>
+                                <span class="text-white">${data.status}</span>
+                            </div>
+                            <div class="flex justify-between">
+                                <span class="text-gray-400">Registered</span>
+                                <span class="text-white">${new Date(data.registered_at).toLocaleDateString()}</span>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div>
+                        <h4 class="text-lg font-bold text-white mb-4">Location & Health</h4>
+                        <div class="space-y-3">
+                            ${data.location && data.location.name ? `
+                                <div class="flex justify-between">
+                                    <span class="text-gray-400">Location</span>
+                                    <span class="text-white">${data.location.name}</span>
+                                </div>
+                            ` : ''}
+                            ${data.health ? `
+                                <div class="flex justify-between">
+                                    <span class="text-gray-400">Health</span>
+                                    <span class="text-white">${data.health.status}</span>
+                                </div>
+                                ${data.health.cpu_usage_percent ? `
+                                    <div class="flex justify-between">
+                                        <span class="text-gray-400">CPU Usage</span>
+                                        <span class="text-white">${data.health.cpu_usage_percent.toFixed(1)}%</span>
+                                    </div>
+                                ` : ''}
+                            ` : ''}
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="mt-6 flex space-x-3">
+                    <button onclick="editConsoleLocation(${consoleId})" class="btn-primary">
+                        <i class="fas fa-map-marker-alt mr-2"></i>Edit Location
+                    </button>
+                    <button onclick="editConsoleVersion(${consoleId})" class="btn-secondary">
+                        <i class="fas fa-code-branch mr-2"></i>Update Version
+                    </button>
+                    <a href="/admin/consoles/${consoleId}" class="btn-secondary">
+                        <i class="fas fa-external-link-alt mr-2"></i>Full Details
+                    </a>
+                </div>
+            `;
+            
+            document.getElementById('console-detail-content').innerHTML = detailHtml;
+        }
+    } catch (error) {
+        showAlert('Failed to load console details: ' + error.message, 'error');
+    }
+}
+
+// Register new console
+document.getElementById('registerForm').addEventListener('submit', async function(e) {
+    e.preventDefault();
+    
+    const formData = new FormData(this);
+    const data = {
+        device_uid: formData.get('device_uid'),
+        public_key: 'placeholder-key', // In production, this would come from the console
+        location: {
+            name: formData.get('location_name'),
+            address: formData.get('location_address'),
+            latitude: formData.get('latitude') ? parseFloat(formData.get('latitude')) : null,
+            longitude: formData.get('longitude') ? parseFloat(formData.get('longitude')) : null,
+            source: 'manual'
+        }
+    };
+    
+    try {
+        const result = await apiCall('/v1/auth/device/register', {
+            method: 'POST',
+            body: JSON.stringify(data)
+        });
+        
+        if (result.success || result.status === 'pending') {
+            showAlert('Console registered successfully! Awaiting approval.', 'success');
+            hideRegisterModal();
+            setTimeout(() => window.location.reload(), 1500);
+        }
+    } catch (error) {
+        showAlert('Failed to register console: ' + error.message, 'error');
+    }
+});
+
+// Approve console
+async function approveConsole(consoleId) {
+    if (!confirm('Are you sure you want to approve this console?')) return;
+    
+    try {
+        const result = await apiCall(`/v1/admin/devices/${consoleId}/approve`, {
+            method: 'POST'
+        });
+        
+        if (result.success) {
+            showAlert('Console approved successfully!', 'success');
+            setTimeout(() => window.location.reload(), 1500);
+        }
+    } catch (error) {
+        showAlert('Failed to approve console: ' + error.message, 'error');
+    }
+}
+
+// Initialize page
+document.addEventListener('DOMContentLoaded', function() {
+    // Auto-refresh every 30 seconds
+    setInterval(refreshConsoles, 30000);
+    
+    // Add hover effects to console cards
+    document.querySelectorAll('.console-card').forEach(card => {
+        card.addEventListener('click', function() {
+            const consoleId = this.dataset.consoleId;
+            if (consoleId) {
+                showConsoleDetail(consoleId);
+            }
+        });
+    });
+});
+</script>
+{% endblock %}

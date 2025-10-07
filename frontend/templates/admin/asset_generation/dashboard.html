@@ -1,0 +1,418 @@
+{% extends "admin/base.html" %}
+
+{% block title %}Asset Generation Dashboard - Deckport Admin{% endblock %}
+{% block page_title %}Card Asset Generation{% endblock %}
+{% block page_subtitle %}Batch graphics generation and production pipeline{% endblock %}
+
+{% block content %}
+<div class="space-y-6">
+    <!-- Asset Generation Overview -->
+    <div class="grid grid-cols-1 md:grid-cols-4 gap-6">
+        <!-- Total Cards -->
+        <div class="bg-white rounded-lg shadow-md p-6">
+            <div class="flex items-center">
+                <div class="flex-shrink-0">
+                    <i class="fas fa-layer-group text-3xl text-blue-500"></i>
+                </div>
+                <div class="ml-4">
+                    <p class="text-sm font-medium text-gray-500">Total Cards</p>
+                    <p class="text-2xl font-semibold text-gray-900">{{ card_stats.get('total_cards', 0) }}</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- Cards with Graphics -->
+        <div class="bg-white rounded-lg shadow-md p-6">
+            <div class="flex items-center">
+                <div class="flex-shrink-0">
+                    <i class="fas fa-image text-3xl text-green-500"></i>
+                </div>
+                <div class="ml-4">
+                    <p class="text-sm font-medium text-gray-500">With Graphics</p>
+                    <p class="text-2xl font-semibold text-gray-900">{{ card_stats.get('cards_with_graphics', 0) }}</p>
+                    <p class="text-xs text-gray-400">{{ ((card_stats.get('cards_with_graphics', 0) / card_stats.get('total_cards', 1)) * 100)|round(1) }}%</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- Queue Status -->
+        <div class="bg-white rounded-lg shadow-md p-6">
+            <div class="flex items-center">
+                <div class="flex-shrink-0">
+                    <i class="fas fa-clock text-3xl text-yellow-500"></i>
+                </div>
+                <div class="ml-4">
+                    <p class="text-sm font-medium text-gray-500">In Queue</p>
+                    <p class="text-2xl font-semibold text-gray-900">{{ queue_data.get('pending_count', 0) }}</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- ComfyUI Status -->
+        <div class="bg-white rounded-lg shadow-md p-6">
+            <div class="flex items-center">
+                <div class="flex-shrink-0">
+                    <i class="fas fa-server text-3xl {% if comfyui_status.get('status') == 'online' %}text-green-500{% else %}text-red-500{% endif %}"></i>
+                </div>
+                <div class="ml-4">
+                    <p class="text-sm font-medium text-gray-500">ComfyUI</p>
+                    <p class="text-lg font-semibold text-gray-900">{{ comfyui_status.get('status', 'Unknown') }}</p>
+                    {% if comfyui_status.get('queue_size') %}
+                    <p class="text-xs text-gray-400">{{ comfyui_status.get('queue_size', 0) }} in queue</p>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Batch Generation Controls -->
+    <div class="bg-white rounded-lg shadow-md p-6">
+        <h2 class="text-xl font-semibold text-gray-900 mb-4">
+            <i class="fas fa-magic mr-2 text-purple-500"></i>
+            Batch Asset Generation
+        </h2>
+        
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <!-- Generation Options -->
+            <div>
+                <h3 class="text-lg font-medium text-gray-900 mb-3">Generation Options</h3>
+                <form id="batchGenerationForm" class="space-y-4">
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700">Generation Type</label>
+                        <select name="generation_type" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm">
+                            <option value="artwork">Artwork Only</option>
+                            <option value="frames">Card Frames</option>
+                            <option value="videos">Card Videos</option>
+                            <option value="all">Complete Assets</option>
+                        </select>
+                    </div>
+                    
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700">Batch Size</label>
+                        <select name="batch_size" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm">
+                            <option value="5">5 cards (Fast)</option>
+                            <option value="10" selected>10 cards (Recommended)</option>
+                            <option value="25">25 cards (Slower)</option>
+                            <option value="50">50 cards (Slow)</option>
+                        </select>
+                    </div>
+                    
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700">Priority</label>
+                        <select name="priority" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm">
+                            <option value="low">Low Priority</option>
+                            <option value="normal" selected>Normal Priority</option>
+                            <option value="high">High Priority</option>
+                            <option value="urgent">Urgent</option>
+                        </select>
+                    </div>
+                    
+                    <div class="flex space-x-3">
+                        <button type="submit" class="flex-1 bg-purple-600 text-white py-2 px-4 rounded-md hover:bg-purple-700 transition-colors">
+                            <i class="fas fa-play mr-2"></i>Start Generation
+                        </button>
+                        
+                        <button type="button" onclick="generateMissingOnly()" class="flex-1 bg-blue-600 text-white py-2 px-4 rounded-md hover:bg-blue-700 transition-colors">
+                            <i class="fas fa-plus mr-2"></i>Missing Only
+                        </button>
+                    </div>
+                </form>
+            </div>
+            
+            <!-- Quick Actions -->
+            <div>
+                <h3 class="text-lg font-medium text-gray-900 mb-3">Quick Actions</h3>
+                <div class="space-y-3">
+                    <button onclick="generateAllMissing()" class="w-full bg-green-600 text-white py-2 px-4 rounded-md hover:bg-green-700 transition-colors">
+                        <i class="fas fa-magic mr-2"></i>Generate All Missing Graphics
+                        <span class="block text-sm opacity-90">{{ card_stats.get('total_cards', 0) - card_stats.get('cards_with_graphics', 0) }} cards need graphics</span>
+                    </button>
+                    
+                    <button onclick="retryFailed()" class="w-full bg-orange-600 text-white py-2 px-4 rounded-md hover:bg-orange-700 transition-colors">
+                        <i class="fas fa-redo mr-2"></i>Retry Failed Generations
+                        <span class="block text-sm opacity-90">{{ queue_data.get('failed_count', 0) }} failed jobs</span>
+                    </button>
+                    
+                    <button onclick="viewQueue()" class="w-full bg-gray-600 text-white py-2 px-4 rounded-md hover:bg-gray-700 transition-colors">
+                        <i class="fas fa-list mr-2"></i>View Generation Queue
+                        <span class="block text-sm opacity-90">{{ queue_data.get('pending_count', 0) }} pending jobs</span>
+                    </button>
+                    
+                    <button onclick="checkComfyUI()" class="w-full bg-indigo-600 text-white py-2 px-4 rounded-md hover:bg-indigo-700 transition-colors">
+                        <i class="fas fa-server mr-2"></i>Check ComfyUI Status
+                        <span class="block text-sm opacity-90">{{ comfyui_status.get('status', 'Unknown') }}</span>
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Current Generation Progress -->
+    {% if queue_data.get('current_job') %}
+    <div class="bg-white rounded-lg shadow-md p-6">
+        <h2 class="text-xl font-semibold text-gray-900 mb-4">
+            <i class="fas fa-cog fa-spin mr-2 text-blue-500"></i>
+            Current Generation Progress
+        </h2>
+        
+        <div class="space-y-4">
+            <div class="flex items-center justify-between">
+                <span class="text-sm font-medium text-gray-700">{{ queue_data.current_job.get('type', 'Unknown') }} Generation</span>
+                <span class="text-sm text-gray-500">{{ queue_data.current_job.get('progress', 0) }}%</span>
+            </div>
+            
+            <div class="w-full bg-gray-200 rounded-full h-2">
+                <div class="bg-blue-600 h-2 rounded-full transition-all duration-300" style="width: {{ queue_data.current_job.get('progress', 0) }}%"></div>
+            </div>
+            
+            <div class="flex justify-between text-sm text-gray-600">
+                <span>{{ queue_data.current_job.get('completed', 0) }} / {{ queue_data.current_job.get('total', 0) }} cards</span>
+                <span>ETA: {{ queue_data.current_job.get('eta', 'Unknown') }}</span>
+            </div>
+            
+            {% if queue_data.current_job.get('current_card') %}
+            <div class="text-sm text-gray-600">
+                Currently processing: <strong>{{ queue_data.current_job.current_card.get('name', 'Unknown') }}</strong>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+    {% endif %}
+
+    <!-- Generation History -->
+    <div class="bg-white rounded-lg shadow-md p-6">
+        <h2 class="text-xl font-semibold text-gray-900 mb-4">
+            <i class="fas fa-history mr-2 text-gray-500"></i>
+            Recent Generation History
+        </h2>
+        
+        {% if generation_history %}
+        <div class="overflow-x-auto">
+            <table class="min-w-full divide-y divide-gray-200">
+                <thead class="bg-gray-50">
+                    <tr>
+                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Job ID</th>
+                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Type</th>
+                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Cards</th>
+                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Status</th>
+                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Duration</th>
+                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Started</th>
+                    </tr>
+                </thead>
+                <tbody class="bg-white divide-y divide-gray-200">
+                    {% for job in generation_history %}
+                    <tr>
+                        <td class="px-6 py-4 whitespace-nowrap text-sm font-mono text-gray-900">
+                            {{ job.get('queue_id', 'Unknown')[:8] }}...
+                        </td>
+                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                            {{ job.get('generation_type', 'Unknown') }}
+                        </td>
+                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                            {{ job.get('total_cards', 0) }}
+                        </td>
+                        <td class="px-6 py-4 whitespace-nowrap">
+                            <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full
+                                {% if job.get('status') == 'completed' %}bg-green-100 text-green-800
+                                {% elif job.get('status') == 'failed' %}bg-red-100 text-red-800
+                                {% elif job.get('status') == 'running' %}bg-blue-100 text-blue-800
+                                {% else %}bg-gray-100 text-gray-800{% endif %}">
+                                {{ job.get('status', 'Unknown') }}
+                            </span>
+                        </td>
+                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                            {{ job.get('duration', 'Unknown') }}
+                        </td>
+                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                            {{ job.get('started_at', 'Unknown') }}
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+        {% else %}
+        <div class="text-center py-8">
+            <i class="fas fa-inbox text-4xl text-gray-400 mb-4"></i>
+            <h3 class="text-lg font-medium text-gray-900">No Generation History</h3>
+            <p class="text-gray-500">Start your first batch generation to see progress here.</p>
+        </div>
+        {% endif %}
+    </div>
+
+    <!-- ComfyUI Status -->
+    <div class="bg-white rounded-lg shadow-md p-6">
+        <h2 class="text-xl font-semibold text-gray-900 mb-4">
+            <i class="fas fa-server mr-2 text-indigo-500"></i>
+            ComfyUI Server Status
+        </h2>
+        
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+            <div class="text-center p-4 border rounded-lg">
+                <p class="text-sm text-gray-500">Server Status</p>
+                <p class="text-lg font-semibold {% if comfyui_status.get('status') == 'online' %}text-green-600{% else %}text-red-600{% endif %}">
+                    {{ comfyui_status.get('status', 'Unknown') }}
+                </p>
+            </div>
+            
+            <div class="text-center p-4 border rounded-lg">
+                <p class="text-sm text-gray-500">Queue Size</p>
+                <p class="text-lg font-semibold text-gray-900">
+                    {{ comfyui_status.get('queue_size', 0) }}
+                </p>
+            </div>
+            
+            <div class="text-center p-4 border rounded-lg">
+                <p class="text-sm text-gray-500">Response Time</p>
+                <p class="text-lg font-semibold text-gray-900">
+                    {{ comfyui_status.get('response_time', 'Unknown') }}
+                </p>
+            </div>
+        </div>
+        
+        {% if comfyui_status.get('status') != 'online' %}
+        <div class="mt-4 p-4 bg-red-50 border border-red-200 rounded-md">
+            <div class="flex">
+                <i class="fas fa-exclamation-triangle text-red-400 mt-1"></i>
+                <div class="ml-3">
+                    <h3 class="text-sm font-medium text-red-800">ComfyUI Offline</h3>
+                    <p class="text-sm text-red-700 mt-1">
+                        Asset generation requires ComfyUI to be running. Please start ComfyUI server before generating graphics.
+                    </p>
+                </div>
+            </div>
+        </div>
+        {% endif %}
+    </div>
+</div>
+
+<script>
+// Batch generation form submission
+document.getElementById('batchGenerationForm').addEventListener('submit', async function(e) {
+    e.preventDefault();
+    
+    const formData = new FormData(this);
+    const data = {
+        generation_type: formData.get('generation_type'),
+        batch_size: parseInt(formData.get('batch_size')),
+        priority: formData.get('priority')
+    };
+    
+    try {
+        const response = await fetch('/admin/assets/generate-all', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify(data)
+        });
+        
+        const result = await response.json();
+        
+        if (result.success) {
+            showAlert(`Batch generation started! Queue ID: ${result.queue_id}`, 'success');
+            setTimeout(() => window.location.reload(), 2000);
+        } else {
+            showAlert(`Failed to start generation: ${result.error}`, 'error');
+        }
+    } catch (error) {
+        showAlert('Error starting batch generation', 'error');
+    }
+});
+
+// Quick action functions
+async function generateAllMissing() {
+    if (!confirm('Generate graphics for all cards missing artwork? This may take several hours.')) {
+        return;
+    }
+    
+    try {
+        const response = await fetch('/admin/assets/generate-all', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+                generation_type: 'missing_only',
+                batch_size: 10,
+                priority: 'normal'
+            })
+        });
+        
+        const result = await response.json();
+        
+        if (result.success) {
+            showAlert(`Started generating graphics for ${result.total_cards} cards!`, 'success');
+            setTimeout(() => window.location.reload(), 2000);
+        } else {
+            showAlert(`Failed to start generation: ${result.error}`, 'error');
+        }
+    } catch (error) {
+        showAlert('Error starting generation', 'error');
+    }
+}
+
+async function retryFailed() {
+    try {
+        const response = await fetch('/admin/assets/retry-failed', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            }
+        });
+        
+        const result = await response.json();
+        
+        if (result.success) {
+            showAlert(`Retrying ${result.retry_count} failed generations`, 'success');
+            setTimeout(() => window.location.reload(), 2000);
+        } else {
+            showAlert(`Failed to retry: ${result.error}`, 'error');
+        }
+    } catch (error) {
+        showAlert('Error retrying failed generations', 'error');
+    }
+}
+
+function viewQueue() {
+    window.location.href = '/admin/assets/queue';
+}
+
+async function checkComfyUI() {
+    try {
+        const response = await fetch('/admin/assets/comfyui/status');
+        const result = await response.json();
+        
+        if (result.status === 'online') {
+            showAlert('ComfyUI is online and ready', 'success');
+        } else {
+            showAlert(`ComfyUI Status: ${result.status}`, 'warning');
+        }
+    } catch (error) {
+        showAlert('Error checking ComfyUI status', 'error');
+    }
+}
+
+function showAlert(message, type) {
+    // Simple alert implementation
+    const alertClass = type === 'success' ? 'bg-green-100 text-green-800' : 
+                      type === 'error' ? 'bg-red-100 text-red-800' : 
+                      'bg-yellow-100 text-yellow-800';
+    
+    const alertDiv = document.createElement('div');
+    alertDiv.className = `fixed top-4 right-4 p-4 rounded-md ${alertClass} z-50`;
+    alertDiv.textContent = message;
+    
+    document.body.appendChild(alertDiv);
+    
+    setTimeout(() => {
+        document.body.removeChild(alertDiv);
+    }, 5000);
+}
+
+// Auto-refresh every 30 seconds
+setInterval(() => {
+    window.location.reload();
+}, 30000);
+</script>
+{% endblock %}

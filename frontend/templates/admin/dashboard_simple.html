@@ -1,0 +1,165 @@
+<!doctype html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Deckport Admin Dashboard</title>
+    <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+</head>
+<body class="bg-gray-900 text-white">
+    <div class="min-h-screen">
+        <!-- Header -->
+        <header class="bg-gray-800 shadow-lg">
+            <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+                <div class="flex justify-between items-center py-6">
+                    <div class="flex items-center">
+                        <h1 class="text-2xl font-bold text-white">
+                            <i class="fas fa-shield-alt text-blue-400 mr-3"></i>
+                            Deckport Admin
+                        </h1>
+                    </div>
+                    <div class="flex items-center space-x-4">
+                        <span class="text-gray-300">Welcome, Admin</span>
+                        <a href="/logout" class="text-gray-400 hover:text-white">
+                            <i class="fas fa-sign-out-alt"></i>
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </header>
+
+        <!-- Main Content -->
+        <main class="max-w-7xl mx-auto py-6 sm:px-6 lg:px-8">
+            <!-- System Status -->
+            <div class="mb-8">
+                <div class="bg-gray-800 rounded-lg p-6">
+                    <h2 class="text-xl font-bold text-white mb-4">
+                        <i class="fas fa-tachometer-alt text-blue-400 mr-2"></i>
+                        System Status
+                    </h2>
+                    
+                    {% if stats %}
+                    <div class="grid grid-cols-1 md:grid-cols-4 gap-4">
+                        <!-- Active Consoles -->
+                        <div class="bg-gray-700 rounded-lg p-4">
+                            <div class="flex items-center">
+                                <i class="fas fa-desktop text-2xl text-blue-400 mr-4"></i>
+                                <div>
+                                    <p class="text-sm text-gray-300">Active Consoles</p>
+                                    <p class="text-2xl font-bold text-white">{{ stats.get('active_consoles', 0) }}</p>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Live Matches -->
+                        <div class="bg-gray-700 rounded-lg p-4">
+                            <div class="flex items-center">
+                                <i class="fas fa-gamepad text-2xl text-green-400 mr-4"></i>
+                                <div>
+                                    <p class="text-sm text-gray-300">Live Matches</p>
+                                    <p class="text-2xl font-bold text-white">{{ stats.get('live_matches', 0) }}</p>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Online Players -->
+                        <div class="bg-gray-700 rounded-lg p-4">
+                            <div class="flex items-center">
+                                <i class="fas fa-users text-2xl text-purple-400 mr-4"></i>
+                                <div>
+                                    <p class="text-sm text-gray-300">Online Players</p>
+                                    <p class="text-2xl font-bold text-white">{{ stats.get('online_players', 0) }}</p>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- NFC Cards -->
+                        <div class="bg-gray-700 rounded-lg p-4">
+                            <div class="flex items-center">
+                                <i class="fas fa-microchip text-2xl text-yellow-400 mr-4"></i>
+                                <div>
+                                    <p class="text-sm text-gray-300">NFC Cards</p>
+                                    <p class="text-2xl font-bold text-white">{{ stats.get('total_nfc_cards', 0) }}</p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    {% else %}
+                    <p class="text-gray-400">Loading system statistics...</p>
+                    {% endif %}
+                </div>
+            </div>
+
+            <!-- Quick Actions -->
+            <div class="mb-8">
+                <div class="bg-gray-800 rounded-lg p-6">
+                    <h2 class="text-xl font-bold text-white mb-4">
+                        <i class="fas fa-bolt text-yellow-400 mr-2"></i>
+                        Quick Actions
+                    </h2>
+                    
+                    <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                        <a href="/admin/cards/generate" class="bg-purple-600 hover:bg-purple-700 rounded-lg p-4 text-center transition-colors">
+                            <i class="fas fa-magic text-2xl text-white mb-2"></i>
+                            <p class="text-white font-medium">Generate Cards</p>
+                        </a>
+                        
+                        <a href="/admin/consoles" class="bg-blue-600 hover:bg-blue-700 rounded-lg p-4 text-center transition-colors">
+                            <i class="fas fa-desktop text-2xl text-white mb-2"></i>
+                            <p class="text-white font-medium">Console Fleet</p>
+                        </a>
+                        
+                        <a href="/admin/game-operations" class="bg-green-600 hover:bg-green-700 rounded-lg p-4 text-center transition-colors">
+                            <i class="fas fa-gamepad text-2xl text-white mb-2"></i>
+                            <p class="text-white font-medium">Game Operations</p>
+                        </a>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Recent Activity -->
+            {% if stats and stats.get('recent_cards') %}
+            <div class="bg-gray-800 rounded-lg p-6">
+                <h2 class="text-xl font-bold text-white mb-4">
+                    <i class="fas fa-clock text-green-400 mr-2"></i>
+                    Recent Activity
+                </h2>
+                
+                <div class="space-y-3">
+                    {% for card in stats.recent_cards[:5] %}
+                    <div class="flex items-center justify-between py-2 border-b border-gray-700 last:border-b-0">
+                        <div class="flex items-center">
+                            <i class="fas fa-magic text-purple-400 mr-3"></i>
+                            <div>
+                                <p class="text-sm font-medium text-white">{{ card.get('name', 'Unknown Card') }}</p>
+                                <p class="text-xs text-gray-400">{{ card.get('category', 'Unknown') }}</p>
+                            </div>
+                        </div>
+                        <span class="text-xs text-gray-500">
+                            {% if card.get('created_at') %}
+                                {% if card.created_at is string %}
+                                    {{ card.created_at[:10] }}
+                                {% else %}
+                                    {{ card.created_at.strftime('%Y-%m-%d') if card.created_at.strftime else card.created_at }}
+                                {% endif %}
+                            {% else %}
+                                Today
+                            {% endif %}
+                        </span>
+                    </div>
+                    {% endfor %}
+                </div>
+            </div>
+            {% endif %}
+        </main>
+    </div>
+
+    <script>
+        // Auto-refresh every 30 seconds
+        setTimeout(() => {
+            window.location.reload();
+        }, 30000);
+    </script>
+</body>
+</html>

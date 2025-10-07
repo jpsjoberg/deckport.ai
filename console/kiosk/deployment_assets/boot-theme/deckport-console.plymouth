@@ -1,0 +1,8 @@
+[Plymouth Theme]
+Name=Deckport Console
+Description=Deckport gaming console boot theme
+ModuleName=script
+
+[script]
+ImageDir=/usr/share/plymouth/themes/deckport-console
+ScriptFile=/usr/share/plymouth/themes/deckport-console/deckport-console.script

@@ -72,8 +72,8 @@ print_success "Python dependencies installed"
 print_status "Applying database migrations..."
 
 # Read database connection from DB_pass file
-if [ -f "DB_pass" ]; then
-    DB_URL=$(cat DB_pass)
+if [ -f ".env/DB_pass" ]; then
+    DB_URL=$(cat .env/DB_pass)
     # Extract components from PostgreSQL URL
     # Format: postgresql+psycopg://user:pass@host:port/db
     DB_USER=$(echo $DB_URL | sed -n 's/.*:\/\/\([^:]*\):.*/\1/p')
@@ -94,7 +94,7 @@ if [ -f "DB_pass" ]; then
         exit 1
     fi
 else
-    print_warning "DB_pass file not found. Please apply migrations manually:"
+    print_warning ".env/DB_pass file not found. Please apply migrations manually:"
     print_warning "psql -h 127.0.0.1 -U deckport_app -d deckport -f database_migration_video_streaming.sql"
 fi
 

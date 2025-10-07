@@ -7,6 +7,15 @@ extends Control
 @onready var status_label = $CenterContainer/VBoxContainer/StatusLabel
 @onready var background_video = $BackgroundVideo
 
+# Touch control buttons (if they exist in scene)
+@onready var portal_button = $CenterContainer/VBoxContainer/MainMenuButtons/PortalButton
+@onready var keys_button = $CenterContainer/VBoxContainer/MainMenuButtons/KeysButton
+@onready var stats_button = $CenterContainer/VBoxContainer/MainMenuButtons/StatsButton
+@onready var travel_button = $CenterContainer/VBoxContainer/MainMenuButtons/TravelButton
+@onready var scan_card1_button = $CenterContainer/VBoxContainer/CardScanButtons/ScanCard1
+@onready var scan_card2_button = $CenterContainer/VBoxContainer/CardScanButtons/ScanCard2
+@onready var scan_card3_button = $CenterContainer/VBoxContainer/CardScanButtons/ScanCard3
+
 var server_logger
 var device_id = "DECK_DEV_CONSOLE_01"  # Fixed device ID for development
 
@@ -25,6 +34,7 @@ func _ready():
 	
 	setup_background()
 	setup_menu()
+	setup_touch_controls()
 
 func setup_background():
 	"""Setup background video for player dashboard"""
@@ -155,15 +165,25 @@ func open_portal():
 	
 	# Initialize game state manager with player data
 	var game_state_manager = get_node("/root/GameStateManager")
+	if not game_state_manager:
+		print("⚠️ GameStateManager not found - creating fallback")
+		game_state_manager = preload("res://game_state_manager.gd").new()
+		add_child(game_state_manager)
 	if game_state_manager:
 		game_state_manager.set_player_data(player_id, player_name, player_elo)
 		game_state_manager.change_state(game_state_manager.GameState.HERO_SELECTION)
 	else:
-		# Fallback - go directly to hero selection
+		# Fallback - check if hero selection scene exists
 		await get_tree().create_timer(1.5).timeout
-		print("🦸 Entering hero selection...")
-		server_logger.log_scene_change("player_menu", "hero_selection")
-		get_tree().change_scene_to_file("res://hero_selection_scene.tscn")
+		print("🦸 Checking for hero selection scene...")
+		
+		if ResourceLoader.exists("res://hero_selection_scene.tscn"):
+			print("📁 Hero selection scene found - loading...")
+			server_logger.log_scene_change("player_menu", "hero_selection")
+			get_tree().change_scene_to_file("res://hero_selection_scene.tscn")
+		else:
+			print("⚠️ Hero selection scene not found - staying in player menu")
+			status_label.text = "🦸 HERO SELECTION\n\nHero selection coming soon!\nPress 2 for Portal Keys or 3 for Stats"
 
 func portal_keys():
 	"""Portal Keys - Card Collection & Stats"""
@@ -185,3 +205,37 @@ func travel_dimensions():
 	server_logger.log_user_action("travel_dimensions", {})
 	status_label.text = "🌌 DIMENSIONAL TRAVEL\n\nDynamic story mode with LLM\nComing soon!"
 	# TODO: Transition to dynamic story scene
+
+func setup_touch_controls():
+	"""Setup touch controls for console interface"""
+	# Connect main menu buttons (if they exist)
+	if has_node("CenterContainer/VBoxContainer/MainMenuButtons/PortalButton"):
+		var portal_btn = get_node("CenterContainer/VBoxContainer/MainMenuButtons/PortalButton")
+		portal_btn.pressed.connect(open_portal)
+	
+	if has_node("CenterContainer/VBoxContainer/MainMenuButtons/KeysButton"):
+		var keys_btn = get_node("CenterContainer/VBoxContainer/MainMenuButtons/KeysButton")
+		keys_btn.pressed.connect(portal_keys)
+	
+	if has_node("CenterContainer/VBoxContainer/MainMenuButtons/StatsButton"):
+		var stats_btn = get_node("CenterContainer/VBoxContainer/MainMenuButtons/StatsButton")
+		stats_btn.pressed.connect(show_statistics)
+	
+	if has_node("CenterContainer/VBoxContainer/MainMenuButtons/TravelButton"):
+		var travel_btn = get_node("CenterContainer/VBoxContainer/MainMenuButtons/TravelButton")
+		travel_btn.pressed.connect(travel_dimensions)
+	
+	# Connect card scanning buttons (if they exist)
+	if has_node("CenterContainer/VBoxContainer/CardScanButtons/ScanCard1"):
+		var scan1_btn = get_node("CenterContainer/VBoxContainer/CardScanButtons/ScanCard1")
+		scan1_btn.pressed.connect(func(): simulate_card_scan("RADIANT-001", "Solar Vanguard"))
+	
+	if has_node("CenterContainer/VBoxContainer/CardScanButtons/ScanCard2"):
+		var scan2_btn = get_node("CenterContainer/VBoxContainer/CardScanButtons/ScanCard2")
+		scan2_btn.pressed.connect(func(): simulate_card_scan("AZURE-014", "Tidecaller Sigil"))
+	
+	if has_node("CenterContainer/VBoxContainer/CardScanButtons/ScanCard3"):
+		var scan3_btn = get_node("CenterContainer/VBoxContainer/CardScanButtons/ScanCard3")
+		scan3_btn.pressed.connect(func(): simulate_card_scan("VERDANT-007", "Nature's Blessing"))
+	
+	print("✅ Touch controls configured for player menu")

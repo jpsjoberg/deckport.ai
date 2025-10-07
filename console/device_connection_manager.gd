@@ -16,8 +16,8 @@ var device_token: String = ""
 var device_token_expires: float = 0
 
 # Network Configuration
-var server_url: String = "http://127.0.0.1:8002"
-var backup_urls: Array[String] = ["http://localhost:8002"]
+var server_url: String = "https://deckport.ai"
+var backup_urls: Array[String] = ["https://deckport.ai"]
 var current_server_url: String = ""
 
 # HTTP Management
@@ -33,6 +33,7 @@ enum ConnectionState {
 	REGISTERING_DEVICE,
 	AUTHENTICATING_DEVICE,
 	PENDING_APPROVAL,
+	CHECKING_STATUS,
 	CONNECTED,
 	ERROR
 }
@@ -69,13 +70,15 @@ func setup_device_identity():
 
 func load_or_generate_device_uid():
 	"""Load existing device UID or generate new one (persistent across restarts)"""
+	var uid_file_handle  # Declare at function level to avoid scope warning
+	
 	# Try to load existing device UID from persistent storage
 	if FileAccess.file_exists("user://device_uid.txt"):
 		print("🆔 Loading existing device UID...")
-		var uid_file = FileAccess.open("user://device_uid.txt", FileAccess.READ)
-		if uid_file:
-			device_uid = uid_file.get_as_text().strip_edges()
-			uid_file.close()
+		uid_file_handle = FileAccess.open("user://device_uid.txt", FileAccess.READ)
+		if uid_file_handle:
+			device_uid = uid_file_handle.get_as_text().strip_edges()
+			uid_file_handle.close()
 			
 			# Validate the loaded UID format
 			if device_uid.begins_with("DECK_") and device_uid.length() > 5:
@@ -96,10 +99,10 @@ func load_or_generate_device_uid():
 	device_uid = "DECK_" + Marshalls.raw_to_base64(hash_result).substr(0, 16).replace("/", "").replace("+", "")
 	
 	# Save device UID to persistent storage
-	var uid_file = FileAccess.open("user://device_uid.txt", FileAccess.WRITE)
-	if uid_file:
-		uid_file.store_string(device_uid)
-		uid_file.close()
+	uid_file_handle = FileAccess.open("user://device_uid.txt", FileAccess.WRITE)
+	if uid_file_handle:
+		uid_file_handle.store_string(device_uid)
+		uid_file_handle.close()
 		print("💾 Device UID saved to persistent storage")
 	else:
 		print("⚠️ Warning: Could not save device UID to storage")
@@ -179,6 +182,23 @@ func get_device_uid() -> String:
 	"""Get the device UID"""
 	return device_uid
 
+func get_auth_headers() -> Array[String]:
+	"""Get headers with device authentication"""
+	var headers = [
+		"Content-Type: application/json",
+		"User-Agent: Deckport-Console/1.0",
+		"X-Device-UID: " + device_uid
+	]
+	
+	if not device_token.is_empty():
+		headers.append("Authorization: Bearer " + device_token)
+	
+	return headers
+
+func is_authenticated() -> bool:
+	"""Check if device is authenticated and token is valid"""
+	return current_state == ConnectionState.CONNECTED and not device_token.is_empty() and Time.get_unix_time_from_system() < device_token_expires
+
 func _check_approval_status():
 	"""Check if device has been approved by admin"""
 	if current_state != ConnectionState.PENDING_APPROVAL:
@@ -187,24 +207,24 @@ func _check_approval_status():
 	
 	print("🔍 Checking approval status...")
 	
-	# Make a simple registration request to check status
+	# Use the status endpoint to check current device status
 	var headers = [
 		"Content-Type: application/json",
 		"User-Agent: Deckport-Console/1.0 (Godot/" + Engine.get_version_info().string + ")",
 		"X-Device-UID: " + device_uid
 	]
 	
-	var registration_data = {
-		"device_uid": device_uid,
-		"public_key": device_private_key.save_to_string(),
-		"device_info": {
-			"platform": OS.get_name(),
-			"godot_version": Engine.get_version_info().string
-		}
-	}
+	var url = current_server_url + "/v1/auth/device/status?device_uid=" + device_uid
+	print("📡 Checking status at: ", url)
 	
-	current_state = ConnectionState.REGISTERING_DEVICE
-	http_request.request(server_url + "/v1/auth/device/register", headers, HTTPClient.METHOD_POST, JSON.stringify(registration_data))
+	# Set state to checking status
+	current_state = ConnectionState.CHECKING_STATUS
+	
+	var error = http_request.request(url, headers, HTTPClient.METHOD_GET)
+	if error != OK:
+		print("❌ Status check request failed: ", error)
+		# Return to pending approval state to try again
+		current_state = ConnectionState.PENDING_APPROVAL
 
 func setup_http_request():
 	"""Configure HTTPRequest with optimal settings for Godot 4.4+"""
@@ -354,6 +374,8 @@ func _on_http_response(result: int, response_code: int, _headers: PackedStringAr
 			_handle_registration_response(response_code, data)
 		ConnectionState.AUTHENTICATING_DEVICE:
 			_handle_authentication_response(response_code, data)
+		ConnectionState.CHECKING_STATUS:
+			_handle_status_check_response(response_code, data)
 
 func _handle_connection_verification_response(response_code: int, data: Dictionary):
 	"""Handle server connection verification response"""
@@ -418,6 +440,28 @@ func _handle_authentication_response(response_code: int, data: Dictionary):
 		var error_msg = data.get("error", "Authentication failed")
 		_handle_connection_error("Device authentication failed", {"code": response_code, "error": error_msg})
 
+func _handle_status_check_response(response_code: int, data: Dictionary):
+	"""Handle device status check response"""
+	if response_code == 200:
+		var status = data.get("status", "unknown")
+		print("📋 Device status: ", status)
+		
+		if status == "active":
+			print("✅ Device approved! Proceeding with authentication...")
+			approval_check_timer.stop()
+			current_state = ConnectionState.PENDING_APPROVAL  # Reset to trigger authentication
+			authenticate_device()
+		elif status == "pending":
+			print("⏳ Still pending approval, will check again...")
+			current_state = ConnectionState.PENDING_APPROVAL  # Continue checking
+		else:
+			print("❌ Device status: ", status)
+			approval_check_timer.stop()
+			_handle_connection_error("Device not approved", {"status": status})
+	else:
+		print("❌ Status check failed: ", response_code)
+		current_state = ConnectionState.PENDING_APPROVAL  # Continue checking
+
 func _handle_network_error(result: int, response_code: int):
 	"""Handle network-level errors with detailed logging"""
 	var error_msg = "Network error: "
@@ -478,7 +522,7 @@ func get_device_token() -> String:
 	"""Get current device token for API requests"""
 	return device_token
 
-func get_authenticated_headers() -> Array[String]:
+func get_device_headers() -> Array[String]:
 	"""Get headers with device authentication"""
 	return [
 		"Content-Type: application/json",

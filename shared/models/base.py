@@ -22,16 +22,17 @@ from sqlalchemy import (
     Text,
     UniqueConstraint
 )
+from sqlalchemy.dialects.postgresql import ARRAY
 from sqlalchemy.dialects.postgresql import JSONB
 from sqlalchemy.orm import DeclarativeBase, Mapped, mapped_column, relationship
 
 
-def utcnow() -> datetime:
-    return datetime.now(timezone.utc)
-
-
 class Base(DeclarativeBase):
     pass
+
+
+def utcnow() -> datetime:
+    return datetime.now(timezone.utc)
 
 
 # --- Enums ---
@@ -63,6 +64,13 @@ class CardCategory(str, Enum):
     summon = "SUMMON"
     terrain = "TERRAIN"
     objective = "OBJECTIVE"
+    hero = "HERO"
+    legendary_creature = "LEGENDARY_CREATURE"
+    legendary_artifact = "LEGENDARY_ARTIFACT"
+    token = "TOKEN"
+    consumable = "CONSUMABLE"
+    vehicle = "VEHICLE"
+    planeswalker = "PLANESWALKER"
 
 
 class NFCCardStatus(str, Enum):
@@ -238,6 +246,9 @@ class CardCatalog(Base):
     __table_args__ = (
         UniqueConstraint("product_sku", name="uq_card_catalog_sku"),
         Index("ix_card_catalog_category", "category"),
+        Index("ix_card_catalog_frame_type", "frame_type"),
+        Index("ix_card_catalog_has_animation", "has_animation"),
+        Index("ix_card_catalog_card_set", "card_set_id"),
     )
 
     id: Mapped[int] = mapped_column(Integer, primary_key=True)
@@ -253,12 +264,28 @@ class CardCatalog(Base):
     flavor_text: Mapped[Optional[str]] = mapped_column(Text)
     rules_text: Mapped[Optional[str]] = mapped_column(Text)
     artwork_url: Mapped[Optional[str]] = mapped_column(String(500))
+    
+    # Enhanced fields for video and frame system
+    frame_type: Mapped[Optional[str]] = mapped_column(String(100))
+    video_url: Mapped[Optional[str]] = mapped_column(String(500))
+    static_url: Mapped[Optional[str]] = mapped_column(String(500))
+    has_animation: Mapped[bool] = mapped_column(Boolean, default=False)
+    frame_data: Mapped[Optional[Dict[str, Any]]] = mapped_column(JSONB, default=dict)
+    asset_quality_levels: Mapped[Optional[List[str]]] = mapped_column(ARRAY(String), default=lambda: ['low', 'medium', 'high'])
+    generation_prompt: Mapped[Optional[str]] = mapped_column(Text)
+    video_prompt: Mapped[Optional[str]] = mapped_column(Text)
+    frame_style: Mapped[Optional[str]] = mapped_column(String(50), default='standard')
+    mana_colors: Mapped[Optional[List[str]]] = mapped_column(ARRAY(String), default=list)
+    action_speed: Mapped[Optional[str]] = mapped_column(String(20))
+    card_set_id: Mapped[str] = mapped_column(String(50), default='open_portal')
+    
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=utcnow, nullable=False)
     updated_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=utcnow, onupdate=utcnow, nullable=False)
 
     # Relationships
     nfc_cards: Mapped[List["NFCCard"]] = relationship(back_populates="card_template")
     player_cards: Mapped[List["PlayerCard"]] = relationship(back_populates="card_template")
+    assets: Mapped[List["CardAsset"]] = relationship(back_populates="card", cascade="all, delete-orphan")
 
 
 class NFCCard(Base):
@@ -299,6 +326,74 @@ class PlayerCard(Base):
     # Relationships
     player: Mapped["Player"] = relationship()
     card_template: Mapped["CardCatalog"] = relationship(back_populates="player_cards")
+
+
+class CardAsset(Base):
+    __tablename__ = "card_assets"
+    __table_args__ = (
+        UniqueConstraint("card_catalog_id", "asset_type", "quality_level", name="uq_card_assets_card_type_quality"),
+        Index("ix_card_assets_card_id", "card_catalog_id"),
+        Index("ix_card_assets_type", "asset_type"),
+        Index("ix_card_assets_quality", "quality_level"),
+    )
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True)
+    card_catalog_id: Mapped[int] = mapped_column(ForeignKey("card_catalog.id", ondelete="CASCADE"), nullable=False)
+    asset_type: Mapped[str] = mapped_column(String(50), nullable=False)  # 'static', 'video', 'frame', 'composite', 'thumbnail'
+    quality_level: Mapped[str] = mapped_column(String(20), nullable=False)  # 'low', 'medium', 'high', 'print'
+    file_path: Mapped[str] = mapped_column(String(500), nullable=False)
+    file_url: Mapped[Optional[str]] = mapped_column(String(500))
+    file_size: Mapped[Optional[int]] = mapped_column(Integer)
+    width: Mapped[Optional[int]] = mapped_column(Integer)
+    height: Mapped[Optional[int]] = mapped_column(Integer)
+    duration_seconds: Mapped[Optional[float]] = mapped_column(Float)  # For video assets
+    format: Mapped[Optional[str]] = mapped_column(String(20))  # PNG, JPG, MP4, WEBM, etc.
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=utcnow, nullable=False)
+    updated_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=utcnow, onupdate=utcnow, nullable=False)
+
+    # Relationships
+    card: Mapped["CardCatalog"] = relationship(back_populates="assets")
+
+
+class FrameType(Base):
+    __tablename__ = "frame_types"
+    __table_args__ = (
+        UniqueConstraint("frame_code", name="uq_frame_types_code"),
+        Index("ix_frame_types_category", "category"),
+        Index("ix_frame_types_rarity", "rarity"),
+    )
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True)
+    frame_code: Mapped[str] = mapped_column(String(100), nullable=False)
+    display_name: Mapped[str] = mapped_column(String(200), nullable=False)
+    category: Mapped[str] = mapped_column(String(50), nullable=False)
+    rarity: Mapped[str] = mapped_column(String(20), nullable=False)
+    mana_color: Mapped[Optional[str]] = mapped_column(String(20))
+    file_path: Mapped[Optional[str]] = mapped_column(String(500))
+    is_active: Mapped[bool] = mapped_column(Boolean, default=True)
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=utcnow, nullable=False)
+
+
+class CardGenerationQueue(Base):
+    __tablename__ = "card_generation_queue"
+    __table_args__ = (
+        Index("ix_generation_queue_status", "status"),
+        Index("ix_generation_queue_priority", "priority"),
+    )
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True)
+    card_catalog_id: Mapped[int] = mapped_column(ForeignKey("card_catalog.id", ondelete="CASCADE"), nullable=False)
+    generation_type: Mapped[str] = mapped_column(String(50), nullable=False)  # 'art', 'video', 'frame', 'composite', 'all'
+    priority: Mapped[int] = mapped_column(Integer, default=1)
+    status: Mapped[str] = mapped_column(String(20), default='pending')  # 'pending', 'processing', 'completed', 'failed'
+    progress_percent: Mapped[int] = mapped_column(Integer, default=0)
+    error_message: Mapped[Optional[str]] = mapped_column(Text)
+    started_at: Mapped[Optional[datetime]] = mapped_column(DateTime(timezone=True))
+    completed_at: Mapped[Optional[datetime]] = mapped_column(DateTime(timezone=True))
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=utcnow, nullable=False)
+
+    # Relationships
+    card: Mapped["CardCatalog"] = relationship()
 
 
 class ConsoleLoginToken(Base):

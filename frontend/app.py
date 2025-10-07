@@ -26,15 +26,37 @@ app = Flask(__name__)
 app.secret_key = os.environ.get("SECRET_KEY", "dev-secret-key-change-in-production")
 API_BASE = os.environ.get("API_BASE", "http://127.0.0.1:8002")
 
+# Add path for imports
+import sys
+import os
+sys.path.append(os.path.dirname(__file__))
+
 # Register admin blueprint
 from admin_routes import admin_bp
-# Temporarily disabled - fixing imports
-# from admin_routes.card_generation_ai import card_gen_bp
-# from admin_routes.card_set_generator_ai import card_set_gen_bp
+from console_deployment import deploy_bp
+from admin_routes.card_generation_ai import card_gen_bp
+from admin_routes.card_set_generator_ai import card_set_gen_bp
 
 app.register_blueprint(admin_bp)
-# app.register_blueprint(card_gen_bp)
-# app.register_blueprint(card_set_gen_bp)
+app.register_blueprint(deploy_bp)
+app.register_blueprint(card_gen_bp)
+app.register_blueprint(card_set_gen_bp)
+
+# Register asset generation blueprint
+from admin_routes.asset_generation import asset_gen_bp
+app.register_blueprint(asset_gen_bp)
+
+# Register card batch production blueprint
+# from admin_routes.card_batch_production import card_batch_bp
+# app.register_blueprint(card_batch_bp)
+
+# Register card database production blueprint (database-only)
+from admin_routes.card_database_production import card_db_bp
+app.register_blueprint(card_db_bp)
+
+# Register print portal blueprint
+from admin_routes.print_portal import print_portal_bp
+app.register_blueprint(print_portal_bp)
 
 
 # ---------- Logging setup ----------
@@ -224,16 +246,86 @@ def video_detail(slug):
 
 @app.get("/cards")
 def cards_list():
-    q = request.args.get("q", "").lower().strip()
+    # Get all filter parameters
+    q = request.args.get("q", "").strip()
     category = request.args.get("category", "").upper()
     color = request.args.get("color", "").upper()
     rarity = request.args.get("rarity", "").upper()
+    card_set = request.args.get("card_set", "").lower().strip()
+    
+    # Pagination parameters
+    page = request.args.get("page", 1, type=int)
+    page_size = request.args.get("page_size", 24, type=int)  # Default to 24 cards per page
+    page_size = min(page_size, 100)  # Max 100 per page
+    
+    # Advanced filters
+    mana_cost_min = request.args.get("mana_cost_min", type=int)
+    mana_cost_max = request.args.get("mana_cost_max", type=int)
+    energy_cost_min = request.args.get("energy_cost_min", type=int)
+    energy_cost_max = request.args.get("energy_cost_max", type=int)
+    attack_min = request.args.get("attack_min", type=int)
+    attack_max = request.args.get("attack_max", type=int)
+    health_min = request.args.get("health_min", type=int)
+    health_max = request.args.get("health_max", type=int)
+    has_artwork = request.args.get("has_artwork")
+    has_video = request.args.get("has_video")
 
-    # Try API; fallback to mock
-    params = {"q": q, "category": category, "color": color, "rarity": rarity}
+    # Get filter options from API
+    filter_data = api_get("/v1/catalog/filters")
+    if filter_data:
+        categories = filter_data.get("categories", [])
+        colors = filter_data.get("colors", [])
+        rarities = filter_data.get("rarities", [])
+        card_sets = filter_data.get("card_sets", [])
+        stat_ranges = filter_data.get("stat_ranges", {})
+    else:
+        # Fallback filter options
+        categories = ["CREATURE", "STRUCTURE", "ACTION_FAST", "ACTION_SLOW", "EQUIPMENT", "ENCHANTMENT", "HERO"]
+        colors = ["CRIMSON", "AZURE", "VERDANT", "OBSIDIAN", "RADIANT"]
+        rarities = ["COMMON", "RARE", "EPIC", "LEGENDARY"]
+        card_sets = ["open_portal"]
+        stat_ranges = {
+            "mana_cost": {"min": 0, "max": 10},
+            "energy_cost": {"min": 0, "max": 6},
+            "attack": {"min": 0, "max": 15},
+            "health": {"min": 0, "max": 20}
+        }
+
+    # Build API parameters with all filters and pagination
+    params = {
+        "q": q, "category": category, "color": color, "rarity": rarity, "card_set": card_set,
+        "mana_cost_min": mana_cost_min, "mana_cost_max": mana_cost_max,
+        "energy_cost_min": energy_cost_min, "energy_cost_max": energy_cost_max,
+        "attack_min": attack_min, "attack_max": attack_max,
+        "health_min": health_min, "health_max": health_max,
+        "has_artwork": has_artwork, "has_video": has_video,
+        "page": page, "page_size": page_size
+    }
+    
+    # Remove None values
+    params = {k: v for k, v in params.items() if v is not None and v != ""}
+    
+    # Get filtered cards from API
     api_data = api_get("/v1/catalog/cards", params=params)
-    items = api_data.get("items", []) if api_data else CATALOG
-    return render_template("cards_list.html", items=items, q=q, category=category, color=color, rarity=rarity)
+    items = api_data.get("items", []) if api_data else []
+    
+    # Extract pagination info
+    total = api_data.get("total", 0) if api_data else 0
+    has_more = api_data.get("has_more", False) if api_data else False
+    total_pages = (total + page_size - 1) // page_size if total > 0 else 1
+    
+    return render_template("cards_list.html", 
+                         items=items, 
+                         q=q, category=category, color=color, rarity=rarity, card_set=card_set,
+                         mana_cost_min=mana_cost_min, mana_cost_max=mana_cost_max,
+                         energy_cost_min=energy_cost_min, energy_cost_max=energy_cost_max,
+                         attack_min=attack_min, attack_max=attack_max,
+                         health_min=health_min, health_max=health_max,
+                         has_artwork=has_artwork, has_video=has_video,
+                         categories=categories, colors=colors, rarities=rarities, card_sets=card_sets,
+                         stat_ranges=stat_ranges,
+                         # Pagination data
+                         page=page, page_size=page_size, total=total, total_pages=total_pages, has_more=has_more)
 
 
 @app.get("/cards/<product_sku>")

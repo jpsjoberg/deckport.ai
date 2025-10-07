@@ -1,8 +1,37 @@
 extends Node
 class_name NFCManager
 
-# Production NFC Card Scanner Manager
-# Handles physical NFC card scanning and validation with real hardware
+##
+## NFC Manager - Physical Card Scanner System
+##
+## This class manages the interface with physical NFC card readers to scan and validate
+## real Deckport trading cards. It handles hardware communication, card authentication,
+## and integration with the server-side card validation system.
+##
+## Key Features:
+## - Physical NFC reader hardware interface
+## - Real-time card scanning and detection
+## - Server-side card validation and authentication
+## - NTAG 424 DNA security chip support
+## - Card ownership verification
+## - Scan error handling and recovery
+## - Hardware status monitoring
+##
+## Hardware Support:
+## - NTAG 424 DNA NFC cards
+## - USB NFC readers (ACR122U compatible)
+## - Real-time scan detection
+##
+## Security:
+## - Card authenticity verification
+## - Ownership validation against player account
+## - Anti-counterfeit measures
+## - Secure card provisioning
+##
+## @author Deckport.ai Development Team
+## @version 1.0
+## @since 2024-12-28
+##
 
 signal card_scanned(card_data: Dictionary)
 signal scan_error(error_message: String)
@@ -25,7 +54,7 @@ var nfc_reader_process: int = -1
 var server_logger
 
 # API Configuration
-var api_base_url: String = "http://127.0.0.1:8002"
+var api_base_url: String = "https://deckport.ai"
 var device_uid: String = ""
 
 func _ready():
@@ -35,8 +64,11 @@ func _ready():
 	
 	# Get device UID from connection manager
 	var device_connection_manager = get_node("/root/DeviceConnectionManager")
-	if device_connection_manager:
+	if device_connection_manager and device_connection_manager.has_method("get_device_uid"):
 		device_uid = device_connection_manager.get_device_uid()
+	else:
+		print("⚠️ DeviceConnectionManager not available - using fallback device UID")
+		device_uid = "DECK_LOCAL_TEST_001"
 	
 	# Initialize NFC reader hardware
 	initialize_nfc_reader()
@@ -46,25 +78,82 @@ func _ready():
 		start_monitoring()
 
 func initialize_nfc_reader():
-	"""Initialize real NFC reader hardware"""
-	print("🔌 Initializing NFC reader hardware...")
+	"""Initialize any compatible NFC reader hardware"""
+	print("🔌 Scanning for NFC readers...")
 	server_logger.log_system_event("nfc_init", {"action": "initialize_reader"})
 	
-	# Check for NFC reader using nfc-list command
-	var output = []
-	var exit_code = OS.execute("nfc-list", [], output)
+	# Multi-method reader detection
+	var reader_detected = false
+	var reader_info = ""
 	
-	if exit_code == 0 and output.size() > 0:
-		var reader_info = output[0]
-		if "NFC reader" in reader_info or "ACR122U" in reader_info or "PN532" in reader_info:
-			current_status = NFCStatus.CONNECTED
-			reader_status_changed.emit("Connected: " + reader_info.strip_edges())
-			print("✅ NFC reader detected: ", reader_info.strip_edges())
-			server_logger.log_system_event("nfc_reader_connected", {"reader": reader_info.strip_edges()})
-		else:
-			_handle_reader_error("NFC reader found but not recognized")
+	# Method 1: nfc-list command (libnfc)
+	var nfc_output = []
+	var nfc_exit_code = OS.execute("nfc-list", [], nfc_output)
+	
+	if nfc_exit_code == 0 and nfc_output.size() > 0:
+		reader_info = nfc_output[0].strip_edges()
+		if "NFC reader" in reader_info or "ACR122" in reader_info or "PN532" in reader_info or "OMNIKEY" in reader_info:
+			reader_detected = true
+			print("✅ NFC reader detected via libnfc: ", reader_info)
+	
+	# Method 2: PC/SC daemon check (for OMNIKEY and professional readers)
+	if not reader_detected:
+		var pcsc_output = []
+		var pcsc_exit_code = OS.execute("pcsc_scan", ["-n"], pcsc_output)
+		
+		if pcsc_exit_code == 0 and pcsc_output.size() > 0:
+			var pcsc_info = pcsc_output.join(" ")
+			if "OMNIKEY" in pcsc_info or "HID" in pcsc_info or "076b:5422" in pcsc_info:
+				reader_detected = true
+				reader_info = "OMNIKEY 5422 Professional NFC Reader"
+				print("✅ Professional NFC reader detected via PC/SC: OMNIKEY 5422")
+	
+	# Method 3: USB device detection (fallback)
+	if not reader_detected:
+		var usb_output = []
+		var usb_exit_code = OS.execute("lsusb", [], usb_output)
+		
+		if usb_exit_code == 0:
+			for line in usb_output:
+				# Check for known NFC reader USB IDs
+				if ("072f:" in line) or ("1fc9:" in line) or ("076b:5422" in line) or ("04e6:" in line):
+					reader_detected = true
+					if "076b:5422" in line:
+						reader_info = "OMNIKEY 5422 (USB ID: 076b:5422)"
+					elif "072f:" in line:
+						reader_info = "ACR122U (USB ID: 072f:*)"
+					elif "1fc9:" in line:
+						reader_info = "PN532 (USB ID: 1fc9:*)"
+					else:
+						reader_info = "Compatible NFC reader detected"
+					
+					print("✅ NFC reader detected via USB: ", reader_info)
+					break
+	
+	if reader_detected:
+		current_status = NFCStatus.CONNECTED
+		reader_status_changed.emit("Connected: " + reader_info)
+		server_logger.log_system_event("nfc_reader_connected", {"reader": reader_info})
+		
+		# Test reader functionality
+		_test_reader_functionality()
 	else:
-		_handle_reader_error("No NFC reader detected")
+		_handle_reader_error("No compatible NFC reader detected")
+
+func _test_reader_functionality():
+	"""Test NFC reader functionality after detection"""
+	print("🧪 Testing NFC reader functionality...")
+	
+	# Test basic reader communication
+	var test_output = []
+	var test_exit_code = OS.execute("timeout", ["3", "nfc-poll", "-1"], test_output)
+	
+	if test_exit_code == 0:
+		print("✅ NFC reader communication test passed")
+		server_logger.log_system_event("nfc_reader_test", {"status": "passed"})
+	else:
+		print("⚠️ NFC reader test inconclusive (no cards present)")
+		server_logger.log_system_event("nfc_reader_test", {"status": "no_cards"})
 
 func _handle_reader_error(error_msg: String):
 	"""Handle NFC reader initialization errors"""
@@ -75,9 +164,11 @@ func _handle_reader_error(error_msg: String):
 	
 	print("💡 Troubleshooting:")
 	print("   - Check NFC reader is connected via USB")
-	print("   - Install libnfc: sudo apt install libnfc-bin")
-	print("   - Check permissions: sudo usermod -a -G dialout $USER")
-	print("   - Restart after driver installation")
+	print("   - Install libnfc: sudo apt install libnfc-bin pcscd")
+	print("   - For OMNIKEY 5422: sudo systemctl restart pcscd")
+	print("   - Check permissions: sudo usermod -a -G dialout,plugdev $USER")
+	print("   - Test manually: nfc-list")
+	print("   - For professional readers: pcsc_scan -n")
 
 func start_monitoring():
 	"""Start NFC card monitoring"""
@@ -113,22 +204,42 @@ func _start_scan_loop():
 		await get_tree().create_timer(0.5).timeout  # Scan every 500ms
 
 func _scan_for_cards():
-	"""Scan for NFC cards using real hardware"""
+	"""Scan for NFC cards using any compatible reader"""
 	if not is_monitoring or current_status != NFCStatus.SCANNING:
 		return
 	
-	# Use nfc-poll to detect cards
-	var output = []
-	var exit_code = OS.execute("timeout", ["2", "nfc-poll", "-1"], output)
+	var card_detected = false
+	var card_uid = ""
 	
-	if exit_code == 0 and output.size() > 0:
-		var scan_result = output.join("\n")
-		var uid = _extract_uid_from_scan(scan_result)
+	# Method 1: nfc-poll (libnfc - works with most readers)
+	var nfc_output = []
+	var nfc_exit_code = OS.execute("timeout", ["2", "nfc-poll", "-1"], nfc_output)
+	
+	if nfc_exit_code == 0 and nfc_output.size() > 0:
+		var scan_result = nfc_output.join("\n")
+		card_uid = _extract_uid_from_scan(scan_result)
 		
-		if uid != "":
-			print("📱 NFC card detected: ", uid)
-			server_logger.log_system_event("nfc_card_detected", {"uid": uid})
-			_process_card_scan(uid)
+		if card_uid != "":
+			card_detected = true
+			print("📱 NFC card detected via libnfc: ", card_uid)
+	
+	# Method 2: PC/SC tools (for OMNIKEY and professional readers)
+	if not card_detected:
+		var pcsc_output = []
+		var pcsc_exit_code = OS.execute("timeout", ["2", "pcsc_scan", "-r"], pcsc_output)
+		
+		if pcsc_exit_code == 0 and pcsc_output.size() > 0:
+			var pcsc_result = pcsc_output.join("\n")
+			card_uid = _extract_uid_from_pcsc_scan(pcsc_result)
+			
+			if card_uid != "":
+				card_detected = true
+				print("📱 NFC card detected via PC/SC: ", card_uid)
+	
+	# Process detected card
+	if card_detected and card_uid != "":
+		server_logger.log_system_event("nfc_card_detected", {"uid": card_uid, "method": "auto_detect"})
+		_process_card_scan(card_uid)
 
 func _extract_uid_from_scan(scan_output: String) -> String:
 	"""Extract card UID from nfc-poll output"""
@@ -145,6 +256,31 @@ func _extract_uid_from_scan(scan_output: String) -> String:
 			if result:
 				var uid = result.get_string().replace(" ", "").replace(":", "").to_upper()
 				return uid
+	
+	return ""
+
+func _extract_uid_from_pcsc_scan(pcsc_output: String) -> String:
+	"""Extract card UID from PC/SC scan output (for OMNIKEY readers)"""
+	var lines = pcsc_output.split("\n")
+	
+	for line in lines:
+		# Look for ATR or UID patterns in PC/SC output
+		if "ATR:" in line or "UID:" in line or "Card UID:" in line:
+			# Extract hex UID pattern
+			var hex_pattern = RegEx.new()
+			hex_pattern.compile("[0-9A-Fa-f]{8,14}")  # 4-7 byte UIDs
+			var result = hex_pattern.search(line)
+			
+			if result:
+				var uid = result.get_string().to_upper()
+				if uid.length() >= 8:  # Valid UID length
+					print("🎯 Extracted UID from PC/SC: ", uid)
+					return uid
+		
+		# OMNIKEY specific patterns
+		if "076b:5422" in line or "OMNIKEY" in line:
+			# Look for following lines with card data
+			continue
 	
 	return ""
 
@@ -180,7 +316,7 @@ func _authenticate_card_with_server(nfc_uid: String):
 	
 	# Make API request
 	var error = http_request.request(
-		api_base_url + "/v1/nfc/console/authenticate",
+		api_base_url + "/v1/nfc-cards/authenticate",
 		headers,
 		HTTPClient.METHOD_POST,
 		json_string

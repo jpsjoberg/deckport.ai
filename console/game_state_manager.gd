@@ -1,56 +1,103 @@
 extends Node
 
-# Game State Manager - Manages the complete physical card battle system
-# Handles matchmaking, battles, NFC card scanning, and video streaming integration
+##
+## Game State Manager - Central Coordination System
+##
+## This singleton manages the complete game state across all scenes and systems.
+## It coordinates matchmaking, battle progression, NFC card scanning, and maintains
+## synchronization between the console interface and server-side game logic.
+##
+## Key Responsibilities:
+## - Game state transitions (Menu → Hero Selection → Matchmaking → Battle → Results)
+## - Player session management and authentication
+## - Match data coordination with server
+## - Physical card scanning integration
+## - Battle state synchronization
+## - Video streaming session management
+##
+## State Flow:
+## MENU → HERO_SELECTION → MATCHMAKING → BATTLE_SETUP → BATTLE_ACTIVE → BATTLE_RESULTS
+##
+## Dependencies:
+## - DeviceConnectionManager: Console authentication
+## - ArenaVideoManager: Arena background videos
+## - VideoStreamManager: Live opponent video streaming
+## - ServerLogger: Real-time event logging
+##
+## @author Deckport.ai Development Team
+## @version 1.0
+## @since 2024-12-28
+##
 
+#region Signals
+## Emitted when the game state changes between scenes/phases
 signal game_state_changed(old_state: GameState, new_state: GameState)
+## Emitted when matchmaking finds an opponent
 signal player_matched(opponent_data: Dictionary)
+## Emitted when a battle begins
 signal battle_started(battle_data: Dictionary)
+## Emitted when a physical card is scanned via NFC
 signal card_scanned(card_data: Dictionary)
+## Emitted when a battle concludes with results
 signal battle_ended(results: Dictionary)
+#endregion
 
+#region Game State Enumeration
+## Defines all possible game states and scene transitions
 enum GameState {
-	MENU,           # Player dashboard
-	HERO_SELECTION, # Choosing starting hero
-	MATCHMAKING,    # Finding opponent
-	BATTLE_SETUP,   # Setting up battle and video
-	BATTLE_ACTIVE,  # Active battle with card scanning
-	BATTLE_RESULTS, # Showing results
-	DISCONNECTED    # Connection issues
+	MENU,           ## Player dashboard and main menu
+	HERO_SELECTION, ## Choosing starting hero for battle
+	MATCHMAKING,    ## Finding opponent via matchmaking queue
+	BATTLE_SETUP,   ## Setting up battle arena and video streams
+	BATTLE_ACTIVE,  ## Active battle with card scanning and gameplay
+	BATTLE_RESULTS, ## Displaying battle results and statistics
+	DISCONNECTED    ## Network connection issues or errors
 }
+#endregion
 
-# Current game state
+#region State Variables
+## Current and previous game states for transition management
 var current_state: GameState = GameState.MENU
 var previous_state: GameState = GameState.MENU
+#endregion
 
-# Player data
-var player_id: int = 0
-var player_name: String = ""
-var player_elo: int = 1000
-var selected_hero_card: Dictionary = {}
+#region Player Data
+## Player identification and profile information
+var player_id: int = 0                    ## Unique player identifier from server
+var player_name: String = ""              ## Display name for this player
+var player_elo: int = 1000                ## Current ELO rating for matchmaking
+var selected_hero_card: Dictionary = {}   ## Hero card chosen for current battle
+#endregion
 
-# Battle data
-var current_battle: Dictionary = {}
-var opponent_data: Dictionary = {}
-var battle_arena: Dictionary = {}
-var is_my_turn: bool = false
-var battle_timer: float = 0.0
+#region Battle Data
+## Current battle and match state information
+var current_battle: Dictionary = {}       ## Active battle session data
+var current_match: Dictionary = {}        ## Real match data from matchmaking system
+var opponent_data: Dictionary = {}        ## Opponent player information and stats
+var battle_arena: Dictionary = {}         ## Selected arena with effects and bonuses
+var is_my_turn: bool = false             ## Whether it's currently this player's turn
+var battle_timer: float = 0.0           ## Current turn or battle timer value
+#endregion
 
-# Physical card system
-var scanned_cards: Array[Dictionary] = []
-var played_cards: Array[Dictionary] = []
-var mana_available: int = 0
-var mana_per_turn: int = 1
+#region Physical Card System
+## NFC card scanning and gameplay state
+var scanned_cards: Array[Dictionary] = []  ## Cards scanned this session
+var played_cards: Array[Dictionary] = []   ## Cards played in current battle
+var mana_available: int = 0               ## Current mana available for card play
+var mana_per_turn: int = 1               ## Mana generated each turn
+#endregion
 
-# Managers
-var device_connection_manager
-var arena_video_manager
-var video_stream_manager
-var server_logger
+#region Manager References
+## References to core system managers
+var device_connection_manager   ## Console device authentication
+var arena_video_manager        ## Arena background video management
+var video_stream_manager       ## Live opponent video streaming
+var server_logger             ## Real-time event logging to server
+#endregion
 
 # HTTP for game API calls
 var http_request: HTTPRequest
-var server_url: String = "http://127.0.0.1:8002"
+var server_url: String = "https://deckport.ai"
 
 func _ready():
 	print("🎮 Game State Manager initialized")
@@ -59,10 +106,18 @@ func _ready():
 	server_logger = preload("res://server_logger.gd").new()
 	add_child(server_logger)
 	
-	# Get manager references
+	# Get manager references with fallbacks
 	device_connection_manager = get_node("/root/DeviceConnectionManager")
+	if not device_connection_manager:
+		print("⚠️ DeviceConnectionManager not found in GameStateManager")
+	
 	arena_video_manager = get_node("/root/ArenaVideoManager")
+	if not arena_video_manager:
+		print("⚠️ ArenaVideoManager not found in GameStateManager")
+	
 	video_stream_manager = get_node("/root/VideoStreamManager")
+	if not video_stream_manager:
+		print("⚠️ VideoStreamManager not found in GameStateManager")
 	
 	# Setup HTTP request
 	setup_http_request()
@@ -162,7 +217,7 @@ func start_matchmaking():
 	server_logger.log_system_event("matchmaking_start", matchmaking_data)
 	
 	# Make API call to join matchmaking queue
-	var headers = device_connection_manager.get_authenticated_headers()
+	var headers = device_connection_manager.get_auth_headers()
 	headers.append("Content-Type: application/json")
 	
 	var error = http_request.request(
@@ -181,7 +236,7 @@ func cancel_matchmaking():
 	print("❌ Cancelling matchmaking")
 	
 	# API call to leave queue
-	var headers = device_connection_manager.get_authenticated_headers()
+	var headers = device_connection_manager.get_auth_headers()
 	http_request.request(
 		server_url + "/v1/matchmaking/leave",
 		headers,
@@ -276,7 +331,7 @@ func scan_card(card_sku: String) -> bool:
 		"turn": current_battle.turn
 	}
 	
-	var headers = device_connection_manager.get_authenticated_headers()
+	var headers = device_connection_manager.get_auth_headers()
 	headers.append("Content-Type: application/json")
 	
 	var error = http_request.request(
@@ -334,7 +389,7 @@ func play_card(card_data: Dictionary) -> bool:
 		"turn": current_battle.turn
 	}
 	
-	var headers = device_connection_manager.get_authenticated_headers()
+	var headers = device_connection_manager.get_auth_headers()
 	headers.append("Content-Type: application/json")
 	
 	http_request.request(
@@ -371,7 +426,7 @@ func end_turn():
 		"cards_played": played_cards.size()
 	}
 	
-	var headers = device_connection_manager.get_authenticated_headers()
+	var headers = device_connection_manager.get_auth_headers()
 	headers.append("Content-Type: application/json")
 	
 	http_request.request(
@@ -407,7 +462,7 @@ func attack_opponent():
 		"turn": current_battle.turn
 	}
 	
-	var headers = device_connection_manager.get_authenticated_headers()
+	var headers = device_connection_manager.get_auth_headers()
 	headers.append("Content-Type: application/json")
 	
 	http_request.request(
@@ -461,7 +516,7 @@ func _on_opponent_joined(participant_info: Dictionary):
 	"""Handle opponent joining video stream"""
 	print("👥 Opponent joined video stream: ", participant_info)
 
-func _on_http_response(result: int, response_code: int, headers: PackedStringArray, body: PackedByteArray):
+func _on_http_response(result: int, response_code: int, _headers: PackedStringArray, body: PackedByteArray):
 	"""Handle HTTP responses from game API"""
 	var response_text = body.get_string_from_utf8()
 	
@@ -515,6 +570,24 @@ func _on_http_response(result: int, response_code: int, headers: PackedStringArr
 func get_battle_data() -> Dictionary:
 	"""Get current battle data"""
 	return current_battle
+
+func get_current_match() -> Dictionary:
+	"""Get current match data from matchmaking"""
+	return current_match
+
+func set_current_match(match_data: Dictionary):
+	"""Set current match data from matchmaking"""
+	current_match = match_data
+	print("🎯 Match data set: ", match_data.get("match_id", "unknown"))
+	
+	# Extract opponent data from match data
+	if match_data.has("opponent_name"):
+		opponent_data = {
+			"player_name": match_data.get("opponent_name", "Unknown"),
+			"player_id": match_data.get("opponent_id", 0),
+			"player_elo": match_data.get("opponent_rating", 1000),
+			"hero_name": match_data.get("opponent_hero", "Unknown Hero")
+		}
 
 func get_opponent_data() -> Dictionary:
 	"""Get opponent data"""

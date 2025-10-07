@@ -1,0 +1,38 @@
+[gd_resource type="Theme" format=3]
+
+[ext_resource type="FontFile" path="res://assets/fonts/Chakra_Petch/ChakraPetch-Bold.ttf" id="1"]
+[ext_resource type="FontFile" path="res://assets/fonts/Chakra_Petch/ChakraPetch-Regular.ttf" id="2"]
+[ext_resource type="FontFile" path="res://assets/fonts/Chakra_Petch/ChakraPetch-Medium.ttf" id="3"]
+
+[resource]
+
+[resource.Button]
+font = ExtResource("3")
+font_size = 24
+font_color = Color(1, 1, 1, 1)
+font_pressed_color = Color(0.8, 0.8, 1, 1)
+font_hover_color = Color(1, 1, 0.8, 1)
+font_disabled_color = Color(0.5, 0.5, 0.5, 1)
+
+[resource.Label]
+font = ExtResource("2")
+font_size = 20
+font_color = Color(1, 1, 1, 1)
+
+[resource.Label/title]
+font = ExtResource("1")
+font_size = 36
+font_color = Color(1, 1, 0.8, 1)
+
+[resource.Label/subtitle]
+font = ExtResource("3")
+font_size = 24
+font_color = Color(0.9, 0.9, 1, 1)
+
+[resource.Label/status]
+font = ExtResource("2")
+font_size = 18
+font_color = Color(0.8, 1, 0.8, 1)
+
+[resource.Panel]
+bg_color = Color(0.1, 0.1, 0.2, 0.8)

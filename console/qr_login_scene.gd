@@ -13,7 +13,7 @@ extends Control
 
 var server_logger
 var device_connection_manager
-var server_url = "http://127.0.0.1:8002"
+var server_url = "https://deckport.ai"
 
 # QR Login state
 var login_token = ""
@@ -31,9 +31,14 @@ func _ready():
 	add_child(server_logger)
 	server_logger.log_scene_change("main_menu", "qr_login")
 	
-	# Get device connection manager from parent or create new one
-	device_connection_manager = preload("res://device_connection_manager.gd").new()
-	add_child(device_connection_manager)
+	# Get device connection manager autoload singleton
+	if has_node("/root/DeviceConnectionManager"):
+		device_connection_manager = get_node("/root/DeviceConnectionManager")
+		print("✅ DeviceConnectionManager autoload found")
+	else:
+		print("⚠️ DeviceConnectionManager not found - using fallback")
+		device_connection_manager = preload("res://device_connection_manager.gd").new()
+		add_child(device_connection_manager)
 	
 	# Note: Skip device connection check since reaching this scene means device was authenticated
 	# The boot process already verified device authentication before allowing scene transitions
@@ -346,7 +351,7 @@ func load_qr_image(image_url: String):
 	# Request the QR code image
 	image_request.request(image_url)
 
-func _on_qr_image_loaded(result: int, response_code: int, headers: PackedStringArray, body: PackedByteArray):
+func _on_qr_image_loaded(result: int, response_code: int, _headers: PackedStringArray, body: PackedByteArray):
 	"""Handle QR code image loaded"""
 	print("📥 QR Image response - Result: ", result, " Code: ", response_code, " Body size: ", body.size())
 	
@@ -382,7 +387,15 @@ func _handle_poll_response(data: Dictionary):
 	
 	if status == "confirmed":
 		# Login successful!
-		var player_data = data.get("player_data", {})
+		var player_jwt = data.get("player_jwt", "")
+		var player_data = data.get("player", {})
+		
+		if player_jwt.is_empty():
+			_show_error("Login confirmed but no player token received")
+			return
+		
+		# Store player session data for console use
+		_store_player_session(player_jwt, player_data)
 		_on_login_success(player_data)
 	elif status == "pending":
 		# Still waiting
@@ -424,6 +437,26 @@ func _process(delta):
 		if remaining_time <= 0:
 			_on_login_timeout()
 
+func _store_player_session(player_jwt: String, player_data: Dictionary):
+	"""Store player session data for console use"""
+	print("💾 Storing player session data")
+	
+	# Get or create player session manager
+	var player_session_manager = get_node("/root/PlayerSessionManager")
+	if not player_session_manager:
+		print("⚠️ PlayerSessionManager not found - creating fallback")
+		player_session_manager = preload("res://player_session_manager.gd").new()
+		player_session_manager.name = "PlayerSessionManager"
+		get_tree().root.add_child(player_session_manager)
+	
+	# Login the player through the session manager
+	player_session_manager.login_player(player_jwt, player_data)
+	
+	server_logger.log_system_event("player_session_stored", {
+		"player_id": player_data.get("id", 0),
+		"display_name": player_data.get("display_name", "Player")
+	})
+
 func _on_login_success(player_data: Dictionary):
 	"""Handle successful login"""
 	print("✅ QR Login successful!")
@@ -431,7 +464,7 @@ func _on_login_success(player_data: Dictionary):
 	poll_timer.stop()
 	
 	server_logger.log_login_attempt("qr_code", true, {
-		"player_id": player_data.get("player_id", "unknown"),
+		"player_id": player_data.get("id", "unknown"),
 		"player_email": player_data.get("email", "unknown")
 	})
 	

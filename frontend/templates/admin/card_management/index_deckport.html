@@ -1,0 +1,702 @@
+{% extends "admin/base.html" %}
+
+{% block title %}Card Management - Deckport Admin{% endblock %}
+{% block page_title %}Card Management{% endblock %}
+{% block page_subtitle %}Generate, review, and manage your card collection{% endblock %}
+
+{% block content %}
+<!-- Card Statistics -->
+<div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+    <!-- Total Cards -->
+    <div class="metric-card">
+        <div class="flex items-center justify-between mb-4">
+            <div class="w-12 h-12 rounded-xl flex items-center justify-center" style="background: linear-gradient(135deg, #8b5cf6 0%, #7c3aed 100%);">
+                <i class="fas fa-layer-group text-xl text-white"></i>
+            </div>
+            <i class="fas fa-arrow-up text-green-400"></i>
+        </div>
+        <div class="flex items-baseline">
+            <span class="text-3xl font-bold text-purple-400">{{ stats.total_templates or 0 }}</span>
+        </div>
+        <p class="text-sm text-gray-400 mt-1">Total Cards</p>
+    </div>
+
+    <!-- Published Cards -->
+    <div class="metric-card">
+        <div class="flex items-center justify-between mb-4">
+            <div class="w-12 h-12 rounded-xl flex items-center justify-center" style="background: linear-gradient(135deg, #10b981 0%, #059669 100%);">
+                <i class="fas fa-check-circle text-xl text-white"></i>
+            </div>
+            <span class="status-indicator status-healthy"></span>
+        </div>
+        <div class="flex items-baseline">
+            <span class="text-3xl font-bold text-green-400">{{ stats.published_templates or 0 }}</span>
+        </div>
+        <p class="text-sm text-gray-400 mt-1">Published</p>
+    </div>
+
+    <!-- Generation Queue -->
+    <div class="metric-card">
+        <div class="flex items-center justify-between mb-4">
+            <div class="w-12 h-12 rounded-xl flex items-center justify-center" style="background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%);">
+                <i class="fas fa-clock text-xl text-white"></i>
+            </div>
+            <span class="status-indicator status-warning"></span>
+        </div>
+        <div class="flex items-baseline">
+            <span class="text-3xl font-bold text-yellow-400" id="queue-count">0</span>
+        </div>
+        <p class="text-sm text-gray-400 mt-1">In Queue</p>
+    </div>
+
+    <!-- Legendary Cards -->
+    <div class="metric-card">
+        <div class="flex items-center justify-between mb-4">
+            <div class="w-12 h-12 rounded-xl flex items-center justify-center" style="background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%);">
+                <i class="fas fa-crown text-xl text-white"></i>
+            </div>
+            <i class="fas fa-star text-yellow-400"></i>
+        </div>
+        <div class="flex items-baseline">
+            <span class="text-3xl font-bold text-yellow-400">{{ stats.by_rarity.LEGENDARY or 0 }}</span>
+        </div>
+        <p class="text-sm text-gray-400 mt-1">Legendary</p>
+    </div>
+</div>
+
+<!-- Quick Actions -->
+<div class="mb-8">
+    <h2 class="text-2xl font-bold gradient-text mb-6">
+        <i class="fas fa-bolt mr-3"></i>Card Actions
+    </h2>
+    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+        <!-- Generate New Card -->
+        <div class="admin-card p-6 cursor-pointer card-hover" onclick="window.location.href='{{ url_for('admin.card_generation') }}'">
+            <div class="flex items-center justify-between mb-4">
+                <div class="w-16 h-16 rounded-2xl flex items-center justify-center" style="background: linear-gradient(135deg, #8b5cf6 0%, #7c3aed 100%);">
+                    <i class="fas fa-magic text-2xl text-white"></i>
+                </div>
+                <i class="fas fa-arrow-right text-gray-400"></i>
+            </div>
+            <h3 class="text-xl font-bold text-white mb-2">Generate Cards</h3>
+            <p class="text-gray-400 text-sm mb-4">Create new card artwork using AI generation system</p>
+            <div class="flex items-center text-purple-400 font-medium">
+                <span>Start Generation</span>
+                <i class="fas fa-chevron-right ml-2"></i>
+            </div>
+        </div>
+
+        <!-- Review Cards -->
+        <div class="admin-card p-6 cursor-pointer card-hover" onclick="window.location.href='{{ url_for('admin.card_review') }}'">
+            <div class="flex items-center justify-between mb-4">
+                <div class="w-16 h-16 rounded-2xl flex items-center justify-center" style="background: linear-gradient(135deg, #3b82f6 0%, #1d4ed8 100%);">
+                    <i class="fas fa-list text-2xl text-white"></i>
+                </div>
+                <i class="fas fa-arrow-right text-gray-400"></i>
+            </div>
+            <h3 class="text-xl font-bold text-white mb-2">Review Cards</h3>
+            <p class="text-gray-400 text-sm mb-4">Browse and manage existing card collection</p>
+            <div class="flex items-center text-blue-400 font-medium">
+                <span>Browse Collection</span>
+                <i class="fas fa-chevron-right ml-2"></i>
+            </div>
+        </div>
+
+        <!-- Batch Operations -->
+        <div class="admin-card p-6 cursor-pointer card-hover" onclick="showBatchModal()">
+            <div class="flex items-center justify-between mb-4">
+                <div class="w-16 h-16 rounded-2xl flex items-center justify-center" style="background: linear-gradient(135deg, #10b981 0%, #059669 100%);">
+                    <i class="fas fa-layer-group text-2xl text-white"></i>
+                </div>
+                <i class="fas fa-arrow-right text-gray-400"></i>
+            </div>
+            <h3 class="text-xl font-bold text-white mb-2">Batch Operations</h3>
+            <p class="text-gray-400 text-sm mb-4">Generate multiple cards or perform bulk operations</p>
+            <div class="flex items-center text-green-400 font-medium">
+                <span>Batch Process</span>
+                <i class="fas fa-chevron-right ml-2"></i>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Card Distribution by Rarity -->
+<div class="grid grid-cols-1 lg:grid-cols-2 gap-8 mb-8">
+    <!-- Rarity Distribution -->
+    <div class="admin-card p-6">
+        <h3 class="text-xl font-bold text-white mb-6 flex items-center">
+            <i class="fas fa-chart-pie mr-3 text-blue-400"></i>
+            Rarity Distribution
+        </h3>
+        <div class="space-y-4">
+            {% for rarity, count in stats.by_rarity.items() %}
+            <div class="flex items-center justify-between">
+                <div class="flex items-center">
+                    <div class="w-4 h-4 rounded-full mr-3" style="background: 
+                        {% if rarity == 'LEGENDARY' %}linear-gradient(135deg, #f59e0b 0%, #d97706 100%)
+                        {% elif rarity == 'EPIC' %}linear-gradient(135deg, #8b5cf6 0%, #7c3aed 100%)
+                        {% elif rarity == 'RARE' %}linear-gradient(135deg, #3b82f6 0%, #1d4ed8 100%)
+                        {% else %}linear-gradient(135deg, #6b7280 0%, #4b5563 100%){% endif %};"></div>
+                    <span class="text-sm text-white">{{ rarity.title() }}</span>
+                </div>
+                <div class="flex items-center">
+                    <span class="text-lg font-bold text-white mr-3">{{ count }}</span>
+                    <div class="w-24 h-2 bg-gray-700 rounded-full overflow-hidden">
+                        <div class="h-full rounded-full" style="width: {{ (count / stats.total_templates * 100) if stats.total_templates > 0 else 0 }}%; background: 
+                            {% if rarity == 'LEGENDARY' %}linear-gradient(135deg, #f59e0b 0%, #d97706 100%)
+                            {% elif rarity == 'EPIC' %}linear-gradient(135deg, #8b5cf6 0%, #7c3aed 100%)
+                            {% elif rarity == 'RARE' %}linear-gradient(135deg, #3b82f6 0%, #1d4ed8 100%)
+                            {% else %}linear-gradient(135deg, #6b7280 0%, #4b5563 100%){% endif %};"></div>
+                    </div>
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+    </div>
+
+    <!-- Recent Cards -->
+    <div class="admin-card p-6">
+        <h3 class="text-xl font-bold text-white mb-6 flex items-center">
+            <i class="fas fa-clock mr-3 text-green-400"></i>
+            Recently Created
+        </h3>
+        <div class="space-y-3">
+            {% if stats.recent_cards %}
+                {% for card in stats.recent_cards[:6] %}
+                <div class="flex items-center justify-between py-2 border-b border-gray-700 border-opacity-50 last:border-b-0">
+                    <div class="flex items-center">
+                        <div class="w-8 h-8 rounded-lg flex items-center justify-center mr-3" style="background: 
+                            {% if card.rarity == 'LEGENDARY' %}linear-gradient(135deg, #f59e0b 0%, #d97706 100%)
+                            {% elif card.rarity == 'EPIC' %}linear-gradient(135deg, #8b5cf6 0%, #7c3aed 100%)
+                            {% elif card.rarity == 'RARE' %}linear-gradient(135deg, #3b82f6 0%, #1d4ed8 100%)
+                            {% else %}linear-gradient(135deg, #6b7280 0%, #4b5563 100%){% endif %};">
+                            <i class="fas fa-magic text-xs text-white"></i>
+                        </div>
+                        <div>
+                            <p class="text-sm font-medium text-white">{{ card.name }}</p>
+                            <p class="text-xs text-gray-400">{{ card.category }}</p>
+                        </div>
+                    </div>
+                    <span class="text-xs text-gray-500">
+                        {% if card.created_at %}
+                            {% if card.created_at is string %}
+                                {{ card.created_at[:10] }}
+                            {% else %}
+                                Today
+                            {% endif %}
+                        {% else %}
+                            Today
+                        {% endif %}
+                    </span>
+                </div>
+                {% endfor %}
+            {% else %}
+            <div class="text-center py-8">
+                <i class="fas fa-magic text-4xl text-gray-600 mb-4"></i>
+                <p class="text-gray-400">No cards created yet</p>
+                <button onclick="window.location.href='{{ url_for('admin.card_generation') }}'" class="btn-primary mt-4">
+                    Generate First Card
+                </button>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+
+<!-- Card List for Individual Management -->
+<div class="admin-card p-6 mb-6">
+    <div class="flex items-center justify-between mb-6">
+        <h3 class="text-xl font-bold text-white flex items-center">
+            <i class="fas fa-layer-group mr-3 text-blue-400"></i>
+            Card Management
+        </h3>
+        <div class="flex space-x-2">
+            <a href="/admin/cards/generate" class="bg-purple-600 text-white px-4 py-2 rounded-md hover:bg-purple-700">
+                <i class="fas fa-magic mr-2"></i>Generate Graphics
+            </a>
+            <a href="/admin/assets/generation" class="bg-blue-600 text-white px-4 py-2 rounded-md hover:bg-blue-700">
+                <i class="fas fa-chart-line mr-2"></i>View Queue
+            </a>
+        </div>
+    </div>
+    
+    <!-- Filters -->
+    <form method="GET" class="mb-6">
+        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-4">
+            <!-- Search -->
+            <div>
+                <label class="block text-sm font-medium text-gray-300 mb-2">Search Cards</label>
+                <input type="text" name="q" value="{{ filters.q or '' }}" 
+                       placeholder="Card name or SKU..."
+                       class="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded-md text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500">
+            </div>
+            
+            <!-- Category Filter -->
+            <div>
+                <label class="block text-sm font-medium text-gray-300 mb-2">Category</label>
+                <select name="category" class="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded-md text-white focus:outline-none focus:ring-2 focus:ring-blue-500">
+                    <option value="">All Categories</option>
+                    <option value="creature" {{ 'selected' if filters.category == 'creature' }}>Creature</option>
+                    <option value="structure" {{ 'selected' if filters.category == 'structure' }}>Structure</option>
+                    <option value="action_fast" {{ 'selected' if filters.category == 'action_fast' }}>Action (Fast)</option>
+                    <option value="action_slow" {{ 'selected' if filters.category == 'action_slow' }}>Action (Slow)</option>
+                    <option value="equipment" {{ 'selected' if filters.category == 'equipment' }}>Equipment</option>
+                    <option value="enchantment" {{ 'selected' if filters.category == 'enchantment' }}>Enchantment</option>
+                    <option value="artifact" {{ 'selected' if filters.category == 'artifact' }}>Artifact</option>
+                    <option value="hero" {{ 'selected' if filters.category == 'hero' }}>Hero</option>
+                </select>
+            </div>
+            
+            <!-- Rarity Filter -->
+            <div>
+                <label class="block text-sm font-medium text-gray-300 mb-2">Rarity</label>
+                <select name="rarity" class="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded-md text-white focus:outline-none focus:ring-2 focus:ring-blue-500">
+                    <option value="">All Rarities</option>
+                    <option value="common" {{ 'selected' if filters.rarity == 'common' }}>Common</option>
+                    <option value="rare" {{ 'selected' if filters.rarity == 'rare' }}>Rare</option>
+                    <option value="epic" {{ 'selected' if filters.rarity == 'epic' }}>Epic</option>
+                    <option value="legendary" {{ 'selected' if filters.rarity == 'legendary' }}>Legendary</option>
+                </select>
+            </div>
+            
+            <!-- Mana Color Filter -->
+            <div>
+                <label class="block text-sm font-medium text-gray-300 mb-2">Mana Color</label>
+                <select name="mana_color" class="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded-md text-white focus:outline-none focus:ring-2 focus:ring-blue-500">
+                    <option value="">All Colors</option>
+                    <option value="CRIMSON" {{ 'selected' if filters.mana_color == 'CRIMSON' }}>Crimson</option>
+                    <option value="AZURE" {{ 'selected' if filters.mana_color == 'AZURE' }}>Azure</option>
+                    <option value="VERDANT" {{ 'selected' if filters.mana_color == 'VERDANT' }}>Verdant</option>
+                    <option value="OBSIDIAN" {{ 'selected' if filters.mana_color == 'OBSIDIAN' }}>Obsidian</option>
+                    <option value="RADIANT" {{ 'selected' if filters.mana_color == 'RADIANT' }}>Radiant</option>
+                    <option value="AETHER" {{ 'selected' if filters.mana_color == 'AETHER' }}>Aether</option>
+                </select>
+            </div>
+        </div>
+        
+        <div class="flex items-center justify-between">
+            <div class="flex space-x-2">
+                <button type="submit" class="bg-blue-600 text-white px-4 py-2 rounded-md hover:bg-blue-700">
+                    <i class="fas fa-search mr-2"></i>Filter Cards
+                </button>
+                <a href="/admin/cards" class="bg-gray-600 text-white px-4 py-2 rounded-md hover:bg-gray-700">
+                    <i class="fas fa-times mr-2"></i>Clear Filters
+                </a>
+            </div>
+            <div class="text-gray-300 text-sm">
+                Showing {{ ((page - 1) * per_page + 1) if total > 0 else 0 }} - {{ ((page - 1) * per_page + cards|length) if total > 0 else 0 }} of {{ total }} cards
+            </div>
+        </div>
+    </form>
+    
+    {% if cards %}
+    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
+        {% for card in cards %}
+        <div class="bg-gray-800 rounded-lg p-4 hover:bg-gray-750 transition-colors">
+            <a href="/admin/cards/{{ card.product_sku }}" class="block">
+                <!-- Card Preview -->
+                <div class="aspect-[5/7] mb-3 rounded-lg overflow-hidden bg-gray-700 flex items-center justify-center">
+                    {% if card.artwork_url %}
+                    <img src="/static/cards/thumbnails/{{ card.name.lower().replace(' ', '_').replace("'", "") }}_thumb.png" 
+                         alt="{{ card.name }}"
+                         class="w-full h-full object-cover"
+                         onerror="this.src='{{ card.artwork_url }}'; this.onerror=function(){this.parentElement.innerHTML='<i class=\\'fas fa-image text-gray-500 text-2xl\\'></i>';}">
+                    {% else %}
+                    <i class="fas fa-image text-gray-500 text-2xl"></i>
+                    {% endif %}
+                </div>
+                
+                <!-- Card Info -->
+                <div class="text-center">
+                    <h4 class="text-sm font-semibold text-white mb-1">{{ card.name }}</h4>
+                    <p class="text-xs text-gray-400">{{ card.rarity }} • {{ card.category }}</p>
+                    
+                    <!-- Asset Status Indicators -->
+                    <div class="flex justify-center space-x-1 mt-2">
+                        <span class="w-2 h-2 rounded-full {% if card.artwork_url %}bg-green-500{% else %}bg-red-500{% endif %}"></span>
+                        <span class="w-2 h-2 rounded-full {% if card.static_url %}bg-green-500{% else %}bg-red-500{% endif %}"></span>
+                        <span class="w-2 h-2 rounded-full {% if card.video_url %}bg-green-500{% else %}bg-red-500{% endif %}"></span>
+                    </div>
+                    <p class="text-xs text-gray-500 mt-1">
+                        {% if card.artwork_url and card.static_url and card.video_url %}
+                        Complete
+                        {% elif card.artwork_url %}
+                        Partial
+                        {% else %}
+                        No Assets
+                        {% endif %}
+                    </p>
+                </div>
+            </a>
+        </div>
+        {% endfor %}
+    </div>
+    
+    <!-- Pagination Controls -->
+    {% if total_pages > 1 %}
+    <div class="mt-8 flex justify-center items-center space-x-4">
+        <!-- Previous Page -->
+        {% if page > 1 %}
+            <a href="{{ url_for('admin.card_management_index', page=page-1, q=filters.q, category=filters.category, rarity=filters.rarity, mana_color=filters.mana_color) }}" 
+               class="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg transition-colors">
+                <i class="fas fa-chevron-left mr-2"></i>Previous
+            </a>
+        {% else %}
+            <span class="px-4 py-2 bg-gray-600 text-gray-400 rounded-lg cursor-not-allowed">
+                <i class="fas fa-chevron-left mr-2"></i>Previous
+            </span>
+        {% endif %}
+        
+        <!-- Page Numbers -->
+        <div class="flex items-center space-x-2">
+            {% set start_page = [1, page - 2]|max %}
+            {% set end_page = [total_pages, page + 2]|min %}
+            
+            {% if start_page > 1 %}
+                <a href="{{ url_for('admin.card_management_index', page=1, q=filters.q, category=filters.category, rarity=filters.rarity, mana_color=filters.mana_color) }}" 
+                   class="px-3 py-2 bg-gray-700 hover:bg-gray-600 text-white rounded transition-colors">1</a>
+                {% if start_page > 2 %}
+                    <span class="px-3 py-2 text-gray-400">...</span>
+                {% endif %}
+            {% endif %}
+            
+            {% for p in range(start_page, end_page + 1) %}
+                {% if p == page %}
+                    <span class="px-3 py-2 bg-blue-600 text-white rounded font-semibold">{{ p }}</span>
+                {% else %}
+                    <a href="{{ url_for('admin.card_management_index', page=p, q=filters.q, category=filters.category, rarity=filters.rarity, mana_color=filters.mana_color) }}" 
+                       class="px-3 py-2 bg-gray-700 hover:bg-gray-600 text-white rounded transition-colors">{{ p }}</a>
+                {% endif %}
+            {% endfor %}
+            
+            {% if end_page < total_pages %}
+                {% if end_page < total_pages - 1 %}
+                    <span class="px-3 py-2 text-gray-400">...</span>
+                {% endif %}
+                <a href="{{ url_for('admin.card_management_index', page=total_pages, q=filters.q, category=filters.category, rarity=filters.rarity, mana_color=filters.mana_color) }}" 
+                   class="px-3 py-2 bg-gray-700 hover:bg-gray-600 text-white rounded transition-colors">{{ total_pages }}</a>
+            {% endif %}
+        </div>
+        
+        <!-- Next Page -->
+        {% if page < total_pages %}
+            <a href="{{ url_for('admin.card_management_index', page=page+1, q=filters.q, category=filters.category, rarity=filters.rarity, mana_color=filters.mana_color) }}" 
+               class="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg transition-colors">
+                Next<i class="fas fa-chevron-right ml-2"></i>
+            </a>
+        {% else %}
+            <span class="px-4 py-2 bg-gray-600 text-gray-400 rounded-lg cursor-not-allowed">
+                Next<i class="fas fa-chevron-right ml-2"></i>
+            </span>
+        {% endif %}
+    </div>
+    {% endif %}
+    
+    <div class="mt-4 text-center">
+        <a href="/admin/cards/generate" class="text-purple-400 hover:text-purple-300">
+            <i class="fas fa-magic mr-2"></i>Generate missing graphics
+        </a>
+    </div>
+    {% else %}
+    <div class="text-center py-12">
+        <i class="fas fa-layer-group text-4xl text-gray-600 mb-4"></i>
+        <h3 class="text-lg font-medium text-white">No Cards Found</h3>
+        <p class="text-gray-400">Unable to load card data from API</p>
+    </div>
+    {% endif %}
+</div>
+
+<!-- Generation Progress -->
+<div class="admin-card p-6">
+    <h3 class="text-xl font-bold text-white mb-6 flex items-center">
+        <i class="fas fa-tasks mr-3 text-purple-400"></i>
+        Generation Progress
+    </h3>
+    
+    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+        <!-- Art Generation -->
+        <div class="text-center">
+            <div class="w-16 h-16 mx-auto rounded-2xl flex items-center justify-center mb-4" style="background: linear-gradient(135deg, #8b5cf6 0%, #7c3aed 100%);">
+                <i class="fas fa-paint-brush text-2xl text-white"></i>
+            </div>
+            <h4 class="text-lg font-bold text-white">{{ stats.total_templates or 0 }}</h4>
+            <p class="text-sm text-gray-400">Artwork Generated</p>
+            <div class="w-full bg-gray-700 rounded-full h-2 mt-2">
+                <div class="bg-gradient-to-r from-purple-600 to-purple-500 h-2 rounded-full" style="width: 85%;"></div>
+            </div>
+        </div>
+
+        <!-- Video Assets -->
+        <div class="text-center">
+            <div class="w-16 h-16 mx-auto rounded-2xl flex items-center justify-center mb-4" style="background: linear-gradient(135deg, #3b82f6 0%, #1d4ed8 100%);">
+                <i class="fas fa-video text-2xl text-white"></i>
+            </div>
+            <h4 class="text-lg font-bold text-white">{{ (stats.total_templates * 0.6)|int if stats.total_templates else 0 }}</h4>
+            <p class="text-sm text-gray-400">Video Assets</p>
+            <div class="w-full bg-gray-700 rounded-full h-2 mt-2">
+                <div class="bg-gradient-to-r from-blue-600 to-blue-500 h-2 rounded-full" style="width: 60%;"></div>
+            </div>
+        </div>
+
+        <!-- Frame Overlays -->
+        <div class="text-center">
+            <div class="w-16 h-16 mx-auto rounded-2xl flex items-center justify-center mb-4" style="background: linear-gradient(135deg, #10b981 0%, #059669 100%);">
+                <i class="fas fa-border-style text-2xl text-white"></i>
+            </div>
+            <h4 class="text-lg font-bold text-white">{{ (stats.total_templates * 0.9)|int if stats.total_templates else 0 }}</h4>
+            <p class="text-sm text-gray-400">Frame Overlays</p>
+            <div class="w-full bg-gray-700 rounded-full h-2 mt-2">
+                <div class="bg-gradient-to-r from-green-600 to-green-500 h-2 rounded-full" style="width: 90%;"></div>
+            </div>
+        </div>
+
+        <!-- Thumbnails -->
+        <div class="text-center">
+            <div class="w-16 h-16 mx-auto rounded-2xl flex items-center justify-center mb-4" style="background: linear-gradient(135deg, #ef4444 0%, #dc2626 100%);">
+                <i class="fas fa-image text-2xl text-white"></i>
+            </div>
+            <h4 class="text-lg font-bold text-white">{{ (stats.total_templates * 0.95)|int if stats.total_templates else 0 }}</h4>
+            <p class="text-sm text-gray-400">Thumbnails</p>
+            <div class="w-full bg-gray-700 rounded-full h-2 mt-2">
+                <div class="bg-gradient-to-r from-red-600 to-red-500 h-2 rounded-full" style="width: 95%;"></div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Card Filters and Search -->
+<div class="admin-card p-6 mb-8">
+    <div class="flex items-center justify-between mb-4">
+        <h2 class="text-xl font-bold text-white flex items-center">
+            <i class="fas fa-filter mr-3 text-blue-400"></i>
+            Filter & Search Cards
+        </h2>
+    </div>
+    
+    <form method="get" class="grid grid-cols-1 md:grid-cols-5 gap-4">
+        <!-- Search -->
+        <div>
+            <label class="form-label">Search Cards</label>
+            <input name="q" value="{{ request.args.get('q', '') }}" placeholder="Search by name..." class="form-input">
+        </div>
+        
+        <!-- Category -->
+        <div>
+            <label class="form-label">Category</label>
+            <select name="category" class="form-input">
+                <option value="">All Categories</option>
+                {% for category, count in stats.by_category.items() if count > 0 %}
+                <option value="{{ category }}" {% if request.args.get('category') == category %}selected{% endif %}>
+                    {{ category.replace('_', ' ').title() }} ({{ count }})
+                </option>
+                {% endfor %}
+            </select>
+        </div>
+        
+        <!-- Rarity -->
+        <div>
+            <label class="form-label">Rarity</label>
+            <select name="rarity" class="form-input">
+                <option value="">All Rarities</option>
+                {% for rarity, count in stats.by_rarity.items() if count > 0 %}
+                <option value="{{ rarity }}" {% if request.args.get('rarity') == rarity %}selected{% endif %}>
+                    {{ rarity.title() }} ({{ count }})
+                </option>
+                {% endfor %}
+            </select>
+        </div>
+        
+        <!-- Status -->
+        <div>
+            <label class="form-label">Status</label>
+            <select name="status" class="form-input">
+                <option value="">All Status</option>
+                <option value="published" {% if request.args.get('status') == 'published' %}selected{% endif %}>Published</option>
+                <option value="draft" {% if request.args.get('status') == 'draft' %}selected{% endif %}>Draft</option>
+                <option value="pending" {% if request.args.get('status') == 'pending' %}selected{% endif %}>Pending</option>
+            </select>
+        </div>
+        
+        <!-- Actions -->
+        <div class="flex items-end space-x-2">
+            <button type="submit" class="btn-primary flex-1">
+                <i class="fas fa-search mr-2"></i>Filter
+            </button>
+            <a href="{{ url_for('admin.card_management_index') }}" class="btn-secondary px-3 py-3">
+                <i class="fas fa-times"></i>
+            </a>
+        </div>
+    </form>
+</div>
+
+<!-- Cards Grid -->
+<div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6" id="cards-grid">
+    {% for card in cards %}
+    <div class="admin-card p-4 card-hover cursor-pointer" onclick="showCardDetail('{{ card.id }}')">
+        <!-- Card Image -->
+        <div class="relative mb-4">
+            {% if card.artwork_url %}
+            <img src="{{ card.artwork_url }}" alt="{{ card.name }}" 
+                 class="w-full h-48 object-cover rounded-lg"
+                 onerror="this.src='/static/cards/thumbnails/{{ card.product_sku.lower() }}_thumb.png'; this.onerror=null;">
+            {% else %}
+            <div class="w-full h-48 bg-gradient-to-br from-gray-700 to-gray-800 rounded-lg flex items-center justify-center">
+                <div class="text-center text-gray-400">
+                    <i class="fas fa-magic text-3xl mb-2"></i>
+                    <p class="text-sm">No Artwork</p>
+                </div>
+            </div>
+            {% endif %}
+            
+            <!-- Rarity Badge -->
+            <div class="absolute top-2 right-2">
+                <span class="px-2 py-1 text-xs font-semibold rounded-full
+                    {% if card.rarity == 'LEGENDARY' %}bg-yellow-500 text-black
+                    {% elif card.rarity == 'EPIC' %}bg-purple-500 text-white
+                    {% elif card.rarity == 'RARE' %}bg-blue-500 text-white
+                    {% else %}bg-gray-500 text-white{% endif %}">
+                    {{ card.rarity }}
+                </span>
+            </div>
+        </div>
+        
+        <!-- Card Info -->
+        <div>
+            <h3 class="text-lg font-bold text-white mb-2">{{ card.name }}</h3>
+            <p class="text-sm text-gray-400 mb-3">{{ card.category.replace('_', ' ').title() }}</p>
+            
+            <div class="flex items-center justify-between">
+                <span class="text-xs text-blue-400 font-medium">{{ card.product_sku }}</span>
+                <div class="flex items-center space-x-1">
+                    {% if card.artwork_url %}
+                        <i class="fas fa-image text-green-400 text-xs" title="Has Artwork"></i>
+                    {% endif %}
+                    {% if card.video_url %}
+                        <i class="fas fa-video text-blue-400 text-xs" title="Has Video"></i>
+                    {% endif %}
+                    {% if card.has_animation %}
+                        <i class="fas fa-play text-purple-400 text-xs" title="Has Animation"></i>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+    {% endfor %}
+</div>
+
+<!-- Empty State -->
+{% if not cards %}
+<div class="admin-card p-12 text-center">
+    <i class="fas fa-magic text-6xl text-gray-600 mb-6"></i>
+    <h3 class="text-2xl font-bold text-white mb-4">No Cards Found</h3>
+    <p class="text-gray-400 mb-6">Start creating your card collection with AI-powered generation</p>
+    <a href="{{ url_for('admin.card_generation') }}" class="btn-primary">
+        <i class="fas fa-plus mr-2"></i>Generate First Card
+    </a>
+</div>
+{% endif %}
+
+<!-- Batch Operations Modal -->
+<div id="batchModal" class="fixed inset-0 bg-black bg-opacity-50 backdrop-blur-sm hidden items-center justify-center z-50">
+    <div class="admin-card p-8 rounded-xl max-w-2xl w-full mx-4">
+        <div class="flex items-center justify-between mb-6">
+            <h3 class="text-xl font-bold gradient-text">Batch Operations</h3>
+            <button onclick="hideBatchModal()" class="text-gray-400 hover:text-white">
+                <i class="fas fa-times"></i>
+            </button>
+        </div>
+        
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <!-- Batch Generation -->
+            <div class="admin-card p-6 cursor-pointer" onclick="startBatchGeneration()">
+                <div class="text-center">
+                    <div class="w-16 h-16 mx-auto rounded-2xl flex items-center justify-center mb-4" style="background: linear-gradient(135deg, #8b5cf6 0%, #7c3aed 100%);">
+                        <i class="fas fa-layer-group text-2xl text-white"></i>
+                    </div>
+                    <h4 class="text-lg font-bold text-white mb-2">Batch Generate</h4>
+                    <p class="text-sm text-gray-400">Generate multiple cards at once</p>
+                </div>
+            </div>
+            
+            <!-- Export Cards -->
+            <div class="admin-card p-6 cursor-pointer" onclick="exportCards()">
+                <div class="text-center">
+                    <div class="w-16 h-16 mx-auto rounded-2xl flex items-center justify-center mb-4" style="background: linear-gradient(135deg, #10b981 0%, #059669 100%);">
+                        <i class="fas fa-download text-2xl text-white"></i>
+                    </div>
+                    <h4 class="text-lg font-bold text-white mb-2">Export Cards</h4>
+                    <p class="text-sm text-gray-400">Download card data and assets</p>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+// Card management functions
+
+// Show batch modal
+function showBatchModal() {
+    document.getElementById('batchModal').classList.remove('hidden');
+    document.getElementById('batchModal').classList.add('flex');
+}
+
+// Hide batch modal
+function hideBatchModal() {
+    document.getElementById('batchModal').classList.add('hidden');
+    document.getElementById('batchModal').classList.remove('flex');
+}
+
+// Show card detail
+function showCardDetail(cardId) {
+    window.location.href = `/admin/cards/${cardId}`;
+}
+
+// Start batch generation
+function startBatchGeneration() {
+    hideBatchModal();
+    showAlert('Batch generation feature coming soon!', 'info');
+}
+
+// Export cards
+function exportCards() {
+    hideBatchModal();
+    showAlert('Export feature coming soon!', 'info');
+}
+
+// Load real-time card statistics
+async function loadCardStats() {
+    try {
+        const data = await apiCall('/admin/api/cards/stats');
+        
+        if (data && !data.error) {
+            // Update queue count
+            document.getElementById('queue-count').textContent = data.queue_count || 0;
+        }
+    } catch (error) {
+        console.log('Real-time card stats not available');
+    }
+}
+
+// Initialize page
+document.addEventListener('DOMContentLoaded', function() {
+    loadCardStats();
+    
+    // Auto-refresh stats every 30 seconds
+    setInterval(loadCardStats, 30000);
+    
+    // Add hover effects to cards
+    document.querySelectorAll('.card-hover').forEach(card => {
+        card.addEventListener('mouseenter', function() {
+            this.style.transform = 'translateY(-5px) scale(1.02)';
+        });
+        
+        card.addEventListener('mouseleave', function() {
+            this.style.transform = 'translateY(0) scale(1)';
+        });
+    });
+});
+</script>
+{% endblock %}

@@ -1,0 +1,506 @@
+{% extends "admin/base.html" %}
+
+{% block title %}Card Batch Production{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="row">
+        <div class="col-12">
+            <h1 class="h2 mb-4">
+                <i class="bi bi-collection"></i> Card Batch Production
+                <small class="text-muted">Automated CSV → Graphics → Database Pipeline</small>
+            </h1>
+        </div>
+    </div>
+
+    <!-- Status Cards -->
+    <div class="row mb-4">
+        <div class="col-md-3">
+            <div class="card border-primary">
+                <div class="card-body text-center">
+                    <i class="bi bi-file-earmark-spreadsheet fs-1 text-primary"></i>
+                    <h5 class="card-title mt-2">CSV Files</h5>
+                    {% if csv_status.art_csv_exists and csv_status.gameplay_csv_exists %}
+                        <span class="badge bg-success">Ready</span>
+                        <p class="small text-muted mt-2">~{{ csv_status.estimated_cards }} cards<br><small>Production Ready Files</small></p>
+                    {% else %}
+                        <span class="badge bg-danger">Missing</span>
+                        <p class="small text-muted mt-2">Files not found</p>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+        
+        <div class="col-md-3">
+            <div class="card border-info">
+                <div class="card-body text-center">
+                    <i class="bi bi-cloud fs-1 text-info"></i>
+                    <h5 class="card-title mt-2">ComfyUI</h5>
+                    {% if comfyui_status.online %}
+                        <span class="badge bg-success">Online</span>
+                        <p class="small text-muted mt-2">{{ comfyui_status.host }}</p>
+                    {% else %}
+                        <span class="badge bg-danger">Offline</span>
+                        <p class="small text-muted mt-2">Not connected</p>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+        
+        <div class="col-md-3">
+            <div class="card border-warning">
+                <div class="card-body text-center">
+                    <i class="bi bi-images fs-1 text-warning"></i>
+                    <h5 class="card-title mt-2">Assets</h5>
+                    <span class="badge bg-info">CDN Ready</span>
+                    <p class="small text-muted mt-2">5 asset types</p>
+                </div>
+            </div>
+        </div>
+        
+        <div class="col-md-3">
+            <div class="card border-success">
+                <div class="card-body text-center">
+                    <i class="bi bi-database fs-1 text-success"></i>
+                    <h5 class="card-title mt-2">Database</h5>
+                    <span class="badge bg-success">Connected</span>
+                    <p class="small text-muted mt-2">PostgreSQL</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Main Control Panel -->
+    <div class="row">
+        <div class="col-lg-8">
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="card-title mb-0">
+                        <i class="bi bi-play-circle"></i> Batch Processing Control
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <form id="batchForm">
+                        <div class="row">
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    <label for="startIndex" class="form-label">Start Index</label>
+                                    <input type="number" class="form-control" id="startIndex" value="0" min="0">
+                                    <div class="form-text">Card index to start processing from (0-based)</div>
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    <label for="endIndex" class="form-label">End Index</label>
+                                    <input type="number" class="form-control" id="endIndex" placeholder="Leave empty for all">
+                                    <div class="form-text">Card index to stop at (empty = process all)</div>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="row">
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    <label for="maxWorkers" class="form-label">Parallel Workers</label>
+                                    <select class="form-select" id="maxWorkers">
+                                        <option value="2">2 Workers (Safe)</option>
+                                        <option value="4" selected>4 Workers (Recommended)</option>
+                                        <option value="6">6 Workers (Fast)</option>
+                                        <option value="8">8 Workers (Maximum)</option>
+                                    </select>
+                                    <div class="form-text">Number of parallel ComfyUI requests</div>
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    <label for="comfyuiTimeout" class="form-label">ComfyUI Timeout (seconds)</label>
+                                    <input type="number" class="form-control" id="comfyuiTimeout" value="300" min="60" max="600">
+                                    <div class="form-text">Timeout for each ComfyUI generation</div>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="row">
+                            <div class="col-12">
+                                <div class="mb-3">
+                                    <label class="form-label">Asset Generation Options</label>
+                                    <div class="form-check">
+                                        <input class="form-check-input" type="checkbox" id="generateVideos" checked>
+                                        <label class="form-check-label" for="generateVideos">
+                                            Generate Video Backgrounds (3-second loops)
+                                        </label>
+                                    </div>
+                                    <div class="form-check">
+                                        <input class="form-check-input" type="checkbox" id="generateThumbnails" checked>
+                                        <label class="form-check-label" for="generateThumbnails">
+                                            Generate Thumbnails (300x420px)
+                                        </label>
+                                    </div>
+                                    <div class="form-check">
+                                        <input class="form-check-input" type="checkbox" id="qualityChecks" checked>
+                                        <label class="form-check-label" for="qualityChecks">
+                                            Enable Quality Control Checks
+                                        </label>
+                                    </div>
+                                    <div class="form-check">
+                                        <input class="form-check-input" type="checkbox" id="resumeFromExisting" checked>
+                                        <label class="form-check-label" for="resumeFromExisting">
+                                            Skip cards already in database
+                                        </label>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="d-grid gap-2 d-md-flex justify-content-md-end">
+                            <button type="button" class="btn btn-outline-secondary" onclick="validateCSV()">
+                                <i class="bi bi-check-circle"></i> Validate CSV
+                            </button>
+                            <button type="button" class="btn btn-primary" onclick="startBatchProcessing()" 
+                                    {% if not (csv_status.art_csv_exists and csv_status.gameplay_csv_exists and comfyui_status.online) %}disabled{% endif %}>
+                                <i class="bi bi-play-fill"></i> Start Batch Processing
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+        
+        <div class="col-lg-4">
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="card-title mb-0">
+                        <i class="bi bi-card-text"></i> Single Card Processing
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <div class="mb-3">
+                        <label for="singleCardName" class="form-label">Card Name</label>
+                        <input type="text" class="form-control" id="singleCardName" 
+                               placeholder="Enter exact card name">
+                        <div class="form-text">Process one specific card by name</div>
+                    </div>
+                    
+                    <div class="d-grid">
+                        <button type="button" class="btn btn-outline-primary" onclick="processSingleCard()">
+                            <i class="bi bi-lightning"></i> Process Single Card
+                        </button>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- CSV Preview -->
+            <div class="card mt-3">
+                <div class="card-header">
+                    <h5 class="card-title mb-0">
+                        <i class="bi bi-eye"></i> CSV Preview
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <div class="btn-group w-100 mb-3" role="group">
+                        <button type="button" class="btn btn-outline-secondary" onclick="previewCSV('art')">
+                            Art CSV
+                        </button>
+                        <button type="button" class="btn btn-outline-secondary" onclick="previewCSV('gameplay')">
+                            Gameplay CSV
+                        </button>
+                    </div>
+                    
+                    <div id="csvPreview" class="small">
+                        <p class="text-muted">Click a button above to preview CSV data</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Progress and Results -->
+    <div class="row mt-4">
+        <div class="col-12">
+            <div class="card" id="resultsCard" style="display: none;">
+                <div class="card-header">
+                    <h5 class="card-title mb-0">
+                        <i class="bi bi-bar-chart"></i> Processing Results
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <div id="processingResults">
+                        <!-- Results will be populated here -->
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Loading Modal -->
+<div class="modal fade" id="loadingModal" tabindex="-1" data-bs-backdrop="static">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+            <div class="modal-body text-center">
+                <div class="spinner-border text-primary mb-3" role="status">
+                    <span class="visually-hidden">Loading...</span>
+                </div>
+                <h5 id="loadingText">Processing cards...</h5>
+                <p class="text-muted" id="loadingSubtext">This may take several minutes</p>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+function startBatchProcessing() {
+    const formData = {
+        start_index: parseInt(document.getElementById('startIndex').value),
+        end_index: document.getElementById('endIndex').value ? parseInt(document.getElementById('endIndex').value) : null,
+        max_workers: parseInt(document.getElementById('maxWorkers').value),
+        comfyui_timeout: parseInt(document.getElementById('comfyuiTimeout').value),
+        generate_videos: document.getElementById('generateVideos').checked,
+        generate_thumbnails: document.getElementById('generateThumbnails').checked,
+        quality_checks: document.getElementById('qualityChecks').checked,
+        resume_from_existing: document.getElementById('resumeFromExisting').checked
+    };
+    
+    // Show loading modal
+    document.getElementById('loadingText').textContent = 'Starting batch processing...';
+    document.getElementById('loadingSubtext').textContent = 'Initializing workers and validating data';
+    new bootstrap.Modal(document.getElementById('loadingModal')).show();
+    
+    fetch('/admin/card-batch/start-batch', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(formData)
+    })
+    .then(response => response.json())
+    .then(data => {
+        bootstrap.Modal.getInstance(document.getElementById('loadingModal')).hide();
+        
+        if (data.success) {
+            showResults(data.results);
+            showAlert('success', data.message);
+        } else {
+            showAlert('danger', 'Batch processing failed: ' + data.error);
+        }
+    })
+    .catch(error => {
+        bootstrap.Modal.getInstance(document.getElementById('loadingModal')).hide();
+        showAlert('danger', 'Error: ' + error.message);
+    });
+}
+
+function processSingleCard() {
+    const cardName = document.getElementById('singleCardName').value.trim();
+    if (!cardName) {
+        showAlert('warning', 'Please enter a card name');
+        return;
+    }
+    
+    document.getElementById('loadingText').textContent = 'Processing single card...';
+    document.getElementById('loadingSubtext').textContent = `Generating assets for: ${cardName}`;
+    new bootstrap.Modal(document.getElementById('loadingModal')).show();
+    
+    fetch('/admin/card-batch/process-single', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ card_name: cardName })
+    })
+    .then(response => response.json())
+    .then(data => {
+        bootstrap.Modal.getInstance(document.getElementById('loadingModal')).hide();
+        
+        if (data.success) {
+            const results = {
+                total_processed: 1,
+                successful: 1,
+                failed: 0,
+                processing_time: data.processing_time
+            };
+            showResults(results);
+            showAlert('success', data.message);
+        } else {
+            showAlert('danger', 'Single card processing failed: ' + data.error);
+        }
+    })
+    .catch(error => {
+        bootstrap.Modal.getInstance(document.getElementById('loadingModal')).hide();
+        showAlert('danger', 'Error: ' + error.message);
+    });
+}
+
+function validateCSV() {
+    document.getElementById('loadingText').textContent = 'Validating CSV files...';
+    document.getElementById('loadingSubtext').textContent = 'Checking data integrity and merge compatibility';
+    new bootstrap.Modal(document.getElementById('loadingModal')).show();
+    
+    fetch('/admin/card-batch/validate-csv', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+        }
+    })
+    .then(response => response.json())
+    .then(data => {
+        bootstrap.Modal.getInstance(document.getElementById('loadingModal')).hide();
+        
+        if (data.success) {
+            if (data.valid) {
+                showAlert('success', 'CSV files are valid and ready for processing!');
+            } else {
+                showAlert('warning', 'CSV validation found issues. Check the validation results.');
+            }
+            
+            // Show detailed validation results
+            const results = data.validation_results;
+            let html = '<h6>Validation Results:</h6>';
+            html += `<div class="row">
+                <div class="col-md-6">
+                    <strong>Art CSV:</strong><br>
+                    <small>Rows: ${results.art_csv.rows}</small><br>
+                    <small>Missing columns: ${results.art_csv.missing_columns.length > 0 ? results.art_csv.missing_columns.join(', ') : 'None'}</small>
+                </div>
+                <div class="col-md-6">
+                    <strong>Gameplay CSV:</strong><br>
+                    <small>Rows: ${results.gameplay_csv.rows}</small><br>
+                    <small>Missing columns: ${results.gameplay_csv.missing_columns.length > 0 ? results.gameplay_csv.missing_columns.join(', ') : 'None'}</small>
+                </div>
+            </div>
+            <div class="mt-2">
+                <strong>Merge Result:</strong> ${results.merge_result.merged_cards}/${results.merge_result.art_cards} cards 
+                (${results.merge_result.merge_success_rate.toFixed(1)}% success rate)
+            </div>`;
+            
+            showResults({ validation: html });
+        } else {
+            showAlert('danger', 'CSV validation failed: ' + data.error);
+        }
+    })
+    .catch(error => {
+        bootstrap.Modal.getInstance(document.getElementById('loadingModal')).hide();
+        showAlert('danger', 'Error: ' + error.message);
+    });
+}
+
+function previewCSV(type) {
+    fetch(`/admin/card-batch/csv-preview?type=${type}&limit=5`)
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            let html = `<strong>${type.toUpperCase()} CSV Preview (${data.total_rows} total rows)</strong><br>`;
+            html += '<div class="table-responsive mt-2">';
+            html += '<table class="table table-sm table-striped">';
+            
+            // Headers
+            if (data.preview.length > 0) {
+                html += '<thead><tr>';
+                for (const col of data.columns.slice(0, 4)) { // Show first 4 columns
+                    html += `<th class="small">${col}</th>`;
+                }
+                html += '</tr></thead>';
+                
+                // Data rows
+                html += '<tbody>';
+                for (const row of data.preview) {
+                    html += '<tr>';
+                    for (const col of data.columns.slice(0, 4)) {
+                        const value = row[col] || '';
+                        const truncated = value.length > 30 ? value.substring(0, 30) + '...' : value;
+                        html += `<td class="small">${truncated}</td>`;
+                    }
+                    html += '</tr>';
+                }
+                html += '</tbody>';
+            }
+            
+            html += '</table></div>';
+            document.getElementById('csvPreview').innerHTML = html;
+        } else {
+            document.getElementById('csvPreview').innerHTML = `<div class="alert alert-danger">Error: ${data.error}</div>`;
+        }
+    })
+    .catch(error => {
+        document.getElementById('csvPreview').innerHTML = `<div class="alert alert-danger">Error: ${error.message}</div>`;
+    });
+}
+
+function showResults(results) {
+    let html = '';
+    
+    if (results.validation) {
+        html = results.validation;
+    } else {
+        html = `
+            <div class="row text-center">
+                <div class="col-md-3">
+                    <div class="card border-primary">
+                        <div class="card-body">
+                            <h3 class="text-primary">${results.total_processed}</h3>
+                            <small>Total Processed</small>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-3">
+                    <div class="card border-success">
+                        <div class="card-body">
+                            <h3 class="text-success">${results.successful}</h3>
+                            <small>Successful</small>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-3">
+                    <div class="card border-danger">
+                        <div class="card-body">
+                            <h3 class="text-danger">${results.failed}</h3>
+                            <small>Failed</small>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-3">
+                    <div class="card border-info">
+                        <div class="card-body">
+                            <h3 class="text-info">${((results.successful / results.total_processed) * 100).toFixed(1)}%</h3>
+                            <small>Success Rate</small>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        `;
+        
+        if (results.failed_cards && results.failed_cards.length > 0) {
+            html += `
+                <div class="mt-3">
+                    <h6>Failed Cards:</h6>
+                    <div class="alert alert-warning">
+                        ${results.failed_cards.join(', ')}
+                    </div>
+                </div>
+            `;
+        }
+    }
+    
+    document.getElementById('processingResults').innerHTML = html;
+    document.getElementById('resultsCard').style.display = 'block';
+}
+
+function showAlert(type, message) {
+    const alertDiv = document.createElement('div');
+    alertDiv.className = `alert alert-${type} alert-dismissible fade show`;
+    alertDiv.innerHTML = `
+        ${message}
+        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+    `;
+    
+    document.querySelector('.container-fluid').insertBefore(alertDiv, document.querySelector('.row'));
+    
+    // Auto dismiss after 5 seconds
+    setTimeout(() => {
+        if (alertDiv.parentNode) {
+            alertDiv.remove();
+        }
+    }, 5000);
+}
+</script>
+{% endblock %}

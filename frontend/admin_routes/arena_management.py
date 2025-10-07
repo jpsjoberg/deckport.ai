@@ -1,3 +1,4 @@
+import sys; import os; sys.path.append(os.path.dirname(os.path.dirname(os.path.dirname(__file__))))
 """
 Arena Management Routes for Deckport Admin Panel
 Handles arena creation, assignment, and game environment management
@@ -225,3 +226,60 @@ def deactivate_arena(arena_id):
             'success': False,
             'message': f'Error deactivating arena: {str(e)}'
         }), 500
+
+@admin_bp.route('/arenas/create')
+@require_admin_auth
+def arena_creation_interface():
+    """Arena creation interface with AI generation options"""
+    return render_template('admin/arena_management/create.html')
+
+@admin_bp.route('/arenas/create-batch', methods=['POST'])
+@require_admin_auth
+def create_arenas_batch():
+    """Create multiple arenas using AI generation"""
+    try:
+        data = request.get_json()
+        count = int(data.get('count', 1))
+        theme_preference = data.get('theme_preference', '')
+        
+        if count < 1 or count > 100:
+            return jsonify({
+                'success': False,
+                'message': 'Arena count must be between 1 and 100'
+            }), 400
+        
+        # Import and use the arena creation engine
+        import sys
+        sys.path.append('/home/jp/deckport.ai')
+        from services.arena_creation_engine import ArenaCreationAPI
+        
+        # Create arenas asynchronously
+        import asyncio
+        arena_api = ArenaCreationAPI()
+        result = asyncio.run(arena_api.create_arenas_endpoint(count, theme_preference))
+        
+        if result.get('success'):
+            flash(f"Successfully created {result['total_created']} arenas!", 'success')
+            return jsonify(result)
+        else:
+            return jsonify(result), 500
+            
+    except Exception as e:
+        logger.error(f"Error creating arenas: {e}")
+        return jsonify({
+            'success': False,
+            'message': f'Error creating arenas: {str(e)}'
+        }), 500
+
+@admin_bp.route('/arenas/creation-status/<job_id>')
+@require_admin_auth
+def arena_creation_status(job_id):
+    """Get status of arena creation job"""
+    # This would track long-running arena creation jobs
+    # For now, return completed since we're doing synchronous creation
+    return jsonify({
+        'success': True,
+        'status': 'completed',
+        'progress': 100,
+        'message': 'Arena creation completed'
+    })

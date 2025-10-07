@@ -1,12 +1,23 @@
+import sys; import os; sys.path.append(os.path.dirname(os.path.dirname(os.path.dirname(__file__))))
 """
 AI-Powered Card Generation Admin Interface
 Generates balanced cards using AI analysis of existing cards
 """
 
 from flask import Blueprint, render_template, request, jsonify, flash, redirect, url_for
-from shared.auth.decorators import admin_required
-from shared.database.connection import SessionLocal
-from shared.models.card_templates import CardTemplate, CardSet
+# Use same admin auth as working routes
+def require_admin_auth(f):
+    from functools import wraps
+    from flask import request, redirect, url_for
+    
+    @wraps(f)
+    def decorated_function(*args, **kwargs):
+        admin_jwt = request.cookies.get("admin_jwt")
+        if not admin_jwt:
+            return redirect(url_for("admin_login", next=request.path))
+        return f(*args, **kwargs)
+    return decorated_function
+from services.api_service import APIService
 import json
 import logging
 from datetime import datetime, timezone
@@ -16,7 +27,7 @@ logger = logging.getLogger(__name__)
 card_gen_bp = Blueprint('card_generation', __name__, url_prefix='/admin/cards')
 
 @card_gen_bp.route('/generate', methods=['GET', 'POST'])
-@admin_required
+@require_admin_auth
 def generate_card():
     """AI-powered card generation with balance analysis"""
     
@@ -66,7 +77,7 @@ def generate_card():
             return redirect(url_for('card_generation.generate_card'))
 
 @card_gen_bp.route('/analyze-balance', methods=['POST'])
-@admin_required
+@require_admin_auth
 def analyze_balance():
     """Analyze balance of cards in a set/color"""
     
@@ -88,7 +99,7 @@ def analyze_balance():
         return jsonify({'success': False, 'error': str(e)}), 500
 
 @card_gen_bp.route('/save-generated', methods=['POST'])
-@admin_required
+@require_admin_auth
 def save_generated_card():
     """Save a generated card as a template"""
     

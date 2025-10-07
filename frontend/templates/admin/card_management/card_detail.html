@@ -1,0 +1,877 @@
+{% extends "admin/base.html" %}
+
+{% block title %}{{ card.name }} - Card Management - Deckport Admin{% endblock %}
+{% block page_title %}{{ card.name }}{% endblock %}
+{% block page_subtitle %}{{ card.rarity }} {{ card.category }} • {{ card.product_sku }}{% endblock %}
+
+{% block content %}
+<div class="space-y-6">
+    <!-- Navigation -->
+    <div class="flex items-center justify-between">
+        <a href="/admin/cards" class="text-indigo-600 hover:text-indigo-800">
+            <i class="fas fa-arrow-left mr-2"></i>Back to Card Management
+        </a>
+        
+        <div class="flex space-x-2">
+            <button onclick="regenerateArtwork()" class="bg-purple-600 text-white px-4 py-2 rounded-md hover:bg-purple-700">
+                <i class="fas fa-magic mr-2"></i>Regenerate Artwork
+            </button>
+            <button onclick="editCard()" class="bg-blue-600 text-white px-4 py-2 rounded-md hover:bg-blue-700">
+                <i class="fas fa-edit mr-2"></i>Edit Card
+            </button>
+        </div>
+    </div>
+
+    <div class="grid grid-cols-1 lg:grid-cols-2 gap-8">
+        <!-- Card Assets Preview -->
+        <div class="bg-white rounded-lg shadow-md p-6">
+            <h2 class="text-xl font-semibold text-gray-900 mb-4">
+                <i class="fas fa-images mr-2 text-purple-500"></i>
+                Card Assets
+            </h2>
+            
+            <!-- Asset Grid -->
+            <div class="grid grid-cols-2 gap-4">
+                <!-- Framed Card (Main Display) -->
+                <div class="text-center">
+                    <h3 class="text-sm font-medium text-gray-700 mb-2">Framed Card</h3>
+                    {% if asset_status.framed %}
+                    <img src="/static/cards/frames/{{ card_slug }}_frame.png" 
+                         alt="{{ card.name }} Framed" 
+                         class="w-full rounded-lg shadow-md border-2 border-green-300"
+                         onerror="this.src='/static/cards/frames/{{ card_slug }}_framed.png'; this.onerror=function(){this.src='/static/cards/composite/{{ card_slug }}_composite.png';}">
+                    <p class="text-xs text-green-600 mt-1">
+                        <i class="fas fa-check-circle"></i> Available
+                    </p>
+                    {% else %}
+                    <div class="w-full h-48 bg-gray-100 rounded-lg border-2 border-red-300 flex items-center justify-center">
+                        <i class="fas fa-exclamation-triangle text-red-500 text-2xl"></i>
+                    </div>
+                    <p class="text-xs text-red-600 mt-1">
+                        <i class="fas fa-times-circle"></i> Missing
+                    </p>
+                    {% endif %}
+                </div>
+
+                <!-- Thumbnail -->
+                <div class="text-center">
+                    <h3 class="text-sm font-medium text-gray-700 mb-2">Thumbnail</h3>
+                    {% if asset_status.thumbnail %}
+                    <img src="/static/cards/thumbnails/{{ card_slug }}_thumb.png" 
+                         alt="{{ card.name }} Thumbnail" 
+                         class="w-full rounded-lg shadow-md border-2 border-green-300">
+                    <p class="text-xs text-green-600 mt-1">
+                        <i class="fas fa-check-circle"></i> Available
+                    </p>
+                    {% else %}
+                    <div class="w-full h-48 bg-gray-100 rounded-lg border-2 border-red-300 flex items-center justify-center">
+                        <i class="fas fa-exclamation-triangle text-red-500 text-2xl"></i>
+                    </div>
+                    <p class="text-xs text-red-600 mt-1">
+                        <i class="fas fa-times-circle"></i> Missing
+                    </p>
+                    {% endif %}
+                </div>
+
+                <!-- Raw Artwork -->
+                <div class="text-center">
+                    <h3 class="text-sm font-medium text-gray-700 mb-2">Raw Artwork</h3>
+                    {% if asset_status.artwork %}
+                    <img src="/static/cards/artwork/{{ card_slug }}.png" 
+                         alt="{{ card.name }} Artwork" 
+                         class="w-full rounded-lg shadow-md border-2 border-green-300">
+                    <p class="text-xs text-green-600 mt-1">
+                        <i class="fas fa-check-circle"></i> Available
+                    </p>
+                    {% else %}
+                    <div class="w-full h-48 bg-gray-100 rounded-lg border-2 border-red-300 flex items-center justify-center">
+                        <i class="fas fa-exclamation-triangle text-red-500 text-2xl"></i>
+                    </div>
+                    <p class="text-xs text-red-600 mt-1">
+                        <i class="fas fa-times-circle"></i> Missing
+                    </p>
+                    {% endif %}
+                </div>
+
+                <!-- Video -->
+                <div class="text-center">
+                    <h3 class="text-sm font-medium text-gray-700 mb-2">Video Background</h3>
+                    {% if asset_status.video %}
+                    <video src="/static/cards/videos/{{ card_slug }}.mp4" 
+                           class="w-full rounded-lg shadow-md border-2 border-green-300" 
+                           autoplay loop muted>
+                    </video>
+                    <p class="text-xs text-green-600 mt-1">
+                        <i class="fas fa-check-circle"></i> Available
+                    </p>
+                    {% else %}
+                    <div class="w-full h-48 bg-gray-100 rounded-lg border-2 border-red-300 flex items-center justify-center">
+                        <i class="fas fa-exclamation-triangle text-red-500 text-2xl"></i>
+                    </div>
+                    <p class="text-xs text-red-600 mt-1">
+                        <i class="fas fa-times-circle"></i> Missing
+                    </p>
+                    {% endif %}
+                </div>
+            </div>
+
+            <!-- Generation Progress Bar (hidden by default) -->
+            <div id="generationProgress" class="mt-6 hidden">
+                <div class="bg-blue-50 border border-blue-200 rounded-lg p-4">
+                    <div class="flex items-center justify-between mb-2">
+                        <span class="text-sm font-medium text-blue-800">Generating Assets...</span>
+                        <span id="progressPercent" class="text-sm text-blue-600">0%</span>
+                    </div>
+                    <div class="w-full bg-blue-200 rounded-full h-2">
+                        <div id="progressBar" class="bg-blue-600 h-2 rounded-full transition-all duration-300" style="width: 0%"></div>
+                    </div>
+                    <div class="mt-2 text-xs text-blue-700">
+                        <span id="progressStatus">Preparing generation...</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Asset Generation Controls -->
+            <div id="generationControls" class="mt-6 space-y-3">
+                <button onclick="regenerateArtwork()" class="w-full bg-purple-600 text-white py-2 px-4 rounded-md hover:bg-purple-700">
+                    <i class="fas fa-magic mr-2"></i>Regenerate All Assets
+                </button>
+                
+                <div class="grid grid-cols-3 gap-2">
+                    <button onclick="regenerateArtworkOnly()" class="bg-blue-600 text-white py-2 px-4 rounded-md hover:bg-blue-700 text-sm">
+                        <i class="fas fa-image mr-1"></i>Artwork Only
+                    </button>
+                    <button onclick="generateVideoClip()" class="bg-purple-600 text-white py-2 px-4 rounded-md hover:bg-purple-700 text-sm">
+                        <i class="fas fa-play mr-1"></i>Video Clip
+                    </button>
+                    <button onclick="regenerateVideoOnly()" class="bg-orange-600 text-white py-2 px-4 rounded-md hover:bg-orange-700 text-sm">
+                        <i class="fas fa-video mr-1"></i>Video BG
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Manual Card Positioning -->
+        <div class="bg-white rounded-lg shadow-md p-6">
+            <h2 class="text-xl font-semibold text-gray-900 mb-4">
+                <i class="fas fa-arrows-alt mr-2 text-green-500"></i>
+                Manual Artwork Positioning
+            </h2>
+            
+            <!-- Live Preview Canvas -->
+            <div class="text-center mb-4">
+                <canvas id="cardPreview" width="300" height="420" 
+                        class="border-2 border-gray-300 rounded-lg shadow-sm bg-gray-50">
+                </canvas>
+                <p class="text-xs text-gray-500 mt-1">Live preview of artwork positioning</p>
+            </div>
+            
+            <!-- Full Resolution Preview -->
+            <div class="text-center mb-4">
+                <div class="inline-block">
+                    <img id="fullResPreview" 
+                         src="/static/cards/composite/{{ card_slug }}_composite.png" 
+                         alt="{{ card.name }} Full Resolution"
+                         class="max-w-full h-auto rounded-lg shadow-md border border-gray-300 cursor-pointer hover:shadow-lg transition-shadow"
+                         style="max-height: 300px;"
+                         onclick="openFullResModal()"
+                         onerror="this.style.display='none';">
+                    <p class="text-xs text-gray-500 mt-1">Current composite (click for full size)</p>
+                </div>
+            </div>
+            
+            <!-- Position Controls -->
+            <div class="space-y-4">
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-2">
+                        X Offset: <span id="xValue" class="font-mono text-blue-600">0</span>px
+                    </label>
+                    <input type="range" id="xOffset" min="-150" max="150" value="0" 
+                           class="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer"
+                           oninput="updatePreview()">
+                </div>
+                
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-2">
+                        Y Offset: <span id="yValue" class="font-mono text-blue-600">0</span>px
+                    </label>
+                    <input type="range" id="yOffset" min="-150" max="150" value="0" 
+                           class="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer"
+                           oninput="updatePreview()">
+                </div>
+                
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-2">
+                        Scale: <span id="scaleValue" class="font-mono text-purple-600">100</span>%
+                    </label>
+                    <input type="range" id="scaleSlider" min="50" max="150" value="100" 
+                           class="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer"
+                           oninput="updatePreview()">
+                    <div class="flex justify-between text-xs text-gray-400 mt-1">
+                        <span>50% (Smaller)</span>
+                        <span>100% (Original)</span>
+                        <span>150% (Larger)</span>
+                    </div>
+                </div>
+                
+                <div class="flex space-x-3">
+                    <button onclick="resetPosition()" class="flex-1 bg-gray-600 text-white py-2 px-4 rounded-md hover:bg-gray-700">
+                        <i class="fas fa-undo mr-2"></i>Reset Position
+                    </button>
+                    
+                    <button onclick="compileComposite()" class="flex-1 bg-green-600 text-white py-2 px-4 rounded-md hover:bg-green-700">
+                        <i class="fas fa-save mr-2"></i>Compile & Save
+                    </button>
+                </div>
+                
+                <div class="text-xs text-gray-500">
+                    <p><strong>Instructions:</strong> Adjust sliders to reposition artwork within the card frame. Click "Compile & Save" to generate the final positioned card.</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- Card Details and Editing -->
+        <div class="bg-white rounded-lg shadow-md p-6">
+            <h2 class="text-xl font-semibold text-gray-900 mb-4">
+                <i class="fas fa-edit mr-2 text-blue-500"></i>
+                Card Details
+            </h2>
+            
+            <form id="cardEditForm" class="space-y-4">
+                <input type="hidden" name="card_id" value="{{ card.id }}">
+                
+                <div>
+                    <label class="block text-sm font-medium text-gray-700">Card Name</label>
+                    <input type="text" name="name" value="{{ card.name }}" 
+                           class="mt-1 block w-full rounded-md border-gray-300 shadow-sm">
+                </div>
+                
+                <div class="grid grid-cols-2 gap-4">
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700">Rarity</label>
+                        <select name="rarity" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm">
+                            <option value="common" {% if card.rarity == 'common' %}selected{% endif %}>Common</option>
+                            <option value="rare" {% if card.rarity == 'rare' %}selected{% endif %}>Rare</option>
+                            <option value="epic" {% if card.rarity == 'epic' %}selected{% endif %}>Epic</option>
+                            <option value="legendary" {% if card.rarity == 'legendary' %}selected{% endif %}>Legendary</option>
+                        </select>
+                    </div>
+                    
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700">Category</label>
+                        <select name="category" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm">
+                            <option value="creature" {% if card.category == 'creature' %}selected{% endif %}>Creature</option>
+                            <option value="action_fast" {% if card.category == 'action_fast' %}selected{% endif %}>Action (Fast)</option>
+                            <option value="action_slow" {% if card.category == 'action_slow' %}selected{% endif %}>Action (Slow)</option>
+                            <option value="structure" {% if card.category == 'structure' %}selected{% endif %}>Structure</option>
+                            <option value="equipment" {% if card.category == 'equipment' %}selected{% endif %}>Equipment</option>
+                            <option value="hero" {% if card.category == 'hero' %}selected{% endif %}>Hero</option>
+                        </select>
+                    </div>
+                </div>
+                
+                <div>
+                    <label class="block text-sm font-medium text-gray-700">Flavor Text</label>
+                    <textarea name="flavor_text" rows="3" 
+                              class="mt-1 block w-full rounded-md border-gray-300 shadow-sm">{{ card.flavor_text or '' }}</textarea>
+                </div>
+                
+                <div>
+                    <label class="block text-sm font-medium text-gray-700">Art Generation Prompt</label>
+                    <textarea name="generation_prompt" rows="3" 
+                              class="mt-1 block w-full rounded-md border-gray-300 shadow-sm">{{ card.generation_prompt or '' }}</textarea>
+                    <p class="text-xs text-gray-500 mt-1">This prompt will be used for artwork regeneration</p>
+                </div>
+                
+                <div class="flex space-x-3">
+                    <button type="submit" class="flex-1 bg-green-600 text-white py-2 px-4 rounded-md hover:bg-green-700">
+                        <i class="fas fa-save mr-2"></i>Save Changes
+                    </button>
+                    
+                    <button type="button" onclick="resetForm()" class="flex-1 bg-gray-600 text-white py-2 px-4 rounded-md hover:bg-gray-700">
+                        <i class="fas fa-undo mr-2"></i>Reset
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Asset URLs and Technical Info -->
+    <div class="bg-white rounded-lg shadow-md p-6">
+        <h2 class="text-xl font-semibold text-gray-900 mb-4">
+            <i class="fas fa-link mr-2 text-gray-500"></i>
+            Asset URLs and Technical Info
+        </h2>
+        
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <div>
+                <h3 class="text-lg font-medium text-gray-700 mb-2">Current URLs</h3>
+                <div class="space-y-2 text-sm">
+                    <div>
+                        <strong>Artwork URL:</strong>
+                        <code class="bg-gray-100 px-2 py-1 rounded text-xs">{{ card.artwork_url or 'None' }}</code>
+                    </div>
+                    <div>
+                        <strong>Static URL:</strong>
+                        <code class="bg-gray-100 px-2 py-1 rounded text-xs">{{ card.static_url or 'None' }}</code>
+                    </div>
+                    <div>
+                        <strong>Video URL:</strong>
+                        <code class="bg-gray-100 px-2 py-1 rounded text-xs">{{ card.video_url or 'None' }}</code>
+                    </div>
+                </div>
+            </div>
+            
+            <div>
+                <h3 class="text-lg font-medium text-gray-700 mb-2">Asset Status</h3>
+                <div class="space-y-2 text-sm">
+                    <div class="flex items-center">
+                        <i class="fas fa-{% if asset_status.artwork %}check text-green-500{% else %}times text-red-500{% endif %} mr-2"></i>
+                        Raw Artwork ({{ 'Available' if asset_status.artwork else 'Missing' }})
+                    </div>
+                    <div class="flex items-center">
+                        <i class="fas fa-{% if asset_status.framed %}check text-green-500{% else %}times text-red-500{% endif %} mr-2"></i>
+                        Framed Card ({{ 'Available' if asset_status.framed else 'Missing' }})
+                    </div>
+                    <div class="flex items-center">
+                        <i class="fas fa-{% if asset_status.thumbnail %}check text-green-500{% else %}times text-red-500{% endif %} mr-2"></i>
+                        Thumbnail ({{ 'Available' if asset_status.thumbnail else 'Missing' }})
+                    </div>
+                    <div class="flex items-center">
+                        <i class="fas fa-{% if asset_status.video %}check text-green-500{% else %}times text-red-500{% endif %} mr-2"></i>
+                        Video Background ({{ 'Available' if asset_status.video else 'Missing' }})
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Full Resolution Modal -->
+<div id="fullResModal" class="fixed inset-0 bg-black bg-opacity-75 flex items-center justify-center z-50 hidden">
+    <div class="relative max-w-4xl max-h-screen p-4">
+        <button onclick="closeFullResModal()" 
+                class="absolute top-2 right-2 bg-white text-black rounded-full w-8 h-8 flex items-center justify-center hover:bg-gray-200 z-10">
+            <i class="fas fa-times"></i>
+        </button>
+        
+        <img id="fullResModalImage" 
+             src="" 
+             alt="{{ card.name }} Full Resolution"
+             class="max-w-full max-h-full object-contain rounded-lg shadow-2xl">
+             
+        <div class="absolute bottom-4 left-1/2 transform -translate-x-1/2 bg-black bg-opacity-75 text-white px-4 py-2 rounded-lg">
+            <p class="text-sm font-medium">{{ card.name }} - Full Resolution Composite</p>
+            <p class="text-xs opacity-75">1500 x 2100 pixels • Click outside to close</p>
+        </div>
+    </div>
+</div>
+
+<script>
+async function regenerateArtwork() {
+    if (!confirm('Regenerate all assets for {{ card.name }}? This will overwrite existing artwork.')) {
+        return;
+    }
+    
+    try {
+        const response = await fetch('/admin/cards/{{ card.product_sku }}/regenerate', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+                generation_type: 'all'
+            })
+        });
+        
+        const result = await response.json();
+        
+        if (result.success) {
+            // Show progress bar and start monitoring
+            showGenerationProgress('all');
+            startProgressMonitoring(result.card_name || '{{ card.name }}', 'all');
+        } else {
+            alert(`Failed to start regeneration: ${result.error}`);
+        }
+    } catch (error) {
+        alert('Error starting asset regeneration');
+    }
+}
+
+async function regenerateArtworkOnly() {
+    if (!confirm('Regenerate artwork only for {{ card.name }}?')) {
+        return;
+    }
+    
+    try {
+        const response = await fetch('/admin/cards/{{ card.product_sku }}/regenerate', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+                generation_type: 'artwork'
+            })
+        });
+        
+        const result = await response.json();
+        
+        if (result.success) {
+            // Show progress bar for artwork generation
+            showGenerationProgress('artwork');
+            startProgressMonitoring(result.card_name || '{{ card.name }}', 'artwork');
+        } else {
+            alert(`Failed to start regeneration: ${result.error}`);
+        }
+    } catch (error) {
+        alert('Error starting artwork regeneration');
+    }
+}
+
+async function regenerateVideoOnly() {
+    if (!confirm('Regenerate video background for {{ card.name }}?')) {
+        return;
+    }
+    
+    try {
+        const response = await fetch('/admin/cards/{{ card.product_sku }}/regenerate', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+                generation_type: 'videos'
+            })
+        });
+        
+        const result = await response.json();
+        
+        if (result.success) {
+            alert('Video regeneration started!');
+            setTimeout(() => window.location.reload(), 2000);
+        } else {
+            alert(`Failed to start regeneration: ${result.error}`);
+        }
+    } catch (error) {
+        alert('Error starting video regeneration');
+    }
+}
+
+async function generateVideoClip() {
+    if (!confirm('Generate video clip for {{ card.name }}? This creates animated background from current artwork.')) {
+        return;
+    }
+    
+    try {
+        const response = await fetch('/admin/cards/{{ card.product_sku }}/generate-video', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+                generation_type: 'video_clip'
+            })
+        });
+        
+        const result = await response.json();
+        
+        if (result.success) {
+            // Show progress bar for video generation
+            showGenerationProgress('video_clip');
+            startProgressMonitoring(result.card_name || '{{ card.name }}', 'video_clip');
+        } else {
+            alert(`Failed to start video generation: ${result.error}`);
+        }
+    } catch (error) {
+        alert('Error starting video clip generation');
+    }
+}
+
+function editCard() {
+    // Enable form editing
+    const form = document.getElementById('cardEditForm');
+    const inputs = form.querySelectorAll('input, select, textarea');
+    
+    inputs.forEach(input => {
+        input.disabled = false;
+        input.classList.add('border-blue-300');
+    });
+}
+
+function resetForm() {
+    window.location.reload();
+}
+
+// Form submission
+document.getElementById('cardEditForm').addEventListener('submit', async function(e) {
+    e.preventDefault();
+    
+    const formData = new FormData(this);
+    const data = {
+        card_id: parseInt(formData.get('card_id')),
+        name: formData.get('name'),
+        rarity: formData.get('rarity'),
+        category: formData.get('category'),
+        flavor_text: formData.get('flavor_text'),
+        generation_prompt: formData.get('generation_prompt')
+    };
+    
+    try {
+        const response = await fetch(`/admin/cards/{{ card.product_sku }}/update`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify(data)
+        });
+        
+        const result = await response.json();
+        
+        if (result.success) {
+            alert('Card updated successfully!');
+            window.location.reload();
+        } else {
+            alert(`Failed to update card: ${result.error}`);
+        }
+    } catch (error) {
+        alert('Error updating card');
+    }
+});
+
+// Progress monitoring functions
+function showGenerationProgress(type) {
+    // Hide controls and show progress bar
+    document.getElementById('generationControls').style.display = 'none';
+    document.getElementById('generationProgress').classList.remove('hidden');
+    
+    // Reset progress
+    updateProgress(0, `Starting ${type} generation...`);
+}
+
+function hideGenerationProgress() {
+    // Show controls and hide progress bar
+    document.getElementById('generationControls').style.display = 'block';
+    document.getElementById('generationProgress').classList.add('hidden');
+}
+
+function updateProgress(percent, status) {
+    document.getElementById('progressBar').style.width = percent + '%';
+    document.getElementById('progressPercent').textContent = Math.round(percent) + '%';
+    document.getElementById('progressStatus').textContent = status;
+}
+
+function startProgressMonitoring(cardName, generationType) {
+    let progress = 0;
+    const steps = {
+        'all': [
+            { percent: 20, status: 'Connecting to ComfyUI...' },
+            { percent: 40, status: 'Generating artwork...' },
+            { percent: 60, status: 'Creating framed version...' },
+            { percent: 80, status: 'Generating video background...' },
+            { percent: 95, status: 'Updating database...' },
+            { percent: 100, status: 'Generation complete!' }
+        ],
+        'artwork': [
+            { percent: 25, status: 'Connecting to ComfyUI...' },
+            { percent: 75, status: 'Generating artwork...' },
+            { percent: 95, status: 'Saving artwork...' },
+            { percent: 100, status: 'Artwork generation complete!' }
+        ],
+        'videos': [
+            { percent: 20, status: 'Loading artwork...' },
+            { percent: 50, status: 'Generating video...' },
+            { percent: 90, status: 'Processing video...' },
+            { percent: 100, status: 'Video generation complete!' }
+        ],
+        'video_clip': [
+            { percent: 15, status: 'Loading artwork for video...' },
+            { percent: 30, status: 'Connecting to ComfyUI video pipeline...' },
+            { percent: 60, status: 'Generating animated frames...' },
+            { percent: 85, status: 'Encoding MP4 video...' },
+            { percent: 95, status: 'Saving video clip...' },
+            { percent: 100, status: 'Video clip generation complete!' }
+        ]
+    };
+    
+    const progressSteps = steps[generationType] || steps['all'];
+    let currentStep = 0;
+    
+    const progressInterval = setInterval(() => {
+        if (currentStep < progressSteps.length) {
+            const step = progressSteps[currentStep];
+            updateProgress(step.percent, step.status);
+            
+            if (step.percent >= 100) {
+                // Generation complete
+                setTimeout(() => {
+                    hideGenerationProgress();
+                    alert(`${generationType} generation completed for ${cardName}!`);
+                    window.location.reload();
+                }, 2000);
+                clearInterval(progressInterval);
+            }
+            
+            currentStep++;
+        }
+    }, generationType === 'all' ? 3000 : 2000); // Slower for complete generation
+    
+    // Timeout after reasonable time
+    setTimeout(() => {
+        clearInterval(progressInterval);
+        updateProgress(100, 'Generation completed (check assets)');
+        setTimeout(() => {
+            hideGenerationProgress();
+            window.location.reload();
+        }, 2000);
+    }, generationType === 'all' ? 18000 : 10000); // 18s for all, 10s for single
+}
+
+// Manual positioning functions
+let canvas, ctx, artworkImg, frameImg;
+let currentXOffset = 0, currentYOffset = 0, currentScale = 100;
+
+// Initialize canvas on page load
+document.addEventListener('DOMContentLoaded', function() {
+    initializePositioning();
+});
+
+function initializePositioning() {
+    canvas = document.getElementById('cardPreview');
+    ctx = canvas.getContext('2d');
+    
+    // Load artwork and frame images
+    loadPositioningImages();
+}
+
+function loadPositioningImages() {
+    // Load artwork
+    artworkImg = new Image();
+    artworkImg.crossOrigin = 'anonymous';
+    artworkImg.onload = function() {
+        // Load frame after artwork loads
+        frameImg = new Image();
+        frameImg.crossOrigin = 'anonymous';
+        frameImg.onload = function() {
+            updatePreview();
+        };
+        // Try different frame paths
+        frameImg.src = '/static/cards/frames/{{ card_slug }}_frame.png';
+        frameImg.onerror = function() {
+            // Fallback to transparent frame for positioning
+            createTransparentFrame();
+        };
+    };
+    
+    // Try to load artwork
+    artworkImg.src = '/static/cards/artwork/{{ card_slug }}.png';
+    artworkImg.onerror = function() {
+        // If no artwork, show placeholder
+        drawPlaceholder();
+    };
+}
+
+function createTransparentFrame() {
+    // Create a basic frame outline for positioning reference
+    frameImg = new Image();
+    frameImg.onload = function() { updatePreview(); };
+    
+    // Create a simple frame border as data URL
+    const tempCanvas = document.createElement('canvas');
+    tempCanvas.width = 300;
+    tempCanvas.height = 420;
+    const tempCtx = tempCanvas.getContext('2d');
+    
+    // Draw frame outline
+    tempCtx.strokeStyle = '#333';
+    tempCtx.lineWidth = 2;
+    tempCtx.strokeRect(20, 20, 260, 380);
+    
+    frameImg.src = tempCanvas.toDataURL();
+}
+
+function updatePreview() {
+    if (!artworkImg || !ctx) return;
+    
+    // Get current offset and scale values
+    currentXOffset = parseInt(document.getElementById('xOffset').value);
+    currentYOffset = parseInt(document.getElementById('yOffset').value);
+    currentScale = parseInt(document.getElementById('scaleSlider').value);
+    
+    // Update display values
+    document.getElementById('xValue').textContent = currentXOffset;
+    document.getElementById('yValue').textContent = currentYOffset;
+    document.getElementById('scaleValue').textContent = currentScale;
+    
+    // Clear canvas
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+    
+    // Calculate artwork positioning (match Pillow calculations exactly)
+    const canvasWidth = canvas.width;   // 300px (preview)
+    const canvasHeight = canvas.height; // 420px (preview)
+    const fullWidth = 1500;  // Full resolution width (CardCompositor canvas)
+    const fullHeight = 2100; // Full resolution height (CardCompositor canvas)
+    
+    // Use CORRECT artwork area dimensions (from frame analysis)
+    const artW = artworkImg.naturalWidth;   // Original artwork width (1200)
+    const artH = artworkImg.naturalHeight;  // Original artwork height (1744)
+    
+    // Frame artwork area dimensions (scaled to preview)
+    const artworkAreaWidth = 1156;   // Actual artwork area in frame
+    const artworkAreaHeight = 1692;  // Actual artwork area in frame
+    const artworkAreaX = 168;        // Artwork area starts at x=168
+    const artworkAreaY = 203;        // Artwork area starts at y=203
+    
+    // Scale to preview size
+    const previewArtAreaWidth = Math.floor(artworkAreaWidth * (canvasWidth / fullWidth));
+    const previewArtAreaHeight = Math.floor(artworkAreaHeight * (canvasHeight / fullHeight));
+    const previewArtAreaX = Math.floor(artworkAreaX * (canvasWidth / fullWidth));
+    const previewArtAreaY = Math.floor(artworkAreaY * (canvasHeight / fullHeight));
+    
+    // Calculate scale to fit artwork in artwork area (preserving aspect ratio)
+    const scaleToFit = Math.min(artworkAreaWidth / artW, artworkAreaHeight / artH);
+    let artWidth = Math.max(1, Math.floor(artW * scaleToFit));
+    let artHeight = Math.max(1, Math.floor(artH * scaleToFit));
+    
+    // Scale to preview size
+    artWidth = Math.floor(artWidth * (canvasWidth / fullWidth));
+    artHeight = Math.floor(artHeight * (canvasHeight / fullHeight));
+    
+    // Apply additional scale factor
+    artWidth = Math.floor(artWidth * (currentScale / 100));
+    artHeight = Math.floor(artHeight * (currentScale / 100));
+    
+    // Center within artwork area
+    const baseX = previewArtAreaX + Math.floor((previewArtAreaWidth - artWidth) / 2);
+    const baseY = previewArtAreaY + Math.floor((previewArtAreaHeight - artHeight) / 2);
+    
+    // Apply offset (scaled to preview size)
+    const scaleX = canvasWidth / fullWidth;   // 300/1500 = 0.20
+    const scaleY = canvasHeight / fullHeight; // 420/2100 = 0.20
+    
+    const artX = baseX + (currentXOffset * scaleX);  // Scaled offset
+    const artY = baseY + (currentYOffset * scaleY);  // Scaled offset
+    
+    // Draw artwork with offset
+    if (artworkImg.complete) {
+        ctx.drawImage(artworkImg, artX, artY, artWidth, artHeight);
+    }
+    
+    // Draw frame overlay
+    if (frameImg && frameImg.complete) {
+        ctx.drawImage(frameImg, 0, 0, canvas.width, canvas.height);
+    }
+    
+    // Draw positioning guides
+    ctx.strokeStyle = '#ff0000';
+    ctx.lineWidth = 1;
+    ctx.setLineDash([5, 5]);
+    
+    // Center guides
+    ctx.beginPath();
+    ctx.moveTo(150, 0);
+    ctx.lineTo(150, 420);
+    ctx.moveTo(0, 210);
+    ctx.lineTo(300, 210);
+    ctx.stroke();
+    ctx.setLineDash([]);
+}
+
+function resetPosition() {
+    document.getElementById('xOffset').value = 0;
+    document.getElementById('yOffset').value = 0;
+    document.getElementById('scaleSlider').value = 100;
+    updatePreview();
+}
+
+function drawPlaceholder() {
+    if (!ctx) return;
+    
+    ctx.fillStyle = '#f0f0f0';
+    ctx.fillRect(0, 0, canvas.width, canvas.height);
+    
+    ctx.fillStyle = '#666';
+    ctx.font = '16px Arial';
+    ctx.textAlign = 'center';
+    ctx.fillText('No artwork available', canvas.width/2, canvas.height/2);
+    ctx.fillText('for positioning', canvas.width/2, canvas.height/2 + 20);
+}
+
+async function compileComposite() {
+    if (!confirm(`Compile composite with X:${currentXOffset}, Y:${currentYOffset} offset?`)) {
+        return;
+    }
+    
+    try {
+        const response = await fetch('/admin/cards/{{ card.product_sku }}/reposition', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+                x_offset: currentXOffset,
+                y_offset: currentYOffset,
+                scale: currentScale
+            })
+        });
+        
+        const result = await response.json();
+        
+        if (result.success) {
+            alert(`Composite saved successfully!\nPosition: X:${currentXOffset}, Y:${currentYOffset}\nScale: ${currentScale}%`);
+            
+            // Update full-res preview with timestamp to bypass cache
+            const timestamp = new Date().getTime();
+            const fullResImg = document.getElementById('fullResPreview');
+            fullResImg.src = `/static/cards/composite/{{ card_slug }}_composite.png?v=${timestamp}`;
+            
+            // Refresh page to show updated assets
+            setTimeout(() => window.location.reload(), 2000);
+        } else {
+            alert(`Failed to compile composite: ${result.error}`);
+        }
+    } catch (error) {
+        alert('Error compiling composite');
+    }
+}
+
+// Full resolution modal functions
+function openFullResModal() {
+    const modal = document.getElementById('fullResModal');
+    const modalImage = document.getElementById('fullResModalImage');
+    const fullResImg = document.getElementById('fullResPreview');
+    
+    // Set modal image source to current composite
+    modalImage.src = fullResImg.src;
+    
+    // Show modal
+    modal.classList.remove('hidden');
+    
+    // Close on click outside
+    modal.onclick = function(e) {
+        if (e.target === modal) {
+            closeFullResModal();
+        }
+    };
+}
+
+function closeFullResModal() {
+    const modal = document.getElementById('fullResModal');
+    modal.classList.add('hidden');
+}
+
+// Keyboard shortcut to close modal
+document.addEventListener('keydown', function(e) {
+    if (e.key === 'Escape') {
+        closeFullResModal();
+    }
+});
+
+// Update full-res preview when positioning changes
+function updateFullResPreview() {
+    // Add timestamp to bypass cache and show latest composite
+    const timestamp = new Date().getTime();
+    const fullResImg = document.getElementById('fullResPreview');
+    fullResImg.src = `/static/cards/composite/{{ card_slug }}_composite.png?v=${timestamp}`;
+}
+</script>
+{% endblock %}

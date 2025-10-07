@@ -29,6 +29,8 @@ def register_device():
     
     device_uid = data.get('device_uid', '').strip()
     public_key_pem = data.get('public_key', '').strip()
+    hardware_info = data.get('hardware_info', {})
+    location = data.get('location', {})
     
     if not device_uid:
         return jsonify({"error": "device_uid required"}), 400
@@ -38,13 +40,54 @@ def register_device():
     
     try:
         with SessionLocal() as session:
-            # Check if device already exists
+            # Check if device already exists by device_uid OR MAC address
             existing_device = session.query(Console).filter(Console.device_uid == device_uid).first()
-            if existing_device:
-                if existing_device.status == ConsoleStatus.active:
-                    return jsonify({"error": "Device already registered and active"}), 409
-                elif existing_device.status == ConsoleStatus.pending:
-                    return jsonify({"status": "pending", "message": "Registration pending admin approval"}), 200
+            
+            # Also check by MAC address to prevent hardware duplicates
+            mac_address = hardware_info.get('mac_address') if hardware_info else None
+            existing_by_mac = None
+            if mac_address and mac_address != 'unknown':
+                # Check if we have a console with this MAC address
+                existing_by_mac = session.query(Console).filter(
+                    getattr(Console, 'mac_address', None) == mac_address
+                ).first()
+            
+            # Use existing device if found by UID or MAC
+            console_to_use = existing_device or existing_by_mac
+            
+            if console_to_use:
+                # Update existing console instead of creating new one
+                console_to_use.device_uid = device_uid  # Update UID if different
+                console_to_use.public_key_pem = public_key_pem
+                console_to_use.registered_at = datetime.now(timezone.utc)
+                
+                # Update hardware info if provided
+                if hardware_info:
+                    for key, value in hardware_info.items():
+                        if hasattr(console_to_use, key):
+                            setattr(console_to_use, key, value)
+                
+                # Update location if provided
+                if location:
+                    setattr(console_to_use, 'location_name', location.get('name'))
+                    setattr(console_to_use, 'location_source', location.get('source', 'manual'))
+                
+                session.commit()
+                
+                if console_to_use.status == ConsoleStatus.active:
+                    return jsonify({
+                        "status": "updated", 
+                        "message": "Existing console updated successfully",
+                        "console_id": console_to_use.id,
+                        "device_uid": console_to_use.device_uid
+                    }), 200
+                elif console_to_use.status == ConsoleStatus.pending:
+                    return jsonify({
+                        "status": "pending", 
+                        "message": "Console registration pending admin approval",
+                        "console_id": console_to_use.id,
+                        "device_uid": console_to_use.device_uid
+                    }), 200
                 else:
                     return jsonify({"error": "Device registration rejected"}), 403
             

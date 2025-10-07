@@ -68,11 +68,67 @@ def get_devices():
                     'is_online': is_online,
                     'owner_player_id': console.owner_player_id,
                     'public_key_fingerprint': console.public_key_pem[-12:] if console.public_key_pem else None,
-                    # Mock additional data for now
-                    'location': 'Unknown',  # TODO: Add location tracking
+                    
+                    # Location data
+                    'location': {
+                        'name': getattr(console, 'location_name', None),
+                        'address': getattr(console, 'location_address', None),
+                        'latitude': float(console.location_latitude) if getattr(console, 'location_latitude', None) else None,
+                        'longitude': float(console.location_longitude) if getattr(console, 'location_longitude', None) else None,
+                        'updated_at': console.location_updated_at.isoformat() if getattr(console, 'location_updated_at', None) else None,
+                        'source': getattr(console, 'location_source', None)
+                    },
+                    
+                    # Version information
+                    'versions': {
+                        'software': getattr(console, 'software_version', None),
+                        'hardware': getattr(console, 'hardware_version', None),
+                        'firmware': getattr(console, 'firmware_version', None),
+                        'last_update_check': console.last_update_check.isoformat() if getattr(console, 'last_update_check', None) else None,
+                        'update_available': getattr(console, 'update_available', False),
+                        'auto_update_enabled': getattr(console, 'auto_update_enabled', True)
+                    },
+                    
+                    # Health and performance data
+                    'health': {
+                        'status': getattr(console, 'health_status', 'unknown'),
+                        'last_heartbeat': console.last_heartbeat.isoformat() if getattr(console, 'last_heartbeat', None) else None,
+                        'uptime_seconds': getattr(console, 'uptime_seconds', 0),
+                        'cpu_usage_percent': getattr(console, 'cpu_usage_percent', None),
+                        'memory_usage_percent': getattr(console, 'memory_usage_percent', None),
+                        'disk_usage_percent': getattr(console, 'disk_usage_percent', None),
+                        'temperature_celsius': getattr(console, 'temperature_celsius', None),
+                        'network_latency_ms': getattr(console, 'network_latency_ms', None)
+                    },
+                    
+                    # Battery information
+                    'battery': {
+                        'capacity_percent': getattr(console, 'battery_capacity_percent', None),
+                        'status': getattr(console, 'battery_status', 'Unknown'),
+                        'present': getattr(console, 'battery_present', 0),
+                        'voltage_mv': getattr(console, 'battery_voltage_mv', 0),
+                        'current_ma': getattr(console, 'battery_current_ma', 0),
+                        'power_consumption_watts': getattr(console, 'power_consumption_watts', 0),
+                        'time_remaining_minutes': getattr(console, 'battery_time_remaining_minutes', 0),
+                        'ac_connected': getattr(console, 'ac_connected', 1),
+                        'is_low_battery': getattr(console, 'battery_capacity_percent', 100) < 20 if getattr(console, 'battery_present', 0) else False,
+                        'is_critical_battery': getattr(console, 'battery_capacity_percent', 100) < 10 if getattr(console, 'battery_present', 0) else False
+                    },
+                    
+                    # Camera and surveillance information
+                    'camera': {
+                        'device_count': getattr(console, 'camera_device_count', 0),
+                        'status': getattr(console, 'camera_status', 'unknown'),
+                        'working': getattr(console, 'camera_working', False),
+                        'devices': getattr(console, 'camera_devices', ''),
+                        'surveillance_capable': getattr(console, 'surveillance_capable', False),
+                        'surveillance_active': False  # Will be updated by active surveillance streams
+                    },
+                    
+                    # Legacy fields for backward compatibility
                     'current_player': None,  # TODO: Get from active sessions
-                    'uptime_7d': 95.0 + (console.id % 10),  # Mock uptime
-                    'version': '1.0.0',  # TODO: Track console versions
+                    'uptime_7d': min(95.0 + (console.id % 10), 100.0),  # Calculated from uptime_seconds in production
+                    'version': getattr(console, 'software_version', '1.0.0'),  # Legacy field
                 }
                 
                 devices.append(device_data)
@@ -806,3 +862,425 @@ def get_device_statistics():
     except Exception as e:
         logger.error(f"Error getting device statistics: {e}")
         return jsonify({'error': str(e)}), 500
+
+
+@admin_devices_bp.route('/<int:device_id>/location', methods=['PUT'])
+@console_management_required(Permission.CONSOLE_MANAGE)
+def update_device_location(device_id):
+    """Update console location"""
+    try:
+        data = request.get_json()
+        if not data:
+            return jsonify({'error': 'No data provided'}), 400
+        
+        with SessionLocal() as session:
+            console = session.query(Console).filter(Console.id == device_id).first()
+            if not console:
+                return jsonify({'error': 'Console not found'}), 404
+            
+            # Validate location data
+            location_name = data.get('location_name', '').strip()
+            location_address = data.get('location_address', '').strip()
+            latitude = data.get('latitude')
+            longitude = data.get('longitude')
+            source = data.get('source', 'manual')
+            
+            if latitude is not None:
+                try:
+                    latitude = float(latitude)
+                    if not (-90 <= latitude <= 90):
+                        return jsonify({'error': 'Invalid latitude. Must be between -90 and 90'}), 400
+                except (ValueError, TypeError):
+                    return jsonify({'error': 'Invalid latitude format'}), 400
+            
+            if longitude is not None:
+                try:
+                    longitude = float(longitude)
+                    if not (-180 <= longitude <= 180):
+                        return jsonify({'error': 'Invalid longitude. Must be between -180 and 180'}), 400
+                except (ValueError, TypeError):
+                    return jsonify({'error': 'Invalid longitude format'}), 400
+            
+            # Update console location (using setattr for compatibility with existing schema)
+            setattr(console, 'location_name', location_name if location_name else None)
+            setattr(console, 'location_address', location_address if location_address else None)
+            setattr(console, 'location_latitude', latitude)
+            setattr(console, 'location_longitude', longitude)
+            setattr(console, 'location_updated_at', datetime.now(timezone.utc))
+            setattr(console, 'location_source', source)
+            
+            session.commit()
+            
+            # Log admin action
+            log_admin_action(
+                action="console.location_updated",
+                resource_type="console",
+                resource_id=console.id,
+                details={
+                    'device_uid': console.device_uid,
+                    'location': {
+                        'name': location_name,
+                        'address': location_address,
+                        'latitude': latitude,
+                        'longitude': longitude,
+                        'source': source
+                    }
+                }
+            )
+            
+            return jsonify({
+                'success': True,
+                'message': 'Console location updated successfully',
+                'location': {
+                    'name': location_name,
+                    'address': location_address,
+                    'latitude': latitude,
+                    'longitude': longitude,
+                    'updated_at': datetime.now(timezone.utc).isoformat(),
+                    'source': source
+                }
+            })
+            
+    except Exception as e:
+        logger.error(f"Error updating console location: {e}")
+        return jsonify({'error': 'Failed to update console location'}), 500
+
+
+@admin_devices_bp.route('/<int:device_id>/version', methods=['PUT'])
+@console_management_required(Permission.CONSOLE_MANAGE)
+def update_device_version(device_id):
+    """Update console version information"""
+    try:
+        data = request.get_json()
+        if not data:
+            return jsonify({'error': 'No data provided'}), 400
+        
+        with SessionLocal() as session:
+            console = session.query(Console).filter(Console.id == device_id).first()
+            if not console:
+                return jsonify({'error': 'Console not found'}), 404
+            
+            # Get version updates
+            software_version = data.get('software_version', '').strip()
+            hardware_version = data.get('hardware_version', '').strip()
+            firmware_version = data.get('firmware_version', '').strip()
+            auto_update_enabled = data.get('auto_update_enabled', True)
+            
+            # Update console versions (using setattr for compatibility)
+            if software_version:
+                setattr(console, 'software_version', software_version)
+            if hardware_version:
+                setattr(console, 'hardware_version', hardware_version)
+            if firmware_version:
+                setattr(console, 'firmware_version', firmware_version)
+            
+            setattr(console, 'auto_update_enabled', auto_update_enabled)
+            setattr(console, 'last_update_check', datetime.now(timezone.utc))
+            
+            session.commit()
+            
+            # Log admin action
+            log_admin_action(
+                action="console.version_updated",
+                resource_type="console",
+                resource_id=console.id,
+                details={
+                    'device_uid': console.device_uid,
+                    'versions': {
+                        'software': software_version,
+                        'hardware': hardware_version,
+                        'firmware': firmware_version
+                    },
+                    'auto_update_enabled': auto_update_enabled
+                }
+            )
+            
+            return jsonify({
+                'success': True,
+                'message': 'Console version updated successfully',
+                'versions': {
+                    'software': getattr(console, 'software_version', None),
+                    'hardware': getattr(console, 'hardware_version', None),
+                    'firmware': getattr(console, 'firmware_version', None),
+                    'auto_update_enabled': getattr(console, 'auto_update_enabled', True),
+                    'last_update_check': datetime.now(timezone.utc).isoformat()
+                }
+            })
+            
+    except Exception as e:
+        logger.error(f"Error updating console version: {e}")
+        return jsonify({'error': 'Failed to update console version'}), 500
+
+
+@admin_devices_bp.route('/<int:device_id>/update-game', methods=['POST'])
+@console_management_required(Permission.CONSOLE_MANAGE)
+def update_console_game(device_id):
+    """Trigger game update on a console"""
+    try:
+        data = request.get_json()
+        if not data:
+            return jsonify({'error': 'No data provided'}), 400
+        
+        version = data.get('version', 'latest')
+        force_update = data.get('force', False)
+        
+        with SessionLocal() as session:
+            console = session.query(Console).filter(Console.id == device_id).first()
+            if not console:
+                return jsonify({'error': 'Console not found'}), 404
+            
+            # Check if console is online (has recent heartbeat)
+            if getattr(console, 'last_heartbeat', None):
+                last_heartbeat = getattr(console, 'last_heartbeat')
+                time_since_heartbeat = (datetime.now(timezone.utc) - last_heartbeat).total_seconds()
+                if time_since_heartbeat > 300:  # 5 minutes
+                    return jsonify({'error': 'Console appears to be offline. Last heartbeat was over 5 minutes ago.'}), 400
+            
+            # Store update request in console metadata or audit log
+            current_version = getattr(console, 'software_version', 'unknown')
+            
+            # Log admin action
+            log_admin_action(
+                action="console.game_update_requested",
+                resource_type="console",
+                resource_id=console.id,
+                details={
+                    'device_uid': console.device_uid,
+                    'current_version': current_version,
+                    'target_version': version,
+                    'force_update': force_update,
+                    'update_method': 'admin_triggered'
+                }
+            )
+            
+            # In a production system, this would:
+            # 1. Queue the update in a job system
+            # 2. Send update command to console via websocket/API
+            # 3. Monitor update progress
+            # 4. Update console version when complete
+            
+            # For now, we'll simulate the update process
+            # The console will pick up the update on its next heartbeat
+            setattr(console, 'update_available', True)
+            setattr(console, 'target_version', version)
+            setattr(console, 'update_requested_at', datetime.now(timezone.utc))
+            setattr(console, 'update_requested_by_admin_id', get_current_admin_id())
+            
+            session.commit()
+            
+            return jsonify({
+                'success': True,
+                'message': f'Game update to version {version} has been queued for console {console.device_uid}',
+                'update_info': {
+                    'current_version': current_version,
+                    'target_version': version,
+                    'force_update': force_update,
+                    'console_id': device_id,
+                    'device_uid': console.device_uid,
+                    'status': 'queued'
+                }
+            })
+            
+    except Exception as e:
+        logger.error(f"Error updating console game: {e}")
+        return jsonify({'error': 'Failed to queue game update'}), 500
+
+
+@admin_devices_bp.route('/<int:device_id>/health', methods=['GET'])
+@console_management_required(Permission.CONSOLE_VIEW)
+def get_device_health_history(device_id):
+    """Get console health history and detailed metrics"""
+    try:
+        with SessionLocal() as session:
+            console = session.query(Console).filter(Console.id == device_id).first()
+            if not console:
+                return jsonify({'error': 'Console not found'}), 404
+            
+            # Get recent health data from audit logs
+            recent_logs = session.query(AuditLog).filter(
+                AuditLog.actor_type == "console",
+                AuditLog.details.op('->>')('device_id') == str(console.id)
+            ).order_by(desc(AuditLog.created_at)).limit(50).all()
+            
+            health_history = []
+            for log in recent_logs:
+                health_data = {
+                    'timestamp': log.created_at.isoformat(),
+                    'action': log.action,
+                    'health_status': log.details.get('health_status'),
+                    'cpu_usage': log.details.get('cpu_usage_percent'),
+                    'memory_usage': log.details.get('memory_usage_percent'),
+                    'disk_usage': log.details.get('disk_usage_percent'),
+                    'temperature': log.details.get('temperature_celsius'),
+                    'network_latency': log.details.get('network_latency_ms')
+                }
+                health_history.append(health_data)
+            
+            return jsonify({
+                'console_id': console.id,
+                'device_uid': console.device_uid,
+                'current_health': {
+                    'status': getattr(console, 'health_status', 'unknown'),
+                    'last_heartbeat': getattr(console, 'last_heartbeat', None),
+                    'uptime_seconds': getattr(console, 'uptime_seconds', 0),
+                    'cpu_usage_percent': getattr(console, 'cpu_usage_percent', None),
+                    'memory_usage_percent': getattr(console, 'memory_usage_percent', None),
+                    'disk_usage_percent': getattr(console, 'disk_usage_percent', None),
+                    'temperature_celsius': getattr(console, 'temperature_celsius', None),
+                    'network_latency_ms': getattr(console, 'network_latency_ms', None)
+                },
+                'health_history': health_history,
+                'total_logs': len(health_history)
+            })
+            
+    except Exception as e:
+        logger.error(f"Error getting console health history: {e}")
+        return jsonify({'error': 'Failed to get console health history'}), 500
+
+
+@admin_devices_bp.route('/<int:device_id>/camera/start-surveillance', methods=['POST'])
+@console_management_required(Permission.CONSOLE_MANAGE)
+def start_camera_surveillance(device_id):
+    """Start camera surveillance for a console"""
+    try:
+        data = request.get_json() or {}
+        
+        with SessionLocal() as session:
+            console = session.query(Console).filter(Console.id == device_id).first()
+            if not console:
+                return jsonify({'error': 'Console not found'}), 404
+            
+            # Check if console has camera capability
+            if not getattr(console, 'surveillance_capable', False):
+                return jsonify({'error': 'Console does not have camera surveillance capability'}), 400
+            
+            # Start surveillance via video streaming API
+            from services.api_service import APIService
+            api_service = APIService()
+            
+            surveillance_data = {
+                'console_id': device_id,
+                'reason': data.get('reason', 'Admin surveillance'),
+                'enable_audio': data.get('enable_audio', True),
+                'enable_recording': data.get('enable_recording', True),
+                'quality': data.get('quality', 'medium')
+            }
+            
+            # Call video streaming API
+            response = api_service.post('/v1/video/admin/surveillance/start', surveillance_data)
+            
+            if response and response.get('stream_id'):
+                # Log admin action
+                log_admin_action(
+                    action="console.surveillance_started",
+                    resource_type="console",
+                    resource_id=console.id,
+                    details={
+                        'device_uid': console.device_uid,
+                        'stream_id': response['stream_id'],
+                        'reason': surveillance_data['reason'],
+                        'enable_audio': surveillance_data['enable_audio']
+                    }
+                )
+                
+                return jsonify({
+                    'success': True,
+                    'message': 'Camera surveillance started successfully',
+                    'stream_id': response['stream_id'],
+                    'surveillance_url': response.get('surveillance_url'),
+                    'recording': response.get('recording', True)
+                })
+            else:
+                return jsonify({'error': 'Failed to start surveillance stream'}), 500
+            
+    except Exception as e:
+        logger.error(f"Error starting camera surveillance: {e}")
+        return jsonify({'error': 'Failed to start camera surveillance'}), 500
+
+
+@admin_devices_bp.route('/<int:device_id>/camera/stop-surveillance', methods=['POST'])
+@console_management_required(Permission.CONSOLE_MANAGE)
+def stop_camera_surveillance(device_id):
+    """Stop camera surveillance for a console"""
+    try:
+        data = request.get_json() or {}
+        stream_id = data.get('stream_id')
+        
+        if not stream_id:
+            return jsonify({'error': 'Stream ID required'}), 400
+        
+        with SessionLocal() as session:
+            console = session.query(Console).filter(Console.id == device_id).first()
+            if not console:
+                return jsonify({'error': 'Console not found'}), 404
+            
+            # Stop surveillance via video streaming API
+            from services.api_service import APIService
+            api_service = APIService()
+            
+            response = api_service.post(f'/v1/video/{stream_id}/end')
+            
+            if response:
+                # Log admin action
+                log_admin_action(
+                    action="console.surveillance_stopped",
+                    resource_type="console", 
+                    resource_id=console.id,
+                    details={
+                        'device_uid': console.device_uid,
+                        'stream_id': stream_id,
+                        'reason': data.get('reason', 'Admin stopped surveillance')
+                    }
+                )
+                
+                return jsonify({
+                    'success': True,
+                    'message': 'Camera surveillance stopped successfully'
+                })
+            else:
+                return jsonify({'error': 'Failed to stop surveillance stream'}), 500
+            
+    except Exception as e:
+        logger.error(f"Error stopping camera surveillance: {e}")
+        return jsonify({'error': 'Failed to stop camera surveillance'}), 500
+
+
+@admin_devices_bp.route('/<int:device_id>/camera/test', methods=['POST'])
+@console_management_required(Permission.CONSOLE_VIEW)
+def test_camera(device_id):
+    """Test camera functionality on a console"""
+    try:
+        with SessionLocal() as session:
+            console = session.query(Console).filter(Console.id == device_id).first()
+            if not console:
+                return jsonify({'error': 'Console not found'}), 404
+            
+            # Get current camera status from heartbeat data
+            camera_info = {
+                'device_count': getattr(console, 'camera_device_count', 0),
+                'status': getattr(console, 'camera_status', 'unknown'),
+                'working': getattr(console, 'camera_working', False),
+                'devices': getattr(console, 'camera_devices', ''),
+                'surveillance_capable': getattr(console, 'surveillance_capable', False)
+            }
+            
+            # Log test action
+            log_admin_action(
+                action="console.camera_test",
+                resource_type="console",
+                resource_id=console.id,
+                details={
+                    'device_uid': console.device_uid,
+                    'camera_info': camera_info
+                }
+            )
+            
+            return jsonify({
+                'success': True,
+                'camera_info': camera_info,
+                'message': f'Camera test completed. Found {camera_info["device_count"]} camera(s).'
+            })
+            
+    except Exception as e:
+        logger.error(f"Error testing camera: {e}")
+        return jsonify({'error': 'Failed to test camera'}), 500

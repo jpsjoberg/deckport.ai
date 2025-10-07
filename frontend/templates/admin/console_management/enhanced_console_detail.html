@@ -1,0 +1,627 @@
+{% extends "admin/base.html" %}
+
+{% block title %}Console Detail - {{ console.device_uid }} - Deckport Admin{% endblock %}
+{% block page_title %}Console: {{ console.device_uid }}{% endblock %}
+{% block page_subtitle %}Detailed console management and monitoring{% endblock %}
+
+{% block content %}
+<div class="space-y-6">
+    <!-- Console Overview Card -->
+    <div class="bg-white rounded-lg shadow-md p-6">
+        <div class="flex items-center justify-between mb-4">
+            <h2 class="text-xl font-semibold text-gray-900">Console Overview</h2>
+            <div class="flex space-x-2">
+                <span class="px-3 py-1 text-xs font-medium rounded-full
+                    {% if console.status == 'active' %}bg-green-100 text-green-800
+                    {% elif console.status == 'pending' %}bg-yellow-100 text-yellow-800
+                    {% else %}bg-red-100 text-red-800{% endif %}">
+                    {{ console.status.title() }}
+                </span>
+                <span class="px-3 py-1 text-xs font-medium rounded-full
+                    {% if console.health and console.health.status == 'healthy' %}bg-green-100 text-green-800
+                    {% elif console.health and console.health.status == 'warning' %}bg-yellow-100 text-yellow-800
+                    {% elif console.health and console.health.status == 'critical' %}bg-red-100 text-red-800
+                    {% else %}bg-gray-100 text-gray-800{% endif %}">
+                    {{ console.health.status.title() if console.health else 'Unknown' }}
+                </span>
+            </div>
+        </div>
+        
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+            <!-- Basic Info -->
+            <div>
+                <h3 class="text-sm font-medium text-gray-500 mb-2">Basic Information</h3>
+                <dl class="space-y-2">
+                    <div>
+                        <dt class="text-xs text-gray-500">Device UID</dt>
+                        <dd class="text-sm font-mono text-gray-900">{{ console.device_uid }}</dd>
+                    </div>
+                    <div>
+                        <dt class="text-xs text-gray-500">Registered</dt>
+                        <dd class="text-sm text-gray-900">{{ console.registered_at.strftime('%Y-%m-%d %H:%M') if console.registered_at else 'Unknown' }}</dd>
+                    </div>
+                    <div>
+                        <dt class="text-xs text-gray-500">Owner</dt>
+                        <dd class="text-sm text-gray-900">{{ console.owner_player_id if console.owner_player_id else 'Unassigned' }}</dd>
+                    </div>
+                </dl>
+            </div>
+            
+            <!-- Location Info -->
+            <div>
+                <h3 class="text-sm font-medium text-gray-500 mb-2">Location</h3>
+                <dl class="space-y-2">
+                    <div>
+                        <dt class="text-xs text-gray-500">Name</dt>
+                        <dd class="text-sm text-gray-900">{{ console.location.name if console.location and console.location.name else 'Not set' }}</dd>
+                    </div>
+                    <div>
+                        <dt class="text-xs text-gray-500">Address</dt>
+                        <dd class="text-sm text-gray-900">{{ console.location.address if console.location and console.location.address else 'Not set' }}</dd>
+                    </div>
+                    <div>
+                        <dt class="text-xs text-gray-500">Coordinates</dt>
+                        <dd class="text-sm text-gray-900">
+                            {% if console.location and console.location.latitude and console.location.longitude %}
+                                {{ "%.6f"|format(console.location.latitude) }}, {{ "%.6f"|format(console.location.longitude) }}
+                            {% else %}
+                                Not set
+                            {% endif %}
+                        </dd>
+                    </div>
+                </dl>
+            </div>
+            
+            <!-- Version Info -->
+            <div>
+                <h3 class="text-sm font-medium text-gray-500 mb-2">Versions</h3>
+                <dl class="space-y-2">
+                    <div>
+                        <dt class="text-xs text-gray-500">Software</dt>
+                        <dd class="text-sm font-mono text-gray-900">{{ console.versions.software if console.versions and console.versions.software else 'Unknown' }}</dd>
+                    </div>
+                    <div>
+                        <dt class="text-xs text-gray-500">Firmware</dt>
+                        <dd class="text-sm font-mono text-gray-900">{{ console.versions.firmware if console.versions and console.versions.firmware else 'Unknown' }}</dd>
+                    </div>
+                    <div>
+                        <dt class="text-xs text-gray-500">Hardware</dt>
+                        <dd class="text-sm font-mono text-gray-900">{{ console.versions.hardware if console.versions and console.versions.hardware else 'Unknown' }}</dd>
+                    </div>
+                </dl>
+            </div>
+        </div>
+    </div>
+
+    <!-- Health Monitoring -->
+    {% if console.health %}
+    <div class="bg-white rounded-lg shadow-md p-6">
+        <h2 class="text-xl font-semibold text-gray-900 mb-4">Health Monitoring</h2>
+        
+        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
+            <!-- CPU Usage -->
+            <div class="bg-gray-50 rounded-lg p-4">
+                <div class="flex items-center justify-between">
+                    <span class="text-sm font-medium text-gray-600">CPU Usage</span>
+                    <i class="fas fa-microchip text-blue-500"></i>
+                </div>
+                <div class="mt-2">
+                    <span class="text-2xl font-bold text-gray-900">
+                        {{ "%.1f"|format(console.health.cpu_usage_percent) if console.health.cpu_usage_percent else 'N/A' }}%
+                    </span>
+                </div>
+            </div>
+            
+            <!-- Memory Usage -->
+            <div class="bg-gray-50 rounded-lg p-4">
+                <div class="flex items-center justify-between">
+                    <span class="text-sm font-medium text-gray-600">Memory</span>
+                    <i class="fas fa-memory text-green-500"></i>
+                </div>
+                <div class="mt-2">
+                    <span class="text-2xl font-bold text-gray-900">
+                        {{ "%.1f"|format(console.health.memory_usage_percent) if console.health.memory_usage_percent else 'N/A' }}%
+                    </span>
+                </div>
+            </div>
+            
+            <!-- Disk Usage -->
+            <div class="bg-gray-50 rounded-lg p-4">
+                <div class="flex items-center justify-between">
+                    <span class="text-sm font-medium text-gray-600">Disk Space</span>
+                    <i class="fas fa-hdd text-purple-500"></i>
+                </div>
+                <div class="mt-2">
+                    <span class="text-2xl font-bold text-gray-900">
+                        {{ "%.1f"|format(console.health.disk_usage_percent) if console.health.disk_usage_percent else 'N/A' }}%
+                    </span>
+                </div>
+            </div>
+            
+            <!-- Temperature -->
+            <div class="bg-gray-50 rounded-lg p-4">
+                <div class="flex items-center justify-between">
+                    <span class="text-sm font-medium text-gray-600">Temperature</span>
+                    <i class="fas fa-thermometer-half text-red-500"></i>
+                </div>
+                <div class="mt-2">
+                    <span class="text-2xl font-bold text-gray-900">
+                        {{ "%.1f"|format(console.health.temperature_celsius) if console.health.temperature_celsius else 'N/A' }}°C
+                    </span>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Uptime and Network -->
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div class="bg-gray-50 rounded-lg p-4">
+                <h3 class="text-sm font-medium text-gray-600 mb-2">Uptime</h3>
+                <p class="text-lg font-semibold text-gray-900">
+                    {% if console.health.uptime_seconds %}
+                        {% set days = (console.health.uptime_seconds // 86400) %}
+                        {% set hours = ((console.health.uptime_seconds % 86400) // 3600) %}
+                        {% set minutes = ((console.health.uptime_seconds % 3600) // 60) %}
+                        {{ days }}d {{ hours }}h {{ minutes }}m
+                    {% else %}
+                        Unknown
+                    {% endif %}
+                </p>
+            </div>
+            
+            <div class="bg-gray-50 rounded-lg p-4">
+                <h3 class="text-sm font-medium text-gray-600 mb-2">Network Latency</h3>
+                <p class="text-lg font-semibold text-gray-900">
+                    {{ "%.1f"|format(console.health.network_latency_ms) if console.health.network_latency_ms else 'N/A' }} ms
+                </p>
+            </div>
+        </div>
+    </div>
+    {% endif %}
+
+    <!-- Management Actions -->
+    <div class="bg-white rounded-lg shadow-md p-6">
+        <h2 class="text-xl font-semibold text-gray-900 mb-4">Management Actions</h2>
+        
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <!-- Location Management -->
+            <div class="border border-gray-200 rounded-lg p-4">
+                <h3 class="text-lg font-medium text-gray-900 mb-3 flex items-center">
+                    <i class="fas fa-map-marker-alt text-blue-500 mr-2"></i>
+                    Update Location
+                </h3>
+                <form id="locationForm" class="space-y-3">
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700">Location Name</label>
+                        <input type="text" name="location_name" 
+                               value="{{ console.location.name if console.location else '' }}"
+                               class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500">
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700">Address</label>
+                        <textarea name="location_address" rows="2"
+                                  class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500">{{ console.location.address if console.location else '' }}</textarea>
+                    </div>
+                    <div class="grid grid-cols-2 gap-3">
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700">Latitude</label>
+                            <input type="number" name="latitude" step="any"
+                                   value="{{ console.location.latitude if console.location else '' }}"
+                                   class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500">
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700">Longitude</label>
+                            <input type="number" name="longitude" step="any"
+                                   value="{{ console.location.longitude if console.location else '' }}"
+                                   class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500">
+                        </div>
+                    </div>
+                    <button type="submit" class="w-full bg-blue-600 text-white py-2 px-4 rounded-md hover:bg-blue-700 transition-colors">
+                        Update Location
+                    </button>
+                </form>
+            </div>
+            
+            <!-- Camera Control -->
+            <div class="border border-gray-200 rounded-lg p-4">
+                <h3 class="text-lg font-medium text-gray-900 mb-3 flex items-center">
+                    <i class="fas fa-video text-purple-500 mr-2"></i>
+                    Camera Control
+                </h3>
+                <div class="space-y-3">
+                    {% if console.camera and console.camera.surveillance_capable %}
+                    <div class="flex items-center justify-between mb-3">
+                        <span class="text-sm text-gray-600">Camera Status</span>
+                        <span class="px-2 py-1 text-xs rounded-full
+                            {% if console.camera.working %}bg-green-100 text-green-800
+                            {% else %}bg-red-100 text-red-800{% endif %}">
+                            {{ console.camera.status.title() }}
+                        </span>
+                    </div>
+                    
+                    <div class="flex items-center justify-between mb-3">
+                        <span class="text-sm text-gray-600">Devices Found</span>
+                        <span class="text-sm font-medium">{{ console.camera.device_count }} camera(s)</span>
+                    </div>
+                    
+                    <div class="space-y-2">
+                        <button onclick="testCamera({{ console.id }})" class="w-full bg-blue-600 text-white py-2 px-4 rounded-md hover:bg-blue-700 transition-colors">
+                            <i class="fas fa-camera mr-2"></i>Test Camera
+                        </button>
+                        
+                        <button onclick="startSurveillance({{ console.id }})" class="w-full bg-purple-600 text-white py-2 px-4 rounded-md hover:bg-purple-700 transition-colors">
+                            <i class="fas fa-eye mr-2"></i>Start Surveillance
+                        </button>
+                        
+                        <button onclick="viewSurveillance()" class="w-full bg-gray-600 text-white py-2 px-4 rounded-md hover:bg-gray-700 transition-colors">
+                            <i class="fas fa-desktop mr-2"></i>View All Streams
+                        </button>
+                    </div>
+                    {% else %}
+                    <div class="text-center py-4">
+                        <i class="fas fa-camera-slash text-gray-400 text-2xl mb-2"></i>
+                        <p class="text-sm text-gray-500">No camera available</p>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+        
+        <div class="grid grid-cols-1 md:grid-cols-1 gap-6">
+            <!-- Version Management -->
+            <div class="border border-gray-200 rounded-lg p-4">
+                <h3 class="text-lg font-medium text-gray-900 mb-3 flex items-center">
+                    <i class="fas fa-code-branch text-green-500 mr-2"></i>
+                    Update Versions
+                </h3>
+                <form id="versionForm" class="space-y-3">
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700">Software Version</label>
+                        <input type="text" name="software_version" 
+                               value="{{ console.versions.software if console.versions else '' }}"
+                               class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500">
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700">Firmware Version</label>
+                        <input type="text" name="firmware_version"
+                               value="{{ console.versions.firmware if console.versions else '' }}"
+                               class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500">
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700">Hardware Version</label>
+                        <input type="text" name="hardware_version"
+                               value="{{ console.versions.hardware if console.versions else '' }}"
+                               class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500">
+                    </div>
+                    <div class="flex items-center">
+                        <input type="checkbox" name="auto_update_enabled" 
+                               {% if console.versions and console.versions.auto_update_enabled %}checked{% endif %}
+                               class="rounded border-gray-300 text-blue-600 shadow-sm focus:border-blue-500 focus:ring-blue-500">
+                        <label class="ml-2 text-sm text-gray-700">Enable Auto Updates</label>
+                    </div>
+                    <button type="submit" class="w-full bg-green-600 text-white py-2 px-4 rounded-md hover:bg-green-700 transition-colors">
+                        Update Versions
+                    </button>
+                </form>
+                
+                <!-- Game Update Section -->
+                <div class="mt-4 pt-4 border-t border-gray-200">
+                    <h4 class="text-md font-medium text-gray-700 mb-3">Game Update</h4>
+                    <form id="gameUpdateForm" class="space-y-3">
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700">Target Game Version</label>
+                            <select name="game_version" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500">
+                                <option value="latest">Latest</option>
+                                <option value="v1.0.0">v1.0.0</option>
+                                <option value="v1.1.0">v1.1.0</option>
+                                <option value="v1.2.0">v1.2.0</option>
+                            </select>
+                        </div>
+                        <div class="flex items-center">
+                            <input type="checkbox" name="force_update" class="rounded border-gray-300 text-blue-600 shadow-sm focus:border-blue-500 focus:ring-blue-500">
+                            <label class="ml-2 text-sm text-gray-700">Force Update (even if same version)</label>
+                        </div>
+                        <button type="submit" class="w-full bg-purple-600 text-white py-2 px-4 rounded-md hover:bg-purple-700 transition-colors">
+                            <i class="fas fa-download mr-2"></i>Update Game
+                        </button>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Health History Chart -->
+    {% if console.health %}
+    <div class="bg-white rounded-lg shadow-md p-6">
+        <h2 class="text-xl font-semibold text-gray-900 mb-4">Health History</h2>
+        <div class="h-64" id="healthChart">
+            <!-- Chart will be rendered here -->
+            <div class="flex items-center justify-center h-full text-gray-500">
+                <i class="fas fa-chart-line text-3xl mr-3"></i>
+                <span>Loading health data...</span>
+            </div>
+        </div>
+    </div>
+    {% endif %}
+
+    <!-- Recent Activity -->
+    <div class="bg-white rounded-lg shadow-md p-6">
+        <h2 class="text-xl font-semibold text-gray-900 mb-4">Recent Activity</h2>
+        <div class="space-y-3" id="recentActivity">
+            <!-- Activity will be loaded via JavaScript -->
+            <div class="text-center py-8 text-gray-500">
+                <i class="fas fa-spinner fa-spin text-2xl mb-2"></i>
+                <p>Loading recent activity...</p>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Success/Error Messages -->
+<div id="alertContainer" class="fixed top-4 right-4 z-50 space-y-2"></div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+const consoleId = {{ console.id }};
+
+// Show alert message
+function showAlert(message, type = 'info') {
+    const alertContainer = document.getElementById('alertContainer');
+    const alertId = 'alert-' + Date.now();
+    
+    const alertClass = {
+        'success': 'bg-green-100 border-green-400 text-green-700',
+        'error': 'bg-red-100 border-red-400 text-red-700',
+        'warning': 'bg-yellow-100 border-yellow-400 text-yellow-700',
+        'info': 'bg-blue-100 border-blue-400 text-blue-700'
+    }[type] || 'bg-gray-100 border-gray-400 text-gray-700';
+    
+    const alertHtml = `
+        <div id="${alertId}" class="border-l-4 p-4 rounded shadow-lg ${alertClass}">
+            <div class="flex items-center justify-between">
+                <span>${message}</span>
+                <button onclick="document.getElementById('${alertId}').remove()" class="ml-4">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+        </div>
+    `;
+    
+    alertContainer.insertAdjacentHTML('beforeend', alertHtml);
+    
+    // Auto-remove after 5 seconds
+    setTimeout(() => {
+        const alert = document.getElementById(alertId);
+        if (alert) alert.remove();
+    }, 5000);
+}
+
+// Update console location
+document.getElementById('locationForm').addEventListener('submit', async function(e) {
+    e.preventDefault();
+    
+    const formData = new FormData(this);
+    const data = {
+        location_name: formData.get('location_name'),
+        location_address: formData.get('location_address'),
+        latitude: formData.get('latitude') ? parseFloat(formData.get('latitude')) : null,
+        longitude: formData.get('longitude') ? parseFloat(formData.get('longitude')) : null,
+        source: 'manual',
+        reason: 'Updated via admin panel'
+    };
+    
+    try {
+        const response = await fetch(`/v1/admin/devices/${consoleId}/location`, {
+            method: 'PUT',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify(data)
+        });
+        
+        const result = await response.json();
+        
+        if (result.success) {
+            showAlert('Location updated successfully!', 'success');
+        } else {
+            showAlert(result.error || 'Failed to update location', 'error');
+        }
+    } catch (error) {
+        console.error('Location update error:', error);
+        showAlert('Failed to update location', 'error');
+    }
+});
+
+// Update console versions
+document.getElementById('versionForm').addEventListener('submit', async function(e) {
+    e.preventDefault();
+    
+    const formData = new FormData(this);
+    const data = {
+        software_version: formData.get('software_version'),
+        firmware_version: formData.get('firmware_version'),
+        hardware_version: formData.get('hardware_version'),
+        auto_update_enabled: formData.has('auto_update_enabled')
+    };
+    
+    try {
+        const response = await fetch(`/v1/admin/devices/${consoleId}/version`, {
+            method: 'PUT',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify(data)
+        });
+        
+        const result = await response.json();
+        
+        if (result.success) {
+            showAlert('Versions updated successfully!', 'success');
+        } else {
+            showAlert(result.error || 'Failed to update versions', 'error');
+        }
+    } catch (error) {
+        console.error('Version update error:', error);
+        showAlert('Failed to update versions', 'error');
+    }
+});
+
+// Update console game
+document.getElementById('gameUpdateForm').addEventListener('submit', async function(e) {
+    e.preventDefault();
+    
+    const formData = new FormData(this);
+    const version = formData.get('game_version');
+    const force = formData.has('force_update');
+    
+    if (!confirm(`Are you sure you want to update the console game to ${version}?${force ? ' (Force update enabled)' : ''}`)) {
+        return;
+    }
+    
+    const data = {
+        version: version,
+        force: force
+    };
+    
+    try {
+        const response = await fetch(`/v1/admin/devices/${consoleId}/update-game`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify(data)
+        });
+        
+        const result = await response.json();
+        
+        if (result.success) {
+            showAlert(`Game update to ${version} queued successfully! Console will update on next heartbeat.`, 'success');
+        } else {
+            showAlert(result.error || 'Failed to queue game update', 'error');
+        }
+    } catch (error) {
+        console.error('Game update error:', error);
+        showAlert('Failed to queue game update', 'error');
+    }
+});
+
+// Load health history
+async function loadHealthHistory() {
+    try {
+        const response = await fetch(`/v1/admin/devices/${consoleId}/health`);
+        const data = await response.json();
+        
+        if (data.health_history && data.health_history.length > 0) {
+            // Simple health history display
+            const activityContainer = document.getElementById('recentActivity');
+            const activityHtml = data.health_history.slice(0, 10).map(entry => `
+                <div class="flex items-center justify-between py-2 border-b border-gray-200 last:border-b-0">
+                    <div class="flex items-center">
+                        <i class="fas fa-heartbeat text-red-400 mr-3"></i>
+                        <div>
+                            <p class="text-sm font-medium text-gray-900">${entry.action}</p>
+                            <p class="text-xs text-gray-500">${new Date(entry.timestamp).toLocaleString()}</p>
+                        </div>
+                    </div>
+                    <div class="text-right">
+                        ${entry.health_status ? `<span class="text-xs px-2 py-1 rounded-full bg-gray-100">${entry.health_status}</span>` : ''}
+                    </div>
+                </div>
+            `).join('');
+            
+            activityContainer.innerHTML = activityHtml;
+        } else {
+            document.getElementById('recentActivity').innerHTML = `
+                <div class="text-center py-8 text-gray-500">
+                    <i class="fas fa-inbox text-3xl mb-2"></i>
+                    <p>No recent activity found</p>
+                </div>
+            `;
+        }
+    } catch (error) {
+        console.error('Failed to load health history:', error);
+        document.getElementById('recentActivity').innerHTML = `
+            <div class="text-center py-8 text-red-500">
+                <i class="fas fa-exclamation-triangle text-3xl mb-2"></i>
+                <p>Failed to load activity data</p>
+            </div>
+        `;
+    }
+}
+
+// Camera control functions
+async function testCamera(consoleId) {
+    try {
+        const response = await fetch(`/v1/admin/devices/${consoleId}/camera/test`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            }
+        });
+        
+        const result = await response.json();
+        
+        if (result.success) {
+            showAlert(`Camera test successful! Found ${result.camera_info.device_count} camera(s)`, 'success');
+        } else {
+            showAlert(result.error || 'Camera test failed', 'error');
+        }
+    } catch (error) {
+        console.error('Camera test error:', error);
+        showAlert('Failed to test camera', 'error');
+    }
+}
+
+async function startSurveillance(consoleId) {
+    const reason = prompt('Enter reason for surveillance:', 'Security monitoring');
+    if (!reason) return;
+    
+    try {
+        const response = await fetch(`/v1/admin/devices/${consoleId}/camera/start-surveillance`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+                reason: reason,
+                enable_audio: true,
+                enable_recording: true,
+                quality: 'medium'
+            })
+        });
+        
+        const result = await response.json();
+        
+        if (result.success) {
+            showAlert('Camera surveillance started successfully!', 'success');
+            
+            // Optionally open surveillance view
+            if (result.surveillance_url) {
+                const openView = confirm('Surveillance started. Open live view?');
+                if (openView) {
+                    window.open(result.surveillance_url, '_blank');
+                }
+            }
+        } else {
+            showAlert(result.error || 'Failed to start surveillance', 'error');
+        }
+    } catch (error) {
+        console.error('Surveillance start error:', error);
+        showAlert('Failed to start surveillance', 'error');
+    }
+}
+
+function viewSurveillance() {
+    // Open surveillance dashboard
+    window.open('/admin/surveillance', '_blank');
+}
+
+// Initialize page
+document.addEventListener('DOMContentLoaded', function() {
+    loadHealthHistory();
+    
+    // Auto-refresh health data every 30 seconds
+    setInterval(loadHealthHistory, 30000);
+});
+</script>
+{% endblock %}

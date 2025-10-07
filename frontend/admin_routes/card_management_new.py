@@ -1,3 +1,4 @@
+import sys; import os; sys.path.append(os.path.dirname(os.path.dirname(os.path.dirname(__file__))))
 """
 Card Management Routes for Deckport Admin Panel
 Updated to use PostgreSQL card templates and NFC instances

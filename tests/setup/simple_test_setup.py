@@ -26,7 +26,7 @@ def get_db_connection():
     """Get database connection"""
     try:
         # Try to read password from file
-        with open('/home/jp/deckport.ai/DB_pass', 'r') as f:
+        with open('/home/jp/deckport.ai/.env/DB_pass', 'r') as f:
             content = f.read()
             # Extract password from DB_PASS='...' line
             for line in content.split('\n'):

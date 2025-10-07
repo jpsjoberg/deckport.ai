@@ -6,14 +6,19 @@ The `nfc_card_programmer.py` script allows you to program physical NTAG 424 DNA 
 
 ## 🚀 **Quick Start**
 
-### **1. Download and Setup**
+### **1. Download and Setup (OMNIKEY 5422 Optimized)**
 ```bash
-# Download the script (it's in your scripts/ folder)
-cd /path/to/your/project
-ls scripts/nfc_card_programmer.py
+# Navigate to NFC programmer directory
+cd /home/jp/deckport.ai/tools/nfc-card-programmer/
 
-# Install dependencies
-pip install requests cryptography
+# Install dependencies (optimized for OMNIKEY 5422)
+pip install -r requirements.txt
+
+# Or use automated installer
+./install_nfc_dependencies.sh
+
+# Test your OMNIKEY 5422 setup
+python setup_omnikey_5422.py
 
 # Set your admin token
 export ADMIN_TOKEN="your_admin_jwt_token_here"
@@ -44,48 +49,52 @@ Options:
 python scripts/nfc_card_programmer.py --list-cards
 ```
 
-Output example:
+Output example (from your 2600+ card catalog):
 ```
 📋 Available Cards in Catalog
 ==================================================
-  RADIANT-001     | Solar Vanguard           | EPIC       | CREATURE
-  AZURE-014       | Tidecaller Sigil         | RARE       | ENCHANTMENT
-  VERDANT-007     | Forest Guardian          | COMMON     | CREATURE
-  CRIMSON-003     | Fire Dragon              | LEGENDARY  | CREATURE
+  HERO_CRIMSON_140 | Burn Knight              | LEGENDARY  | HERO
+  EERIE_MASTER     | Eerie Master             | RARE       | HERO  
+  WILD_HUNT_CRUSH  | Wild Hunt Crush          | COMMON     | ACTION_FAST
+  BLOOMING_KEEPER  | Blooming Keeper          | RARE       | CREATURE
+  ... (2600+ cards available)
 ```
 
 ### **4. Validate a Specific Card**
 ```bash
 # Check if a product SKU exists and see its details
-python scripts/nfc_card_programmer.py --validate-sku RADIANT-001
+python nfc_card_programmer.py --validate-sku HERO_CRIMSON_140
 ```
 
-Output example:
+Output example (from your catalog):
 ```
-🔍 Validating Product SKU: RADIANT-001
+🔍 Validating Product SKU: HERO_CRIMSON_140
 ==================================================
-✅ Valid card: Solar Vanguard
-   Product SKU: RADIANT-001
-   Rarity: EPIC
-   Category: CREATURE
-   Base Stats: {"attack": 3, "defense": 2, "health": 5, "mana_cost": {"RADIANT": 3}}
-   Flavor: Where light touches stone, legends are born.
+✅ Valid card: Burn Knight
+   Product SKU: HERO_CRIMSON_140
+   Rarity: LEGENDARY
+   Category: HERO
+   Mana Colors: ["CRIMSON"]
+   Artwork: Generated with ComfyUI (frame-aware composition)
+   Status: Ready for OMNIKEY 5422 programming
 ```
 
 ## 🏭 **Programming Card Batches**
 
-### **Command Line Mode**
+### **Command Line Mode (OMNIKEY 5422)**
 ```bash
-# Program 50 RADIANT-001 cards
-python scripts/nfc_card_programmer.py \
-  --product-sku RADIANT-001 \
-  --batch-size 50
+# Program Burn Knight cards (your legendary hero)
+python nfc_card_programmer.py \
+  --product-sku HERO_CRIMSON_140 \
+  --batch-size 10 \
+  --api-url https://api.deckport.ai
 
 # Program with custom batch code
-python scripts/nfc_card_programmer.py \
-  --product-sku AZURE-014 \
+python nfc_card_programmer.py \
+  --product-sku EERIE_MASTER \
   --batch-size 25 \
-  --batch-code AZURE-SPECIAL-001
+  --batch-code HEROES-BATCH-001 \
+  --api-url https://api.deckport.ai
 ```
 
 ### **Interactive Mode Programming**

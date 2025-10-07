@@ -11,7 +11,7 @@ signal participant_left(participant_info: Dictionary)
 signal surveillance_detected(admin_info: Dictionary)
 
 # Server configuration
-var server_url: String = "http://127.0.0.1:8002"
+var server_url: String = "https://deckport.ai"
 var api_headers: Array[String] = []
 
 # Stream state
@@ -52,7 +52,10 @@ func _ready():
 	# Get device connection manager
 	device_connection_manager = get_node("/root/DeviceConnectionManager")
 	if device_connection_manager:
-		api_headers = device_connection_manager.get_authenticated_headers()
+		api_headers = device_connection_manager.get_auth_headers()
+	else:
+		print("⚠️ DeviceConnectionManager not found - using basic headers")
+		api_headers = ["Content-Type: application/json", "User-Agent: Deckport-Console/1.0"]
 
 func setup_http_request():
 	"""Setup HTTP request for API communication"""
@@ -336,7 +339,7 @@ func _check_stream_status():
 
 # === HTTP RESPONSE HANDLERS ===
 
-func _on_http_response(result: int, response_code: int, headers: PackedStringArray, body: PackedByteArray):
+func _on_http_response(result: int, response_code: int, _headers: PackedStringArray, body: PackedByteArray):
 	"""Handle HTTP responses from video streaming API"""
 	var response_text = body.get_string_from_utf8()
 	

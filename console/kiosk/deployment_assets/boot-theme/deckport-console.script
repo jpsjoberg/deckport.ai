@@ -1,0 +1,57 @@
+# Deckport Console Plymouth Boot Script
+Window.SetBackgroundTopColor(0.0, 0.0, 0.0);    # Pure black background top
+Window.SetBackgroundBottomColor(0.0, 0.0, 0.0);  # Pure black background bottom
+
+# Load Deckport logo
+logo.image = Image("logo.png");
+logo.sprite = Sprite(logo.image);
+
+# Center the logo
+logo.sprite.SetX(Window.GetX() + (Window.GetWidth() - logo.image.GetWidth()) / 2);
+logo.sprite.SetY(Window.GetY() + (Window.GetHeight() - logo.image.GetHeight()) / 2 - 50);
+
+# Loading text with better styling
+loading_text = "Starting Deckport Console...";
+loading.image = Image.Text(loading_text, 0.8, 0.8, 0.8, 1, "Ubuntu 18");  # Light gray text, larger font
+loading.sprite = Sprite(loading.image);
+loading.sprite.SetX(Window.GetX() + (Window.GetWidth() - loading.image.GetWidth()) / 2);
+loading.sprite.SetY(logo.sprite.GetY() + logo.image.GetHeight() + 50);
+
+# Add version text
+version_text = "Console OS v1.0";
+version.image = Image.Text(version_text, 0.5, 0.5, 0.5, 1, "Ubuntu 12");  # Smaller gray text
+version.sprite = Sprite(version.image);
+version.sprite.SetX(Window.GetX() + (Window.GetWidth() - version.image.GetWidth()) / 2);
+version.sprite.SetY(Window.GetY() + Window.GetHeight() - 50);  # Bottom of screen
+
+# Loading animation
+progress = 0;
+fun refresh_callback() {
+    progress++;
+    
+    # Pulse logo
+    opacity = Math.Sin(progress / 30) * 0.3 + 0.7;
+    logo.sprite.SetOpacity(opacity);
+    
+    # Animate loading text
+    if ((progress / 20) % 2 < 1) {
+        loading.sprite.SetOpacity(1);
+    } else {
+        loading.sprite.SetOpacity(0.5);
+    }
+}
+
+Plymouth.SetRefreshFunction(refresh_callback);
+
+# Handle boot progress
+fun boot_progress_callback(duration, progress) {
+    if (progress >= 1.0) {
+        loading_text = "Ready!";
+        loading.image = Image.Text(loading_text, 0.4, 1, 0.4, 1, "Ubuntu 16");
+        loading.sprite = Sprite(loading.image);
+        loading.sprite.SetX(Window.GetX() + (Window.GetWidth() - loading.image.GetWidth()) / 2);
+        loading.sprite.SetY(logo.sprite.GetY() + logo.image.GetHeight() + 30);
+    }
+}
+
+Plymouth.SetBootProgressFunction(boot_progress_callback);

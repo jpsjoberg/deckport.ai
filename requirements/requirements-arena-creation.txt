@@ -1,0 +1,23 @@
+# Arena Creation Engine Dependencies
+# Install with: pip install -r requirements-arena-creation.txt
+
+# Core AI APIs
+anthropic>=0.21.3                # Claude for arena data generation
+elevenlabs>=0.2.26               # ElevenLabs Music API for soundtracks
+
+# Video Processing  
+moviepy>=1.0.3                   # Video editing and audio sync
+imageio>=2.31.0                  # Image sequence to video conversion
+imageio-ffmpeg>=0.4.8            # FFmpeg backend for video processing
+
+# Audio Processing
+pydub>=0.25.1                    # Audio manipulation and format conversion
+librosa>=0.10.0                  # Audio analysis and processing
+
+# Async Processing
+aiohttp>=3.8.0                   # Async HTTP requests
+aiofiles>=23.0.0                 # Async file operations
+
+# Utilities
+tqdm>=4.65.0                     # Progress bars for long operations
+python-dotenv>=1.0.0             # Environment variable management

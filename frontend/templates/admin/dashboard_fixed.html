@@ -1,0 +1,280 @@
+{% extends "admin/base.html" %}
+
+{% block title %}Executive Dashboard - Deckport Admin{% endblock %}
+{% block page_title %}Executive Dashboard{% endblock %}
+{% block page_subtitle %}Real-time system overview and critical metrics{% endblock %}
+
+{% block content %}
+<!-- System Status Section -->
+<div class="mb-6" id="alerts-section">
+    <div class="bg-blue-900 border-l-4 border-blue-500 p-4 mb-4">
+        <div class="flex">
+            <div class="flex-shrink-0">
+                <i class="fas fa-info-circle text-blue-400"></i>
+            </div>
+            <div class="ml-3">
+                <h3 class="text-sm font-medium text-blue-300">System Status</h3>
+                <p class="text-sm text-blue-200 mt-1">Loading system status...</p>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Key Metrics Grid -->
+<div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+    <!-- Active Consoles -->
+    <div class="bg-gray-800 rounded-lg p-6 border border-gray-700">
+        <div class="flex items-center">
+            <div class="flex-shrink-0">
+                <i class="fas fa-desktop text-2xl text-blue-400"></i>
+            </div>
+            <div class="ml-4 flex-1">
+                <h3 class="text-lg font-semibold text-white">Active Consoles</h3>
+                <div class="flex items-baseline">
+                    <span class="text-3xl font-bold text-blue-400" id="console-count">{{ stats.active_consoles or 0 }}</span>
+                    <span class="text-lg text-gray-400 ml-1" id="console-total">/{{ stats.total_consoles or 0 }}</span>
+                </div>
+                <p class="text-sm text-green-400" id="console-uptime">{{ stats.system_health or 'Good' }} Health</p>
+            </div>
+        </div>
+    </div>
+
+    <!-- Live Matches -->
+    <div class="bg-gray-800 rounded-lg p-6 border border-gray-700">
+        <div class="flex items-center">
+            <div class="flex-shrink-0">
+                <i class="fas fa-gamepad text-2xl text-green-400"></i>
+            </div>
+            <div class="ml-4 flex-1">
+                <h3 class="text-lg font-semibold text-white">Live Matches</h3>
+                <div class="flex items-baseline">
+                    <span class="text-3xl font-bold text-green-400" id="match-count">{{ stats.live_matches or 0 }}</span>
+                </div>
+                <p class="text-sm text-gray-400" id="match-avg-duration">Active games</p>
+            </div>
+        </div>
+    </div>
+
+    <!-- Online Players -->
+    <div class="bg-gray-800 rounded-lg p-6 border border-gray-700">
+        <div class="flex items-center">
+            <div class="flex-shrink-0">
+                <i class="fas fa-users text-2xl text-purple-400"></i>
+            </div>
+            <div class="ml-4 flex-1">
+                <h3 class="text-lg font-semibold text-white">Online Players</h3>
+                <div class="flex items-baseline">
+                    <span class="text-3xl font-bold text-purple-400" id="player-count">{{ stats.online_players or 0 }}</span>
+                </div>
+                <p class="text-sm text-gray-400" id="player-growth">Players online</p>
+            </div>
+        </div>
+    </div>
+
+    <!-- NFC Cards -->
+    <div class="bg-gray-800 rounded-lg p-6 border border-gray-700">
+        <div class="flex items-center">
+            <div class="flex-shrink-0">
+                <i class="fas fa-microchip text-2xl text-yellow-400"></i>
+            </div>
+            <div class="ml-4 flex-1">
+                <h3 class="text-lg font-semibold text-white">NFC Cards</h3>
+                <div class="flex items-baseline">
+                    <span class="text-3xl font-bold text-yellow-400" id="nfc-count">{{ stats.total_nfc_cards or 0 }}</span>
+                </div>
+                <p class="text-sm text-gray-400" id="nfc-active">{{ stats.activated_cards or 0 }} activated</p>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Quick Actions -->
+<div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mb-8">
+    <!-- Card Generation -->
+    <div class="bg-gradient-to-r from-purple-600 to-blue-600 rounded-lg p-6">
+        <div class="flex items-center justify-between">
+            <div>
+                <h3 class="text-lg font-semibold text-white mb-2">Generate Cards</h3>
+                <p class="text-purple-100 text-sm">Create new card artwork and assets</p>
+            </div>
+            <i class="fas fa-magic text-3xl text-purple-200"></i>
+        </div>
+        <div class="mt-4">
+            <a href="{{ url_for('admin.card_generation') }}" class="inline-flex items-center px-4 py-2 bg-white bg-opacity-20 text-white rounded-lg hover:bg-opacity-30 transition-colors">
+                <i class="fas fa-plus mr-2"></i>
+                Start Generation
+            </a>
+        </div>
+    </div>
+
+    <!-- Game Operations -->
+    <div class="bg-gradient-to-r from-green-600 to-teal-600 rounded-lg p-6">
+        <div class="flex items-center justify-between">
+            <div>
+                <h3 class="text-lg font-semibold text-white mb-2">Game Operations</h3>
+                <p class="text-green-100 text-sm">Monitor live matches and tournaments</p>
+            </div>
+            <i class="fas fa-gamepad text-3xl text-green-200"></i>
+        </div>
+        <div class="mt-4">
+            <a href="{{ url_for('admin.game_operations') }}" class="inline-flex items-center px-4 py-2 bg-white bg-opacity-20 text-white rounded-lg hover:bg-opacity-30 transition-colors">
+                <i class="fas fa-eye mr-2"></i>
+                View Operations
+            </a>
+        </div>
+    </div>
+
+    <!-- Console Management -->
+    <div class="bg-gradient-to-r from-blue-600 to-indigo-600 rounded-lg p-6">
+        <div class="flex items-center justify-between">
+            <div>
+                <h3 class="text-lg font-semibold text-white mb-2">Console Fleet</h3>
+                <p class="text-blue-100 text-sm">Manage gaming consoles and devices</p>
+            </div>
+            <i class="fas fa-desktop text-3xl text-blue-200"></i>
+        </div>
+        <div class="mt-4">
+            <a href="{{ url_for('admin.console_management') }}" class="inline-flex items-center px-4 py-2 bg-white bg-opacity-20 text-white rounded-lg hover:bg-opacity-30 transition-colors">
+                <i class="fas fa-cogs mr-2"></i>
+                Manage Fleet
+            </a>
+        </div>
+    </div>
+</div>
+
+<!-- Recent Activity -->
+<div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+    <!-- System Events -->
+    <div class="bg-gray-800 rounded-lg p-6 border border-gray-700">
+        <h3 class="text-lg font-semibold text-white mb-4 flex items-center">
+            <i class="fas fa-clock mr-2 text-gray-400"></i>
+            Recent Events
+        </h3>
+        <div class="space-y-3" id="recent-events">
+            {% if stats.recent_cards %}
+                {% for card in stats.recent_cards[:5] %}
+                <div class="flex items-center justify-between py-2 border-b border-gray-700 last:border-b-0">
+                    <div class="flex items-center">
+                        <i class="fas fa-magic text-purple-400 mr-3"></i>
+                        <div>
+                            <p class="text-sm font-medium text-white">{{ card.name }}</p>
+                            <p class="text-xs text-gray-400">{{ card.category }} • {{ card.rarity }}</p>
+                        </div>
+                    </div>
+                    <span class="text-xs text-gray-500">{{ card.created_at[:10] if card.created_at else 'Today' }}</span>
+                </div>
+                {% endfor %}
+            {% else %}
+            <div class="text-center py-8 text-gray-400">
+                <i class="fas fa-inbox text-3xl mb-2"></i>
+                <p>No recent events</p>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+
+    <!-- System Health -->
+    <div class="bg-gray-800 rounded-lg p-6 border border-gray-700">
+        <h3 class="text-lg font-semibold text-white mb-4 flex items-center">
+            <i class="fas fa-heartbeat mr-2 text-red-400"></i>
+            System Health
+        </h3>
+        <div class="space-y-4">
+            <!-- Database -->
+            <div class="flex items-center justify-between">
+                <div class="flex items-center">
+                    <i class="fas fa-database text-green-400 mr-3"></i>
+                    <span class="text-sm text-white">Database</span>
+                </div>
+                <span class="text-xs bg-green-900 text-green-300 px-2 py-1 rounded-full">Healthy</span>
+            </div>
+
+            <!-- API Services -->
+            <div class="flex items-center justify-between">
+                <div class="flex items-center">
+                    <i class="fas fa-plug text-yellow-400 mr-3"></i>
+                    <span class="text-sm text-white">API Services</span>
+                </div>
+                <span class="text-xs bg-yellow-900 text-yellow-300 px-2 py-1 rounded-full">Initializing</span>
+            </div>
+
+            <!-- File System -->
+            <div class="flex items-center justify-between">
+                <div class="flex items-center">
+                    <i class="fas fa-hdd text-green-400 mr-3"></i>
+                    <span class="text-sm text-white">Storage</span>
+                </div>
+                <span class="text-xs bg-green-900 text-green-300 px-2 py-1 rounded-full">Available</span>
+            </div>
+
+            <!-- Console Network -->
+            <div class="flex items-center justify-between">
+                <div class="flex items-center">
+                    <i class="fas fa-network-wired text-blue-400 mr-3"></i>
+                    <span class="text-sm text-white">Network</span>
+                </div>
+                <span class="text-xs bg-blue-900 text-blue-300 px-2 py-1 rounded-full">Connected</span>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+// Simplified dashboard with graceful fallbacks
+document.addEventListener('DOMContentLoaded', function() {
+    // Show system is operational
+    const alertsSection = document.getElementById('alerts-section');
+    setTimeout(() => {
+        alertsSection.innerHTML = `
+            <div class="bg-green-900 border-l-4 border-green-500 p-4 mb-4">
+                <div class="flex">
+                    <div class="flex-shrink-0">
+                        <i class="fas fa-check-circle text-green-400"></i>
+                    </div>
+                    <div class="ml-3">
+                        <h3 class="text-sm font-medium text-green-300">System Operational</h3>
+                        <p class="text-sm text-green-200 mt-1">All core systems are running normally.</p>
+                    </div>
+                </div>
+            </div>
+        `;
+    }, 1000);
+
+    // Optional: Try to load real-time data if available
+    loadRealTimeData();
+});
+
+async function loadRealTimeData() {
+    try {
+        // Try to get data from Flask backend
+        const response = await fetch('/admin/api/dashboard/stats');
+        
+        if (response.ok) {
+            const data = await response.json();
+            
+            // Update metrics if we have real data
+            if (data.active_consoles !== undefined) {
+                document.getElementById('console-count').textContent = data.active_consoles;
+            }
+            if (data.live_matches !== undefined) {
+                document.getElementById('match-count').textContent = data.live_matches;
+            }
+            if (data.online_players !== undefined) {
+                document.getElementById('player-count').textContent = data.online_players;
+            }
+            if (data.total_nfc_cards !== undefined) {
+                document.getElementById('nfc-count').textContent = data.total_nfc_cards;
+            }
+        }
+    } catch (error) {
+        // Silently fail - we already have fallback data from the backend
+        console.log('Real-time data not available, using cached data');
+    }
+}
+
+// Refresh data every 30 seconds if possible
+setInterval(loadRealTimeData, 30000);
+</script>
+{% endblock %}

@@ -1,0 +1,16 @@
+[Unit]
+Description=Deckport WiFi Configuration Portal
+After=network.target
+Before=deckport-kiosk.service
+
+[Service]
+Type=simple
+User=root
+WorkingDirectory=/opt/wifi-portal
+ExecStart=/usr/bin/python3 /opt/wifi-portal/wifi_portal.py
+Restart=on-failure
+StandardOutput=journal
+StandardError=journal
+
+[Install]
+WantedBy=multi-user.target

@@ -488,10 +488,13 @@ def _crop_to_alpha_content(img_rgba: Image.Image, threshold: int = 10) -> Image.
         return img_rgba.crop(bbox)
     return img_rgba
 
-def compose_card(art_img: Image.Image, frame_img: Image.Image, glow_img: Image.Image, mana_icon: Image.Image, gp: GameplayRow) -> Image.Image:
+def compose_card(art_img: Image.Image, frame_img: Image.Image, glow_img: Image.Image, mana_icon: Image.Image, gp: GameplayRow, transparent_bg: bool = False) -> Image.Image:
     W, H = settings.CANVAS_W, settings.CANVAS_H
-    # 1) Black frame background 1500x2100
-    canvas = Image.new('RGBA', (W, H), (0, 0, 0, 255))
+    # 1) Canvas background - transparent for frame-only, black for full cards
+    if transparent_bg:
+        canvas = Image.new('RGBA', (W, H), (0, 0, 0, 0))  # Transparent background
+    else:
+        canvas = Image.new('RGBA', (W, H), (0, 0, 0, 255))  # Black background
 
     # 2) Generated art centered on black frame, preserving aspect
     # Scale to fit without cropping
@@ -560,14 +563,14 @@ def compose_card(art_img: Image.Image, frame_img: Image.Image, glow_img: Image.I
     # Hide any stray dot or placeholder layers by avoiding other text draws
 
     # 5) Card name using Chakra Petch SemiBold at specified coordinates (centered)
-    # Name size double the card type size
+    # Optimized name size for better proportions
     try:
-        font_name = ImageFont.truetype(settings.FONT_PATH, size=int(H * 0.035))
+        font_name = ImageFont.truetype(settings.FONT_PATH, size=int(H * 0.032))
     except Exception:
         font_name = ImageFont.load_default()
-    # Center horizontally on screen; keep vertical near top per prior spec
+    # Center horizontally on screen; moved down 2px for better positioning
     name_center_x = W // 2
-    name_center_y = int(round(179.7)) + 15
+    name_center_y = int(round(179.7)) + 15 + 2
     # Name color: #00d2ff
     render_text_center(draw, gp.name, (name_center_x, name_center_y), font_name, fill=(0, 210, 255, 255))
 

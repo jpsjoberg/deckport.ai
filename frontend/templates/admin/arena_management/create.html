@@ -1,0 +1,330 @@
+{% extends "admin/base.html" %}
+
+{% block title %}Create Arenas - Deckport Admin{% endblock %}
+
+{% block content %}
+<div class="p-6">
+    <div class="flex items-center justify-between mb-6">
+        <div>
+            <h1 class="text-2xl font-bold text-white">AI Arena Creation Engine</h1>
+            <p class="text-gray-400 mt-1">Generate 1-100 unique arenas with AI-powered content, images, videos, and music</p>
+        </div>
+        <div class="flex space-x-3">
+            <a href="/admin/arenas" class="px-4 py-2 bg-gray-600 hover:bg-gray-700 rounded font-medium text-sm">
+                <i class="fas fa-arrow-left mr-2"></i>Back to Arenas
+            </a>
+        </div>
+    </div>
+
+    <!-- Arena Creation Form -->
+    <div class="bg-gray-800 rounded-lg p-6 mb-6">
+        <h2 class="text-xl font-bold text-white mb-4 flex items-center">
+            <i class="fas fa-magic mr-3 text-purple-400"></i>
+            AI Arena Generation
+        </h2>
+        
+        <form id="arenaCreationForm" class="space-y-6">
+            <!-- Number of Arenas -->
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div>
+                    <label class="block text-sm font-medium text-gray-300 mb-2">Number of Arenas</label>
+                    <input type="number" id="arenaCount" name="count" min="1" max="100" value="5"
+                           class="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded-md text-white focus:outline-none focus:ring-2 focus:ring-purple-500">
+                    <p class="text-xs text-gray-400 mt-1">Create 1-100 arenas at once</p>
+                </div>
+                
+                <div>
+                    <label class="block text-sm font-medium text-gray-300 mb-2">Theme Preference (Optional)</label>
+                    <select id="themePreference" name="theme_preference" 
+                            class="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded-md text-white focus:outline-none focus:ring-2 focus:ring-purple-500">
+                        <option value="">Random Themes</option>
+                        <option value="ancient_temple">Ancient Temples</option>
+                        <option value="crystal_cavern">Crystal Caverns</option>
+                        <option value="floating_island">Floating Islands</option>
+                        <option value="underwater_ruins">Underwater Ruins</option>
+                        <option value="volcanic_crater">Volcanic Craters</option>
+                        <option value="frozen_tundra">Frozen Tundras</option>
+                        <option value="mystical_forest">Mystical Forests</option>
+                        <option value="desert_oasis">Desert Oases</option>
+                        <option value="celestial_observatory">Celestial Observatories</option>
+                        <option value="shadow_realm">Shadow Realms</option>
+                        <option value="steampunk_factory">Steampunk Factories</option>
+                        <option value="ethereal_void">Ethereal Voids</option>
+                    </select>
+                </div>
+            </div>
+            
+            <!-- Creation Pipeline Preview -->
+            <div class="bg-gray-700 rounded-lg p-4">
+                <h3 class="text-lg font-semibold text-white mb-3">AI Creation Pipeline</h3>
+                <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+                    <div class="text-center">
+                        <div class="w-12 h-12 bg-blue-500 bg-opacity-20 rounded-lg flex items-center justify-center mx-auto mb-2">
+                            <i class="fas fa-brain text-blue-400"></i>
+                        </div>
+                        <p class="text-sm text-gray-300">LLM Data Generation</p>
+                        <p class="text-xs text-gray-400">GPT-4 creates arena mechanics</p>
+                    </div>
+                    
+                    <div class="text-center">
+                        <div class="w-12 h-12 bg-green-500 bg-opacity-20 rounded-lg flex items-center justify-center mx-auto mb-2">
+                            <i class="fas fa-image text-green-400"></i>
+                        </div>
+                        <p class="text-sm text-gray-300">Image Generation</p>
+                        <p class="text-xs text-gray-400">ComfyUI creates 10+ arena views</p>
+                    </div>
+                    
+                    <div class="text-center">
+                        <div class="w-12 h-12 bg-purple-500 bg-opacity-20 rounded-lg flex items-center justify-center mx-auto mb-2">
+                            <i class="fas fa-video text-purple-400"></i>
+                        </div>
+                        <p class="text-sm text-gray-300">Video Creation</p>
+                        <p class="text-xs text-gray-400">ComfyUI video workflows</p>
+                    </div>
+                    
+                    <div class="text-center">
+                        <div class="w-12 h-12 bg-yellow-500 bg-opacity-20 rounded-lg flex items-center justify-center mx-auto mb-2">
+                            <i class="fas fa-music text-yellow-400"></i>
+                        </div>
+                        <p class="text-sm text-gray-300">Music & Audio</p>
+                        <p class="text-xs text-gray-400">ElevenLabs generates soundtracks</p>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Estimated Time and Cost -->
+            <div class="bg-yellow-900 bg-opacity-30 border border-yellow-600 rounded-lg p-4">
+                <div class="flex items-start">
+                    <i class="fas fa-clock text-yellow-400 mt-1 mr-3"></i>
+                    <div>
+                        <h4 class="text-yellow-400 font-semibold">Estimated Creation Time</h4>
+                        <p class="text-gray-300 text-sm mt-1">
+                            <span id="estimatedTime">~30 minutes</span> for <span id="arenaCountDisplay">5</span> arenas
+                            (≈6 min per arena: Claude + ComfyUI Images + ComfyUI Videos + ElevenLabs Music + Processing)
+                        </p>
+                        <p class="text-gray-400 text-xs mt-2">
+                            <strong>API Costs:</strong> ~$1.65-3.15 per arena (Claude: $0.15, ComfyUI: Your server, ElevenLabs: $1.50-3.00)
+                        </p>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Creation Button -->
+            <div class="flex justify-center">
+                <button type="submit" id="createArenasBtn" 
+                        class="px-8 py-3 bg-purple-600 hover:bg-purple-700 text-white rounded-lg font-semibold text-lg transition-colors">
+                    <i class="fas fa-magic mr-3"></i>
+                    Create <span id="buttonArenaCount">5</span> AI Arenas
+                </button>
+            </div>
+        </form>
+    </div>
+    
+    <!-- Progress Section (Hidden by default) -->
+    <div id="progressSection" class="bg-gray-800 rounded-lg p-6 hidden">
+        <h3 class="text-xl font-bold text-white mb-4 flex items-center">
+            <i class="fas fa-cog fa-spin mr-3 text-purple-400"></i>
+            Creating Arenas...
+        </h3>
+        
+        <div class="space-y-4">
+            <!-- Overall Progress -->
+            <div>
+                <div class="flex justify-between text-sm text-gray-300 mb-2">
+                    <span>Overall Progress</span>
+                    <span id="overallProgress">0%</span>
+                </div>
+                <div class="w-full bg-gray-700 rounded-full h-3">
+                    <div id="overallProgressBar" class="bg-purple-600 h-3 rounded-full transition-all duration-300" style="width: 0%"></div>
+                </div>
+            </div>
+            
+            <!-- Current Step -->
+            <div>
+                <p class="text-sm text-gray-300 mb-2">Current Step:</p>
+                <p id="currentStep" class="text-white font-medium">Initializing arena creation...</p>
+            </div>
+            
+            <!-- Step Progress -->
+            <div class="grid grid-cols-2 md:grid-cols-4 gap-4 text-center">
+                <div id="step1" class="step-indicator">
+                    <i class="fas fa-brain text-2xl mb-2"></i>
+                    <p class="text-xs">LLM Data</p>
+                </div>
+                <div id="step2" class="step-indicator">
+                    <i class="fas fa-image text-2xl mb-2"></i>
+                    <p class="text-xs">Images</p>
+                </div>
+                <div id="step3" class="step-indicator">
+                    <i class="fas fa-video text-2xl mb-2"></i>
+                    <p class="text-xs">Videos</p>
+                </div>
+                <div id="step4" class="step-indicator">
+                    <i class="fas fa-music text-2xl mb-2"></i>
+                    <p class="text-xs">Music</p>
+                </div>
+            </div>
+            
+            <!-- Results -->
+            <div id="resultsSection" class="hidden">
+                <h4 class="text-lg font-semibold text-white mb-3">Creation Results</h4>
+                <div id="createdArenas" class="space-y-2"></div>
+                
+                <div class="mt-4 text-center">
+                    <a href="/admin/arenas" class="px-6 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg">
+                        View Created Arenas
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+.step-indicator {
+    @apply text-gray-400 transition-colors duration-300;
+}
+
+.step-indicator.active {
+    @apply text-purple-400;
+}
+
+.step-indicator.completed {
+    @apply text-green-400;
+}
+</style>
+
+<script>
+// Update arena count displays
+document.getElementById('arenaCount').addEventListener('input', function() {
+    const count = parseInt(this.value) || 1;
+    document.getElementById('arenaCountDisplay').textContent = count;
+    document.getElementById('buttonArenaCount').textContent = count;
+    
+    // Update estimated time (5 minutes per arena)
+    const estimatedMinutes = count * 5;
+    const hours = Math.floor(estimatedMinutes / 60);
+    const minutes = estimatedMinutes % 60;
+    
+    let timeString = '';
+    if (hours > 0) {
+        timeString = `~${hours}h ${minutes}m`;
+    } else {
+        timeString = `~${minutes} minutes`;
+    }
+    
+    document.getElementById('estimatedTime').textContent = timeString;
+});
+
+// Handle form submission
+document.getElementById('arenaCreationForm').addEventListener('submit', async function(e) {
+    e.preventDefault();
+    
+    const count = parseInt(document.getElementById('arenaCount').value);
+    const themePreference = document.getElementById('themePreference').value;
+    
+    // Show progress section
+    document.getElementById('progressSection').classList.remove('hidden');
+    document.getElementById('createArenasBtn').disabled = true;
+    document.getElementById('createArenasBtn').innerHTML = '<i class="fas fa-spinner fa-spin mr-3"></i>Creating...';
+    
+    try {
+        // Start arena creation
+        const response = await fetch('/admin/arenas/create-batch', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+                count: count,
+                theme_preference: themePreference
+            })
+        });
+        
+        const result = await response.json();
+        
+        if (result.success) {
+            // Show success
+            document.getElementById('overallProgressBar').style.width = '100%';
+            document.getElementById('overallProgress').textContent = '100%';
+            document.getElementById('currentStep').textContent = 'Arena creation completed!';
+            
+            // Mark all steps as completed
+            for (let i = 1; i <= 4; i++) {
+                document.getElementById(`step${i}`).classList.add('completed');
+            }
+            
+            // Show results
+            document.getElementById('resultsSection').classList.remove('hidden');
+            const arenasContainer = document.getElementById('createdArenas');
+            
+            result.arenas.forEach(arena => {
+                const arenaDiv = document.createElement('div');
+                arenaDiv.className = 'bg-gray-700 rounded p-3 flex items-center justify-between';
+                arenaDiv.innerHTML = `
+                    <div>
+                        <span class="text-white font-medium">${arena.name}</span>
+                        <span class="text-gray-400 text-sm ml-2">(${arena.mana_color})</span>
+                    </div>
+                    <span class="text-green-400 text-sm">
+                        <i class="fas fa-check mr-1"></i>Created
+                    </span>
+                `;
+                arenasContainer.appendChild(arenaDiv);
+            });
+            
+        } else {
+            // Show error
+            document.getElementById('currentStep').textContent = `Error: ${result.message}`;
+            document.getElementById('currentStep').className = 'text-red-400 font-medium';
+        }
+        
+    } catch (error) {
+        console.error('Arena creation error:', error);
+        document.getElementById('currentStep').textContent = `Error: ${error.message}`;
+        document.getElementById('currentStep').className = 'text-red-400 font-medium';
+    }
+    
+    // Re-enable button
+    document.getElementById('createArenasBtn').disabled = false;
+    document.getElementById('createArenasBtn').innerHTML = '<i class="fas fa-magic mr-3"></i>Create <span id="buttonArenaCount">' + count + '</span> AI Arenas';
+});
+
+// Simulate progress updates (in real implementation, this would be WebSocket updates)
+function simulateProgress() {
+    const steps = ['step1', 'step2', 'step3', 'step4'];
+    let currentStepIndex = 0;
+    
+    const interval = setInterval(() => {
+        if (currentStepIndex < steps.length) {
+            // Mark previous step as completed
+            if (currentStepIndex > 0) {
+                document.getElementById(steps[currentStepIndex - 1]).classList.add('completed');
+                document.getElementById(steps[currentStepIndex - 1]).classList.remove('active');
+            }
+            
+            // Mark current step as active
+            document.getElementById(steps[currentStepIndex]).classList.add('active');
+            
+            // Update progress bar
+            const progress = ((currentStepIndex + 1) / steps.length) * 100;
+            document.getElementById('overallProgressBar').style.width = progress + '%';
+            document.getElementById('overallProgress').textContent = Math.round(progress) + '%';
+            
+            // Update current step text
+            const stepTexts = [
+                'Generating arena data with GPT-4...',
+                'Creating environment images with DALL-E 3...',
+                'Processing video clips with motion effects...',
+                'Generating synchronized music with ElevenLabs...'
+            ];
+            document.getElementById('currentStep').textContent = stepTexts[currentStepIndex];
+            
+            currentStepIndex++;
+        } else {
+            clearInterval(interval);
+        }
+    }, 2000);
+}
+</script>
+{% endblock %}

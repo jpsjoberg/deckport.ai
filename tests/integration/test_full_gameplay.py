@@ -21,7 +21,7 @@ def get_test_players():
     
     try:
         # Read password from file
-        with open('/home/jp/deckport.ai/DB_pass', 'r') as f:
+        with open('/home/jp/deckport.ai/.env/DB_pass', 'r') as f:
             content = f.read()
             for line in content.split('\n'):
                 if line.startswith('DB_PASS='):

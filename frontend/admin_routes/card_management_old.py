@@ -1,3 +1,4 @@
+import sys; import os; sys.path.append(os.path.dirname(os.path.dirname(os.path.dirname(__file__))))
 """
 Card Management Routes for Deckport Admin Panel
 Handles card generation, review, balance management, and ComfyUI integration

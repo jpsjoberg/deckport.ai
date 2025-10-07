@@ -1,0 +1,25 @@
+[Unit]
+Description=Deckport Kiosk Console
+After=graphical-session.target network.target
+Wants=graphical-session.target network-online.target
+
+[Service]
+Type=simple
+User=kiosk
+Group=kiosk
+WorkingDirectory=/home/kiosk
+ExecStart=/home/kiosk/start-kiosk.sh
+Restart=always
+RestartSec=5
+Environment="HOME=/home/kiosk"
+Environment="DISPLAY=:0"
+Environment="XDG_RUNTIME_DIR=/run/user/1000"
+
+# Security and resource settings
+NoNewPrivileges=true
+PrivateTmp=true
+MemoryMax=2G
+CPUQuota=90%
+
+[Install]
+WantedBy=graphical.target

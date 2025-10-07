@@ -1,0 +1,171 @@
+[gd_scene load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://battle_scene.gd" id="1"]
+
+[node name="BattleScene" type="Control"]
+layout_mode = 3
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+script = ExtResource("1")
+
+[node name="BackgroundVideo" type="VideoStreamPlayer" parent="."]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+expand = true
+autoplay = true
+volume = 0.0
+
+[node name="VBoxContainer" type="VBoxContainer" parent="."]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+offset_left = 50.0
+offset_top = 50.0
+offset_right = -50.0
+offset_bottom = -50.0
+
+[node name="TitleLabel" type="Label" parent="VBoxContainer"]
+layout_mode = 2
+text = "BATTLE ARENA"
+horizontal_alignment = 1
+vertical_alignment = 1
+
+[node name="StatusLabel" type="Label" parent="VBoxContainer"]
+layout_mode = 2
+text = "Preparing for battle..."
+horizontal_alignment = 1
+vertical_alignment = 1
+
+[node name="ArenaInfoLabel" type="Label" parent="VBoxContainer"]
+layout_mode = 2
+text = "Arena: Loading..."
+horizontal_alignment = 1
+vertical_alignment = 1
+
+[node name="BattleInfoLabel" type="Label" parent="VBoxContainer"]
+layout_mode = 2
+text = "Turn 1 - Your Turn"
+horizontal_alignment = 1
+vertical_alignment = 1
+
+[node name="TurnTimerDisplay" type="Label" parent="VBoxContainer"]
+layout_mode = 2
+custom_minimum_size = Vector2(0, 100)
+text = "TURN TIMER
+
+[color=green]40[/color]
+
+Main Phase"
+horizontal_alignment = 1
+vertical_alignment = 1
+autowrap_mode = 3
+
+[node name="CardScanPrompt" type="Label" parent="VBoxContainer"]
+layout_mode = 2
+custom_minimum_size = Vector2(0, 80)
+text = "🃏 SCAN YOUR CARD
+
+Place card on NFC reader
+or press Q/W/E to simulate"
+horizontal_alignment = 1
+vertical_alignment = 1
+autowrap_mode = 3
+
+[node name="PendingCardsDisplay" type="Panel" parent="VBoxContainer"]
+layout_mode = 2
+custom_minimum_size = Vector2(0, 120)
+
+[node name="PendingCardsLabel" type="Label" parent="VBoxContainer/PendingCardsDisplay"]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+text = "PENDING CARDS
+
+No cards scanned"
+horizontal_alignment = 1
+vertical_alignment = 1
+
+[node name="PlayedCardsDisplay" type="Panel" parent="VBoxContainer"]
+layout_mode = 2
+custom_minimum_size = Vector2(0, 120)
+
+[node name="PlayedCardsLabel" type="Label" parent="VBoxContainer/PlayedCardsDisplay"]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+text = "PLAYED CARDS
+
+None this turn"
+horizontal_alignment = 1
+vertical_alignment = 1
+
+[node name="VideoContainer" type="Panel" parent="VBoxContainer"]
+layout_mode = 2
+custom_minimum_size = Vector2(0, 200)
+
+[node name="AbilityVideoPlayer" type="VideoStreamPlayer" parent="VBoxContainer/VideoContainer"]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+expand = true
+
+[node name="VideoLabel" type="Label" parent="VBoxContainer/VideoContainer"]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+text = "ABILITY VIDEOS
+
+Card abilities will play here"
+horizontal_alignment = 1
+vertical_alignment = 1
+
+[node name="BattleControls" type="HBoxContainer" parent="VBoxContainer"]
+layout_mode = 2
+custom_minimum_size = Vector2(0, 120)
+alignment = 1
+
+[node name="AttackButton" type="Button" parent="VBoxContainer/BattleControls"]
+layout_mode = 2
+custom_minimum_size = Vector2(200, 80)
+text = "⚔️ ATTACK"
+
+[node name="EndTurnButton" type="Button" parent="VBoxContainer/BattleControls"]
+layout_mode = 2
+custom_minimum_size = Vector2(200, 80)
+text = "⏭️ END TURN"
+
+[node name="ForfeitButton" type="Button" parent="VBoxContainer/BattleControls"]
+layout_mode = 2
+custom_minimum_size = Vector2(200, 80)
+text = "🏳️ FORFEIT"
+
+[node name="CardScanButtons" type="HBoxContainer" parent="VBoxContainer"]
+layout_mode = 2
+custom_minimum_size = Vector2(0, 100)
+alignment = 1
+
+[node name="ScanCard1" type="Button" parent="VBoxContainer/CardScanButtons"]
+layout_mode = 2
+custom_minimum_size = Vector2(180, 80)
+text = "🃏 SCAN CARD 1
+(Q Key)"
+
+[node name="ScanCard2" type="Button" parent="VBoxContainer/CardScanButtons"]
+layout_mode = 2
+custom_minimum_size = Vector2(180, 80)
+text = "🃏 SCAN CARD 2
+(W Key)"
+
+[node name="ScanCard3" type="Button" parent="VBoxContainer/CardScanButtons"]
+layout_mode = 2
+custom_minimum_size = Vector2(180, 80)
+text = "🃏 SCAN CARD 3
+(E Key)"

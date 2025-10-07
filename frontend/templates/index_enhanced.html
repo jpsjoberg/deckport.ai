@@ -29,6 +29,15 @@
         backdrop-filter: blur(10px);
         border: 1px solid rgba(255, 255, 255, 0.1);
       }
+      
+      /* Video background styling */
+      .hero-video {
+        filter: brightness(0.7) contrast(1.2) saturate(1.1);
+      }
+      
+      .hero-video-overlay {
+        background: linear-gradient(135deg, rgba(102, 126, 234, 0.3) 0%, rgba(118, 75, 162, 0.3) 50%, rgba(0, 0, 0, 0.4) 100%);
+      }
     </style>
   </head>
   <body class="bg-gray-900 text-white">
@@ -62,13 +71,30 @@
       </div>
     </nav>
 
-    <!-- Hero Section -->
+    <!-- Hero Section with Video Background -->
     <section class="relative bg-gradient-to-br from-indigo-900 via-gray-900 to-purple-900 py-20 overflow-hidden">
-      <div class="absolute inset-0 bg-black opacity-50"></div>
+      <!-- Video Background -->
+      <div class="absolute inset-0 w-full h-full">
+        <video 
+          class="absolute inset-0 w-full h-full object-cover hero-video"
+          autoplay 
+          muted 
+          loop 
+          playsinline
+          poster="/static/images/hero-poster.jpg">
+          <source src="/static/videos/hero-background.mp4" type="video/mp4">
+          <source src="/static/videos/hero-background.webm" type="video/webm">
+          <!-- Fallback for browsers that don't support video -->
+        </video>
+        <!-- Video overlay for better text readability -->
+        <div class="absolute inset-0 hero-video-overlay"></div>
+      </div>
+      
+      <!-- Animated Background Elements (fallback/enhancement) -->
       <div class="absolute inset-0">
-        <div class="absolute top-10 left-10 w-72 h-72 bg-indigo-500 rounded-full mix-blend-multiply filter blur-xl opacity-20 animate-pulse"></div>
-        <div class="absolute top-10 right-10 w-72 h-72 bg-purple-500 rounded-full mix-blend-multiply filter blur-xl opacity-20 animate-pulse animation-delay-2000"></div>
-        <div class="absolute -bottom-8 left-20 w-72 h-72 bg-pink-500 rounded-full mix-blend-multiply filter blur-xl opacity-20 animate-pulse animation-delay-4000"></div>
+        <div class="absolute top-10 left-10 w-72 h-72 bg-indigo-500 rounded-full mix-blend-multiply filter blur-xl opacity-15 animate-pulse"></div>
+        <div class="absolute top-10 right-10 w-72 h-72 bg-purple-500 rounded-full mix-blend-multiply filter blur-xl opacity-15 animate-pulse animation-delay-2000"></div>
+        <div class="absolute -bottom-8 left-20 w-72 h-72 bg-pink-500 rounded-full mix-blend-multiply filter blur-xl opacity-15 animate-pulse animation-delay-4000"></div>
       </div>
       <div class="container mx-auto px-4 relative z-10">
         <div class="text-center max-w-4xl mx-auto">

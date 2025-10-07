@@ -1,0 +1,267 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Deckport Print Portal - Dashboard</title>
+    <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+</head>
+<body class="bg-gray-900 text-white">
+    <!-- Navigation -->
+    <nav class="bg-gray-800 border-b border-gray-700">
+        <div class="container mx-auto px-4">
+            <div class="flex justify-between items-center py-4">
+                <div class="flex items-center space-x-8">
+                    <h1 class="text-2xl font-bold text-blue-400">🃏 Deckport Print Portal</h1>
+                    <div class="hidden md:flex space-x-6">
+                        <a href="/print-portal/" class="text-blue-400 font-medium">Dashboard</a>
+                        <a href="/print-portal/sets" class="text-gray-300 hover:text-white">Available Sets</a>
+                        <a href="/print-portal/create-order" class="text-gray-300 hover:text-white">Create Order</a>
+                    </div>
+                </div>
+                <div class="text-sm text-gray-400">
+                    Print Supplier Portal
+                </div>
+            </div>
+        </div>
+    </nav>
+
+    <div class="container mx-auto px-4 py-8">
+        <!-- Header -->
+        <div class="mb-8">
+            <h1 class="text-3xl font-bold mb-2">Print Supplier Dashboard</h1>
+            <p class="text-gray-400">Manage card production orders and download print files</p>
+        </div>
+
+        <!-- Card Statistics Overview -->
+        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+            <div class="bg-gray-800 rounded-lg p-6 border border-gray-700">
+                <div class="flex items-center">
+                    <div class="p-3 bg-blue-600 rounded-lg">
+                        <i class="fas fa-layer-group text-xl"></i>
+                    </div>
+                    <div class="ml-4">
+                        <p class="text-2xl font-bold">{{ stats.total_cards }}</p>
+                        <p class="text-gray-400 text-sm">Total Cards</p>
+                    </div>
+                </div>
+            </div>
+
+            <div class="bg-gray-800 rounded-lg p-6 border border-gray-700">
+                <div class="flex items-center">
+                    <div class="p-3 bg-green-600 rounded-lg">
+                        <i class="fas fa-image text-xl"></i>
+                    </div>
+                    <div class="ml-4">
+                        <p class="text-2xl font-bold">{{ stats.cards_with_graphics }}</p>
+                        <p class="text-gray-400 text-sm">Print Ready</p>
+                    </div>
+                </div>
+            </div>
+
+            <div class="bg-gray-800 rounded-lg p-6 border border-gray-700">
+                <div class="flex items-center">
+                    <div class="p-3 bg-purple-600 rounded-lg">
+                        <i class="fas fa-palette text-xl"></i>
+                    </div>
+                    <div class="ml-4">
+                        <p class="text-2xl font-bold">6</p>
+                        <p class="text-gray-400 text-sm">Mana Colors</p>
+                    </div>
+                </div>
+            </div>
+
+            <div class="bg-gray-800 rounded-lg p-6 border border-gray-700">
+                <div class="flex items-center">
+                    <div class="p-3 bg-yellow-600 rounded-lg">
+                        <i class="fas fa-star text-xl"></i>
+                    </div>
+                    <div class="ml-4">
+                        <p class="text-2xl font-bold">{{ stats.graphics_completion }}%</p>
+                        <p class="text-gray-400 text-sm">Completion</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Mana Color Sets -->
+        <div class="mb-8">
+            <h2 class="text-2xl font-bold mb-6">Available Color Sets</h2>
+            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                {% for color_code, color_info in mana_colors.items() %}
+                <div class="bg-gray-800 rounded-lg p-6 border border-gray-700">
+                    <div class="flex items-center mb-4">
+                        <div class="w-4 h-4 rounded-full mr-3" style="background-color: {{ color_info.color }}"></div>
+                        <h3 class="text-lg font-semibold">{{ color_info.name }}</h3>
+                    </div>
+                    
+                    <p class="text-gray-400 text-sm mb-4">{{ color_info.theme }}</p>
+                    
+                    <div class="space-y-2 mb-4">
+                        <div class="flex justify-between text-sm">
+                            <span>Available Cards:</span>
+                            <span>{{ stats.by_color.get(color_code, 0) }}</span>
+                        </div>
+                        <div class="flex justify-between text-sm">
+                            <span>Est. Production Cost:</span>
+                            <span>${{ "%.2f"|format(production_costs.get(color_code, {}).get('estimated_cost', 0)) }}</span>
+                        </div>
+                        <div class="flex justify-between text-sm">
+                            <span>Avg. Cost/Card:</span>
+                            <span>${{ "%.2f"|format(production_costs.get(color_code, {}).get('average_cost_per_card', 0)) }}</span>
+                        </div>
+                    </div>
+                    
+                    <div class="space-y-2">
+                        <a href="/print-portal/download/set/{{ color_code }}" 
+                           class="block w-full bg-blue-600 hover:bg-blue-700 text-center py-2 rounded font-medium text-sm">
+                            <i class="fas fa-download mr-2"></i>Download Print Files
+                        </a>
+                        <a href="/print-portal/manifest/{{ color_code }}" 
+                           class="block w-full bg-gray-700 hover:bg-gray-600 text-center py-2 rounded font-medium text-sm">
+                            <i class="fas fa-list mr-2"></i>View Manifest
+                        </a>
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
+        </div>
+
+        <!-- Rarity Cost Structure -->
+        <div class="mb-8">
+            <h2 class="text-2xl font-bold mb-6">Production Cost Structure</h2>
+            <div class="bg-gray-800 rounded-lg p-6 border border-gray-700">
+                <div class="grid grid-cols-1 md:grid-cols-4 gap-6">
+                    {% for rarity, cost in card_costs.items() %}
+                    <div class="text-center">
+                        <div class="text-2xl font-bold mb-2 
+                            {% if rarity == 'common' %}text-gray-400
+                            {% elif rarity == 'rare' %}text-blue-400
+                            {% elif rarity == 'epic' %}text-purple-400
+                            {% elif rarity == 'legendary' %}text-yellow-400
+                            {% endif %}">
+                            ${{ cost }}
+                        </div>
+                        <div class="text-sm text-gray-400 capitalize">{{ rarity }}</div>
+                        <div class="text-xs text-gray-500">per card</div>
+                    </div>
+                    {% endfor %}
+                </div>
+            </div>
+        </div>
+
+        <!-- Active Print Orders -->
+        <div class="mb-8">
+            <h2 class="text-2xl font-bold mb-6">Active Print Orders</h2>
+            {% if active_orders %}
+            <div class="bg-gray-800 rounded-lg border border-gray-700">
+                <div class="overflow-x-auto">
+                    <table class="w-full">
+                        <thead class="bg-gray-700">
+                            <tr>
+                                <th class="px-6 py-3 text-left text-sm font-medium text-gray-300">Order ID</th>
+                                <th class="px-6 py-3 text-left text-sm font-medium text-gray-300">Set Name</th>
+                                <th class="px-6 py-3 text-left text-sm font-medium text-gray-300">Color</th>
+                                <th class="px-6 py-3 text-left text-sm font-medium text-gray-300">Cards</th>
+                                <th class="px-6 py-3 text-left text-sm font-medium text-gray-300">Cost</th>
+                                <th class="px-6 py-3 text-left text-sm font-medium text-gray-300">Status</th>
+                                <th class="px-6 py-3 text-left text-sm font-medium text-gray-300">Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody class="divide-y divide-gray-700">
+                            {% for order in active_orders %}
+                            <tr>
+                                <td class="px-6 py-4 text-sm">{{ order.order_id }}</td>
+                                <td class="px-6 py-4 text-sm font-medium">{{ order.order_name }}</td>
+                                <td class="px-6 py-4 text-sm">
+                                    <span class="inline-flex items-center px-2 py-1 rounded text-xs font-medium"
+                                          style="background-color: {{ mana_colors[order.color].color }}20; color: {{ mana_colors[order.color].color }}">
+                                        {{ order.color }}
+                                    </span>
+                                </td>
+                                <td class="px-6 py-4 text-sm">{{ "{:,}".format(order.total_cards) }}</td>
+                                <td class="px-6 py-4 text-sm">${{ "%.2f"|format(order.estimated_cost) }}</td>
+                                <td class="px-6 py-4 text-sm">
+                                    <span class="inline-flex items-center px-2 py-1 rounded text-xs font-medium
+                                        {% if order.status == 'pending' %}bg-yellow-900 text-yellow-300
+                                        {% elif order.status == 'in_production' %}bg-blue-900 text-blue-300
+                                        {% elif order.status == 'completed' %}bg-green-900 text-green-300
+                                        {% endif %}">
+                                        {{ order.status.title() }}
+                                    </span>
+                                </td>
+                                <td class="px-6 py-4 text-sm">
+                                    <a href="/print-portal/download/set/{{ order.color }}" 
+                                       class="text-blue-400 hover:text-blue-300 mr-3">
+                                        <i class="fas fa-download"></i>
+                                    </a>
+                                    <a href="/print-portal/manifest/{{ order.color }}" 
+                                       class="text-gray-400 hover:text-gray-300">
+                                        <i class="fas fa-list"></i>
+                                    </a>
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+            {% else %}
+            <div class="bg-gray-800 rounded-lg p-8 border border-gray-700 text-center">
+                <i class="fas fa-inbox text-4xl text-gray-600 mb-4"></i>
+                <h3 class="text-lg font-semibold mb-2">No Active Orders</h3>
+                <p class="text-gray-400 mb-4">Create your first print order to get started</p>
+                <a href="/print-portal/create-order" 
+                   class="inline-flex items-center px-4 py-2 bg-blue-600 hover:bg-blue-700 rounded font-medium">
+                    <i class="fas fa-plus mr-2"></i>Create Print Order
+                </a>
+            </div>
+            {% endif %}
+        </div>
+
+        <!-- Quick Actions -->
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+            <a href="/print-portal/sets" 
+               class="bg-gray-800 hover:bg-gray-700 rounded-lg p-6 border border-gray-700 block">
+                <div class="flex items-center">
+                    <i class="fas fa-layer-group text-2xl text-blue-400 mr-4"></i>
+                    <div>
+                        <h3 class="font-semibold">Browse Card Sets</h3>
+                        <p class="text-gray-400 text-sm">View available cards by mana color</p>
+                    </div>
+                </div>
+            </a>
+
+            <a href="/print-portal/create-order" 
+               class="bg-gray-800 hover:bg-gray-700 rounded-lg p-6 border border-gray-700 block">
+                <div class="flex items-center">
+                    <i class="fas fa-plus text-2xl text-green-400 mr-4"></i>
+                    <div>
+                        <h3 class="font-semibold">Create Print Order</h3>
+                        <p class="text-gray-400 text-sm">Start new card production order</p>
+                    </div>
+                </div>
+            </a>
+
+            <a href="/print-portal/specifications" 
+               class="bg-gray-800 hover:bg-gray-700 rounded-lg p-6 border border-gray-700 block">
+                <div class="flex items-center">
+                    <i class="fas fa-file-pdf text-2xl text-red-400 mr-4"></i>
+                    <div>
+                        <h3 class="font-semibold">Print Specifications</h3>
+                        <p class="text-gray-400 text-sm">Download quality and technical specs</p>
+                    </div>
+                </div>
+            </a>
+        </div>
+    </div>
+
+    <script>
+        // Auto-refresh dashboard every 30 seconds
+        setTimeout(() => {
+            window.location.reload();
+        }, 30000);
+    </script>
+</body>
+</html>

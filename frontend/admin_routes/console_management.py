@@ -1,3 +1,4 @@
+import sys; import os; sys.path.append(os.path.dirname(os.path.dirname(os.path.dirname(__file__))))
 """
 Console Management Routes for Deckport Admin Panel
 Handles console fleet management, diagnostics, and deployment
@@ -35,10 +36,21 @@ def console_management():
         consoles = consoles_response.get('devices', []) if consoles_response else []
         pending_consoles = pending_response.get('devices', []) if pending_response else []
         
-        # Calculate fleet statistics
+        # Calculate fleet statistics with safe type checking
         total_consoles = len(consoles)
-        online_count = len([c for c in consoles if c.get('status') == 'active' and (c.get('last_seen_minutes') or 999) < 5])
-        offline_count = len([c for c in consoles if c.get('status') == 'active' and (c.get('last_seen_minutes') or 0) >= 5])
+        
+        def safe_get_minutes(console):
+            """Safely get last_seen_minutes as integer"""
+            minutes = console.get('last_seen_minutes')
+            if isinstance(minutes, (int, float)):
+                return minutes
+            elif isinstance(minutes, str) and minutes.isdigit():
+                return int(minutes)
+            else:
+                return 999  # Default for unknown
+        
+        online_count = len([c for c in consoles if c.get('status') == 'active' and safe_get_minutes(c) < 5])
+        offline_count = len([c for c in consoles if c.get('status') == 'active' and safe_get_minutes(c) >= 5])
         maintenance_count = len([c for c in consoles if c.get('status') == 'maintenance'])
         pending_count = len(pending_consoles)
         
@@ -53,18 +65,23 @@ def console_management():
         # Debug: Print to stdout (will appear in logs)
         print(f"TEMPLATE DEBUG: consoles={len(consoles)}, pending={len(pending_consoles)}, stats={fleet_stats}")
         
-        return render_template('admin/console_management/index.html', 
+        return render_template('admin/console_management/index_deckport.html', 
                              consoles=consoles, 
                              pending_consoles=pending_consoles[:3],  # Show first 3 in sidebar
+                             total_consoles=fleet_stats['total'],
+                             active_consoles=fleet_stats['online'],
+                             pending_count=fleet_stats['pending'],
                              fleet_stats=fleet_stats)
                              
     except Exception as e:
         flash(f'Error loading console data: {str(e)}', 'error')
         # Return with mock data as fallback
         fleet_stats = {'total': 0, 'online': 0, 'offline': 0, 'maintenance': 0, 'pending': 0}
-        return render_template('admin/console_management/index.html', 
+        return render_template('admin/console_management/index_deckport.html', 
                              consoles=[], 
                              pending_consoles=[],
+                             total_consoles=0,
+                             active_consoles=0,
                              fleet_stats=fleet_stats)
 
 @admin_bp.route('/simple-test-no-auth')

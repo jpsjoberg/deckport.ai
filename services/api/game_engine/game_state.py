@@ -1,6 +1,7 @@
 """
 Game State Management
 Handles the complete state of a match including players, cards, and game rules
+Enhanced with card abilities and arena effects integration
 """
 
 import json
@@ -8,6 +9,11 @@ from typing import Dict, List, Optional, Any
 from datetime import datetime, timezone
 from dataclasses import dataclass, asdict
 from enum import Enum
+import sys
+sys.path.append('/home/jp/deckport.ai')
+
+from .card_abilities import CardAbilitiesEngine
+from .arena_effects import ArenaEffectsEngine
 
 class GamePhase(str, Enum):
     START = "start"
@@ -75,6 +81,10 @@ class GameState:
         self.current_player = 0
         self.sequence = 0  # For state synchronization
         
+        # Initialize game engines
+        self.abilities_engine = CardAbilitiesEngine()
+        self.arena_engine = ArenaEffectsEngine()
+        
         # Game rules
         self.rules = {
             "turn_time_seconds": 60,
@@ -83,6 +93,14 @@ class GameState:
             "max_turns": 20,
             "starting_health": 20,
             "starting_hand_size": 5
+        }
+        
+        # Match tracking for objectives
+        self.match_stats = {
+            "fire_damage_total": 0,
+            "healing_total": 0,
+            "creatures_frozen_count": 0,
+            "cards_played": 0
         }
         
         # Initialize players
@@ -96,17 +114,22 @@ class GameState:
         
         # Initialize arena
         if arena:
+            arena_name = arena.get('name', 'aether_void')
             self.arena = ArenaState(
-                name=arena.get('name', 'Default Arena'),
-                color=arena.get('color', 'NEUTRAL'),
+                name=arena.get('display_name', arena_name),
+                color=arena.get('color', 'AETHER'),
                 passive_effect=arena.get('passive', 'none')
             )
         else:
+            arena_name = "aether_void"
             self.arena = ArenaState(
-                name="Sunspire Plateau",
-                color="RADIANT", 
-                passive_effect="first_match_card_discount"
+                name="Aether Void",
+                color="AETHER", 
+                passive_effect="neutral_ground"
             )
+        
+        # Initialize arena effects
+        self.arena_state = self.arena_engine.initialize_arena(arena_name, self)
         
         # Timer state
         self.timer = {
@@ -204,26 +227,23 @@ class GameState:
         return changes
     
     def _handle_start_phase(self) -> Dict[str, Any]:
-        """Handle start phase - resource generation"""
+        """Handle start phase - resource generation and arena effects"""
         current_player_state = self.players[str(self.current_player)]
         
-        # Generate energy (base 1 + hero bonus + arena bonus)
-        energy_gain = 1
-        if current_player_state.hero:
-            energy_gain += current_player_state.hero.get('energy_per_turn', 0)
-        if self.arena.color == "RADIANT" and self.turn == 1:
-            energy_gain += 1  # Arena bonus
-            
-        current_player_state.energy += energy_gain
+        # Generate energy (turn number = energy available)
+        energy_gain = self.turn
+        current_player_state.energy = energy_gain
         
-        # Generate mana (1 per color in play)
-        colors_in_play = set()
-        for card in current_player_state.battlefield + current_player_state.equipment:
-            if 'colors' in card:
-                colors_in_play.update(card['colors'])
+        # Generate arena-based mana
+        arena_name = self.arena_state.get("arena_name", "aether_void")
+        generated_mana = self.arena_engine.generate_turn_mana(arena_name, self, self.current_player)
         
-        for color in colors_in_play:
-            current_player_state.mana[color] = current_player_state.mana.get(color, 0) + 1
+        # Process turn start effects (status effects, arena rules)
+        status_effects = self.abilities_engine.process_turn_start_effects(self)
+        arena_effects = self.arena_engine.apply_turn_start_effects(arena_name, self, self.turn)
+        
+        # Update arena turn counter
+        self.arena_state["turn_counter"] = self.turn
         
         return {
             "players": {
@@ -231,7 +251,10 @@ class GameState:
                     "energy": current_player_state.energy,
                     "mana": current_player_state.mana
                 }
-            }
+            },
+            "generated_mana": generated_mana,
+            "status_effects": status_effects,
+            "arena_effects": arena_effects
         }
     
     def _handle_main_phase(self) -> Dict[str, Any]:
@@ -358,34 +381,94 @@ class GameState:
             player_state.mana[color] -= cost
     
     def _apply_card_effect(self, player_state: PlayerState, card: Dict, action: str, target: Optional[str]) -> Dict:
-        """Apply card effect to game state"""
+        """Apply card effect to game state with full ability execution"""
         card_category = card.get('category', '')
+        effect_results = []
+        
+        # Execute card abilities
+        card_abilities = card.get('abilities', [])
+        for ability_data in card_abilities:
+            if isinstance(ability_data, dict):
+                ability_name = ability_data.get('name', '')
+                ability_params = ability_data.get('parameters', {})
+            else:
+                ability_name = str(ability_data)
+                ability_params = {}
+            
+            if ability_name:
+                # Add card as caster context
+                caster = {
+                    "id": card.get('id', 'unknown'),
+                    "name": card.get('name', 'Unknown Card'),
+                    "team": player_state.team,
+                    "health": card.get('health', 1),
+                    "attack": card.get('attack', 0),
+                    "defense": card.get('defense', 0)
+                }
+                
+                # Execute ability
+                ability_result = self.abilities_engine.execute_ability(
+                    ability_name, ability_params, caster, self, target
+                )
+                
+                if ability_result.success:
+                    effect_results.append(ability_result.to_dict())
+                    
+                    # Update match stats for objectives
+                    self.match_stats["fire_damage_total"] += ability_result.damage_dealt
+                    self.match_stats["healing_total"] += ability_result.healing_done
+                    
+                    # Check arena objectives
+                    arena_name = self.arena_state.get("arena_name", "aether_void")
+                    objective_result = self.arena_engine.check_arena_objectives(
+                        arena_name, self, {
+                            "player_id": player_state.player_id,
+                            "fire_damage_total": self.match_stats["fire_damage_total"],
+                            "healing_total": self.match_stats["healing_total"],
+                            "creatures_frozen_count": self.match_stats["creatures_frozen_count"]
+                        }
+                    )
+                    
+                    if objective_result:
+                        effect_results.append({"type": "objective_completed", "objective": objective_result})
+        
+        # Handle card placement
+        placement_result = {"type": "unknown", "location": "graveyard"}
         
         if card_category in ["CREATURE", "STRUCTURE"]:
             # Summon to battlefield
+            card["id"] = f"{card.get('name', 'card')}_{self.sequence}"
             player_state.battlefield.append(card)
-            return {"type": "summon", "location": "battlefield"}
+            placement_result = {"type": "summon", "location": "battlefield"}
         
         elif card_category == "EQUIPMENT":
             # Equip to player
             player_state.equipment.append(card)
-            return {"type": "equip", "location": "equipment"}
+            placement_result = {"type": "equip", "location": "equipment"}
         
         elif card_category in ["ACTION_FAST", "ACTION_SLOW"]:
-            # Apply immediate effect then discard
-            effect = self._resolve_action_card(card, target)
+            # Immediate effect then discard
             player_state.graveyard.append(card)
-            return {"type": "action", "effect": effect, "location": "graveyard"}
+            placement_result = {"type": "action", "location": "graveyard"}
         
         elif card_category == "ENCHANTMENT":
             # Apply ongoing effect
             player_state.battlefield.append(card)
-            return {"type": "enchantment", "location": "battlefield"}
+            placement_result = {"type": "enchantment", "location": "battlefield"}
         
         else:
             # Default: discard
             player_state.graveyard.append(card)
-            return {"type": "discard", "location": "graveyard"}
+            placement_result = {"type": "discard", "location": "graveyard"}
+        
+        # Update match stats
+        self.match_stats["cards_played"] += 1
+        
+        return {
+            "placement": placement_result,
+            "ability_results": effect_results,
+            "match_stats": self.match_stats
+        }
     
     def _resolve_action_card(self, card: Dict, target: Optional[str]) -> Dict:
         """Resolve action card effects"""

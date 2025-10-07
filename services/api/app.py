@@ -37,6 +37,12 @@ from routes.nfc_admin import nfc_admin_bp
 from routes.admin_profiles import admin_profiles_bp
 from routes.admin_cms import admin_cms_bp
 from routes.cms_public import cms_public_bp
+from routes.product_categories import product_categories_bp
+from routes.console_heartbeat import console_heartbeat_bp
+from routes.console_logs_streaming import console_logs_streaming_bp
+from routes.debug_upload import debug_upload_bp
+from routes.admin_card_sets import admin_card_sets_bp
+from routes.admin_cards_stats import admin_cards_stats_bp
 
 # Load environment variables
 load_dotenv()
@@ -77,6 +83,12 @@ app.register_blueprint(nfc_admin_bp)
 app.register_blueprint(admin_profiles_bp)
 app.register_blueprint(admin_cms_bp)
 app.register_blueprint(cms_public_bp)
+# app.register_blueprint(product_categories_bp)  # Temporarily disabled
+app.register_blueprint(console_heartbeat_bp)
+app.register_blueprint(console_logs_streaming_bp)
+app.register_blueprint(debug_upload_bp)
+app.register_blueprint(admin_card_sets_bp)
+app.register_blueprint(admin_cards_stats_bp)
 
 # Legacy endpoints for backward compatibility
 @app.get("/v1/hello")

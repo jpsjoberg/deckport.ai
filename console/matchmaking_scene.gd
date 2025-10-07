@@ -12,10 +12,13 @@ extends Control
 
 var game_state_manager
 var server_logger
+var network_client
+var player_session_manager
 var selected_hero: Dictionary = {}
 var matchmaking_timer: Timer
 var search_animation_timer: Timer
 var search_dots: int = 0
+var is_in_queue: bool = false
 
 func _ready():
 	print("🔍 Matchmaking Scene loaded")
@@ -29,6 +32,23 @@ func _ready():
 	if game_state_manager:
 		selected_hero = game_state_manager.get_selected_hero()
 		game_state_manager.player_matched.connect(_on_opponent_found)
+	
+	# Get network client
+	network_client = get_node("/root/NetworkClient")
+	if not network_client:
+		network_client = preload("res://scripts/NetworkClient.gd").new()
+		network_client.name = "NetworkClient"
+		get_tree().root.add_child(network_client)
+	
+	# Get player session manager
+	player_session_manager = get_node("/root/PlayerSessionManager")
+	
+	# Connect network client signals
+	if network_client:
+		network_client.match_found.connect(_on_match_found)
+		network_client.queue_joined.connect(_on_queue_joined)
+		network_client.queue_left.connect(_on_queue_left)
+		network_client.error_occurred.connect(_on_network_error)
 	
 	# Setup UI
 	setup_matchmaking_ui()
@@ -108,6 +128,11 @@ func start_matchmaking():
 	"""Start the matchmaking process"""
 	print("🔍 Starting matchmaking process")
 	
+	# Check authentication first
+	if not player_session_manager or not player_session_manager.is_session_valid():
+		_show_error("Player authentication required. Please login first.")
+		return
+	
 	# Setup search animation
 	search_animation_timer = Timer.new()
 	add_child(search_animation_timer)
@@ -122,17 +147,25 @@ func start_matchmaking():
 	matchmaking_timer.timeout.connect(_on_matchmaking_timeout)
 	matchmaking_timer.start()
 	
-	# Tell game state manager to start matchmaking
-	if game_state_manager:
-		# Game state manager will handle the actual matchmaking API call
-		pass
+	# Authenticate network client and join queue
+	if network_client:
+		# Authenticate with both device and player credentials
+		network_client.authenticate_with_managers()
+		
+		# Join matchmaking queue
+		network_client.join_matchmaking_queue("1v1")
+		is_in_queue = true
+		
+		print("📡 Joined matchmaking queue")
+		status_label.text = "Joined matchmaking queue\nSearching for opponent..."
 	else:
-		# Simulate matchmaking for testing
-		simulate_matchmaking()
+		_show_error("Network client not available")
+		return
 	
 	server_logger.log_system_event("matchmaking_started", {
 		"hero_sku": selected_hero.get("sku", ""),
-		"hero_name": selected_hero.get("name", "")
+		"hero_name": selected_hero.get("name", ""),
+		"player_id": player_session_manager.player_id if player_session_manager else 0
 	})
 
 func simulate_matchmaking():
@@ -222,6 +255,11 @@ func cancel_matchmaking():
 	"""Cancel matchmaking and return to menu"""
 	print("❌ Matchmaking cancelled")
 	
+	# Leave queue if in queue
+	if is_in_queue and network_client:
+		network_client.leave_matchmaking_queue("1v1")
+		is_in_queue = false
+	
 	# Tell game state manager to cancel
 	if game_state_manager:
 		game_state_manager.cancel_matchmaking()
@@ -239,3 +277,53 @@ func _input(event):
 		elif event.keycode == KEY_F:
 			# Force find opponent for testing
 			simulate_matchmaking()
+
+# === NETWORK CLIENT SIGNAL HANDLERS ===
+
+func _on_match_found(match_data: Dictionary):
+	"""Handle match found from network client"""
+	print("🎯 Match found via network client: ", match_data)
+	
+	# Convert network client match data to legacy format
+	var opponent_data = {
+		"player_name": match_data.get("opponent_name", "Unknown Player"),
+		"player_elo": match_data.get("opponent_rating", 1000),
+		"player_id": match_data.get("opponent_id", 0),
+		"hero_name": "Unknown Hero",  # TODO: Get from match data
+		"hero_attack": 1,
+		"hero_health": 20,
+		"match_id": match_data.get("match_id", "")
+	}
+	
+	# Store match info for battle scene
+	if game_state_manager:
+		game_state_manager.set_current_match(match_data)
+	
+	# Use existing opponent found handler
+	_on_opponent_found(opponent_data)
+
+func _on_queue_joined():
+	"""Handle successful queue join"""
+	print("✅ Successfully joined matchmaking queue")
+	status_label.text = "In matchmaking queue\nSearching for opponent..."
+
+func _on_queue_left():
+	"""Handle leaving queue"""
+	print("📤 Left matchmaking queue")
+	is_in_queue = false
+
+func _on_network_error(error_message: String):
+	"""Handle network errors"""
+	print("❌ Network error: ", error_message)
+	_show_error("Network error: " + error_message)
+
+func _show_error(error_message: String):
+	"""Show error message"""
+	status_label.text = "❌ " + error_message
+	matchmaking_progress.text = "❌ ERROR"
+	
+	# Stop timers
+	if search_animation_timer:
+		search_animation_timer.stop()
+	if matchmaking_timer:
+		matchmaking_timer.stop()

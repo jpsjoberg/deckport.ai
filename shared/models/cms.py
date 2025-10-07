@@ -212,7 +212,7 @@ class ContentCategory(Base):
     
     # Relationships
     parent: Mapped[Optional["ContentCategory"]] = relationship(remote_side=[id])
-    children: Mapped[List["ContentCategory"]] = relationship()
+    children: Mapped[List["ContentCategory"]] = relationship(overlaps="parent")
 
 
 class ContentTag(Base):

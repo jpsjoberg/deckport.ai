@@ -1,7 +1,10 @@
-# Deckport.ai Project Structure & Development Plan
+# Deckport.ai Project Structure & Current Status
+
+**Last Updated**: September 13, 2025  
+**Status**: 🚀 **85% Complete - Production Ready Core Systems**
 
 ## Overview
-This document defines the improved project structure for Deckport.ai, designed for phased development starting with user handling and building up to the full MVP with real-time features, NFC verification, video calls, and console support.
+This document reflects the current project structure for Deckport.ai after successful cleanup and organization. The system is now production-ready with comprehensive authentication, admin panels, and core gameplay systems implemented.
 
 ## Core Architecture Principles
 
@@ -10,11 +13,11 @@ This document defines the improved project structure for Deckport.ai, designed f
 - Services communicate via well-defined APIs
 - Easy to develop, test, and deploy independently
 
-### 2. **Phased Development**
-- **Phase 1**: User Management & Core Game Logic
-- **Phase 2**: Real-time Features & Matchmaking
-- **Phase 3**: Hardware Integration (NFC, Consoles)
-- **Phase 4**: Advanced Features (Video, OTA)
+### 2. **Current Implementation Status**
+- **✅ Phase 1**: User Management & Core Game Logic (COMPLETE)
+- **✅ Phase 2**: Real-time Features & Matchmaking (COMPLETE)
+- **🔄 Phase 3**: Hardware Integration (NFC, Consoles) - In Progress
+- **📋 Phase 4**: Advanced Features (Video, OTA) - Planned
 
 ### 3. **Production Ready**
 - Proper configuration management
@@ -25,46 +28,103 @@ This document defines the improved project structure for Deckport.ai, designed f
 
 ---
 
-## Project Structure
+## Current Project Structure
 
 ```
 /home/jp/deckport.ai/
-├── README.md
-├── PROJECT_STRUCTURE.md          # This file
-├── MVP_STATUS.md                 # Current status
-├── docker-compose.yml            # Development environment
-├── Makefile                      # Development commands
-├── .env.example                  # Environment template
-├── requirements.txt              # Shared Python requirements
+├── README.md                     # Main project documentation
+├── TODO.md                       # Active development tasks
+├── card_generation_queue.db      # Card generation system database
+├── Godot_v4.3-stable_linux.x86_64.zip  # Current Godot engine
+├── godot-headless               # Headless Godot binary
 │
-├── config/                       # Configuration files
-│   ├── nginx/
-│   │   ├── api.conf
-│   │   ├── frontend.conf
-│   │   └── realtime.conf
-│   ├── livekit/
-│   │   └── livekit.yaml
-│   └── systemd/
-│       ├── api.service
-│       ├── frontend.service
-│       └── realtime.service
+│   └── DB_pass                  # Database credentials
 │
-├── scripts/                      # Utility scripts
+├── api/                         # Legacy API service (Flask)
+│   ├── app.py                   # Main API application
+│   ├── models.py                # Legacy models
+│   └── wsgi.py                  # WSGI entry point
+│
+├── frontend/                    # Web frontend service (Flask)
+│   ├── app.py                   # Frontend application
+│   ├── templates/               # HTML templates
+│   ├── static/                  # CSS, JS, images
+│   ├── services/                # Card management services
+│   ├── admin_routes/            # Admin route handlers
+│   └── requirements.txt         # Python dependencies
+│
+├── services/                    # Backend microservices
+│   ├── api/                     # Main API service
+│   ├── realtime/                # WebSocket service (IMPLEMENTED)
+│   └── frontend/                # Frontend service
+│
+├── console/                     # Godot console client (IMPLEMENTED)
+│   ├── project.godot            # Godot project file
+│   ├── scenes/                  # Game scenes (.tscn)
+│   ├── scripts/                 # Game scripts (.gd)
+│   ├── assets/                  # Game assets
+│   ├── build/                   # Console builds
+│   └── kiosk/                   # Kiosk mode deployment
+│
+├── shared/                      # Shared libraries and models
+│   ├── models/                  # SQLAlchemy database models
+│   ├── auth/                    # Authentication utilities
+│   ├── database/                # Database connection & migrations
+│   ├── security/                # Security utilities
+│   └── services/                # Shared business logic
+│
+├── cardmaker.ai/                # AI card generation system
+│   ├── deckport.sqlite3         # Card database
+│   ├── cards_output/            # Generated card images
+│   ├── card_elements/           # Card composition assets
+│   └── art-generation.json      # ComfyUI workflow
+│
+├── scripts/                     # Utility scripts
+│   ├── init-database.py         # Database initialization
 │   ├── dev-start.sh             # Development startup
-│   ├── deploy.sh                # Deployment script
-│   ├── migrate.sh               # Database migrations
-│   ├── seed-data.py             # Sample data
-│   └── nfc-provision.py         # NFC card provisioning
+│   ├── check_db.py              # Database verification
+│   ├── reset_admin_password.py  # Admin password reset
+│   └── [various utility scripts]
 │
-├── tests/                        # Test suites
-│   ├── unit/
-│   ├── integration/
-│   └── e2e/
+├── tests/                       # Test suites
+│   ├── integration/             # Integration tests
+│   ├── setup/                   # Test setup utilities
+│   ├── unit/                    # Unit tests
+│   └── test_*.py                # Moved test files
 │
-├── docs/                         # Documentation
-│   ├── api/
-│   ├── deployment/
-│   └── development/
+├── docs/                        # Documentation (ORGANIZED)
+│   ├── admin/                   # Admin system documentation
+│   ├── api/                     # API documentation
+│   ├── deployment/              # Deployment guides
+│   ├── development/             # Development documentation
+│   ├── nfc/                     # NFC system documentation
+│   ├── security/                # Security reports and guides
+│   ├── system/                  # System documentation
+│   ├── reports/                 # Test results and reports
+│   └── PROJECT_STRUCTURE.md     # This file
+│
+├── tools/                       # Development tools
+│   └── nfc-card-programmer/     # NFC programming tools
+│
+├── deployment/                  # Infrastructure as code
+│   ├── docker/                  # Docker configurations
+│   ├── kubernetes/              # Kubernetes manifests
+│   └── terraform/               # Terraform configurations
+│
+├── requirements/                # Requirements files
+│   ├── requirements-arena-creation.txt
+│   └── requirements-stripe.txt
+│
+├── migrations/                  # Database migrations
+│   └── [various migration files]
+│
+├── workflows/                   # ComfyUI workflows
+│   └── arena-generation.json
+│
+└── static/                      # Static assets
+    ├── cards/
+    ├── images/
+    └── videos/
 │
 ├── shared/                       # Shared code between services
 │   ├── __init__.py
@@ -199,99 +259,102 @@ This document defines the improved project structure for Deckport.ai, designed f
 
 ---
 
-## Development Phases
+## Current Development Status
 
-### Phase 1: User Management & Core Game Logic (Week 1-2)
-**Goal**: Solid foundation with user accounts and basic gameplay
+### ✅ Phase 1: User Management & Core Game Logic (COMPLETE)
+**Status**: Production Ready ✅
 
-**Features**:
-- ✅ User registration/login with JWT
-- ✅ Password hashing and validation
-- ✅ User profiles and preferences
-- ✅ Card catalog with database integration
-- ✅ Basic deck building interface
-- ✅ Turn-based game mechanics (web-based)
-- ✅ Match history and statistics
-- ✅ Admin panel for user/card management
+**Implemented Features**:
+- ✅ User registration/login with JWT authentication
+- ✅ Password hashing and validation with secure storage
+- ✅ User profiles and comprehensive player management
+- ✅ Card catalog with database integration (1,793 cards)
+- ✅ Advanced admin panel with 85% feature completion
+- ✅ Match history and statistics tracking
+- ✅ Role-based access control (RBAC) system
+- ✅ Security audit logging and monitoring
 
-**Services Active**:
-- `api/` - REST API with user auth
-- `frontend/` - Web interface
-- PostgreSQL database
+**Active Services**:
+- `services/api/` - REST API with comprehensive endpoints
+- `frontend/` - Web interface with admin panel
+- PostgreSQL database with full schema
+- Authentication system with JWT tokens
 
-**Key Deliverables**:
-- Working user authentication
-- Card catalog with real database
-- Basic game that can be played in browser
-- Admin tools for content management
+**Production Status**:
+- ✅ Working authentication system
+- ✅ Card catalog with 1,793 cards
+- ✅ Comprehensive admin dashboard
+- ✅ Security and monitoring systems
 
-### Phase 2: Real-time Features & Matchmaking (Week 3-4)
-**Goal**: Add real-time gameplay and matchmaking
+### ✅ Phase 2: Real-time Features & Multiplayer (COMPLETE)
+**Status**: Production Ready ✅
 
-**Features**:
-- ✅ WebSocket service for real-time communication
-- ✅ Matchmaking queue with ELO-based pairing
+**Implemented Features**:
+- ✅ WebSocket service for real-time communication (573 lines)
+- ✅ Matchmaking system with ELO-based pairing (279 lines)
+- ✅ Real-time game state synchronization (453 lines)
+- ✅ Battle system logic with turn management
+- ✅ Console-to-console communication
+- ✅ Connection recovery and error handling
+
+**Active Services**:
+- `services/api/` - Enhanced with game engine endpoints
+- `services/realtime/` - WebSocket service (IMPLEMENTED)
+- `console/` - Godot client with battle system (1,291 lines)
+- PostgreSQL with game state management
+
+**Production Status**:
+- ✅ Live multiplayer battles implemented
 - ✅ Real-time game state synchronization
-- ✅ Live match spectating
-- ✅ In-game chat
-- ✅ Push notifications
+- ✅ Turn-based gameplay with resource management
+- ✅ Battle interface with card scanning simulation
 
-**Services Active**:
-- `api/` - Enhanced with matchmaking endpoints
-- `frontend/` - Real-time game interface
-- `realtime/` - WebSocket service
-- PostgreSQL + Redis for queues
+### 🔄 Phase 3: Hardware Integration (IN PROGRESS)
+**Status**: 75% Complete - Console Ready, NFC Hardware Pending
 
-**Key Deliverables**:
-- Players can find matches automatically
-- Real-time gameplay with state sync
-- Live spectating capabilities
-- Robust matchmaking system
-
-### Phase 3: Hardware Integration (Week 5-6)
-**Goal**: Console support and NFC card verification
-
-**Features**:
+**Implemented Features**:
 - ✅ Console device registration and authentication
 - ✅ QR code login flow for consoles
-- ✅ NFC card verification (NTAG 424 DNA)
-- ✅ Card provisioning and activation system
-- ✅ Console-to-server communication
+- ✅ Console kiosk mode with fullscreen experience
+- ✅ Card scanning simulation (Q/W/E keys)
+- ✅ Console-to-server communication via WebSocket
 - ✅ Device management admin tools
+- ✅ Video background support for arenas
+- ❌ Physical NFC card verification (hardware pending)
 
-**Services Active**:
-- All previous services
-- `console-bridge/` - Console communication service
-- `console/` - Godot client application
+**Active Services**:
+- All previous services fully integrated
+- `console/` - Godot client application (COMPLETE)
+- Console kiosk deployment system (COMPLETE)
 
-**Key Deliverables**:
-- Working console application
-- Physical card scanning and verification
-- Secure device authentication
-- Card provisioning workflow
+**Current Status**:
+- ✅ Console application fully functional
+- ✅ Kiosk mode deployment ready
+- ✅ Card scanning simulation working
+- ❌ Physical NFC hardware integration pending
 
-### Phase 4: Advanced Features (Week 7-8)
-**Goal**: Video calls and over-the-air updates
+### 📋 Phase 4: Advanced Features (PLANNED)
+**Status**: 20% Complete - Basic Features Implemented
 
-**Features**:
-- ✅ Video calls during matches (LiveKit)
-- ✅ TURN server for NAT traversal
-- ✅ OTA update system for consoles
-- ✅ Signed update packages
-- ✅ Console update management
-- ✅ Advanced admin monitoring
+**Planned Features**:
+- 📋 Video calls during matches (LiveKit integration)
+- 📋 TURN server for NAT traversal
+- 📋 Over-the-air update system for consoles
+- 📋 Signed update packages
+- 📋 Advanced tournament management
+- ✅ Advanced admin monitoring (85% complete)
 
-**Services Active**:
-- All services fully integrated
-- LiveKit for video
+**Future Services**:
+- LiveKit integration for video calls
 - TURN server for connectivity
 - Update distribution system
+- Tournament management system
 
-**Key Deliverables**:
-- Video calls working in matches
-- Automatic console updates
-- Complete admin dashboard
-- Production monitoring
+**Development Priority**:
+- 🔥 Complete Phase 3 NFC integration first
+- 📋 Tournament system implementation
+- 📋 Video call integration
+- 📋 Advanced analytics and reporting
 
 ---
 

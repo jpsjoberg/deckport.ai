@@ -32,34 +32,68 @@ Deckport combines the tactile experience of physical trading cards with the dyna
 deckport.ai/
 ├── api/                    # Game API service (Flask)
 │   ├── app.py             # Main API application
-│   ├── models/            # Database models
-│   ├── routes/            # API endpoints
-│   ├── venv/              # Python virtual environment
-│   └── requirements.txt   # Python dependencies
+│   ├── models.py          # Legacy models
+│   └── wsgi.py            # WSGI entry point
 ├── frontend/              # Web frontend (Flask)
 │   ├── app.py             # Frontend application
 │   ├── templates/         # HTML templates
 │   │   └── admin/         # Admin panel templates
 │   ├── static/            # CSS, JS, images
 │   ├── services/          # Card management services
-│   ├── venv/              # Python virtual environment
+│   ├── admin_routes/      # Admin route handlers
 │   └── requirements.txt   # Python dependencies
 ├── console/               # Game console (Godot)
 │   ├── project.godot      # Godot project file
 │   ├── scenes/            # Game scenes (.tscn)
 │   ├── scripts/           # Game scripts (.gd)
 │   ├── assets/            # Game assets
-│   └── build/             # Console builds
+│   ├── build/             # Console builds
+│   └── kiosk/             # Kiosk mode deployment
+├── services/              # Backend microservices
+│   ├── api/               # Main API service
+│   ├── realtime/          # WebSocket service
+│   └── frontend/          # Frontend service
+├── shared/                # Shared libraries and models
+│   ├── models/            # SQLAlchemy database models
+│   ├── auth/              # Authentication utilities
+│   ├── database/          # Database connection & migrations
+│   ├── security/          # Security utilities
+│   └── services/          # Shared business logic
 ├── cardmaker.ai/          # AI card generation system
 │   ├── deckport.sqlite3   # Card database
 │   ├── cards_output/      # Generated card images
 │   ├── card_elements/     # Card composition assets
 │   └── art-generation.json # ComfyUI workflow
-└── shared/                # Shared utilities and models
-    ├── models/            # Database models
-    ├── auth/              # Authentication utilities
-    ├── database/          # Database connection
-    └── utils/             # Common utilities
+├── docs/                  # Documentation
+│   ├── admin/             # Admin system documentation
+│   ├── api/               # API documentation
+│   ├── deployment/        # Deployment guides
+│   ├── development/       # Development documentation
+│   ├── nfc/               # NFC system documentation
+│   ├── security/          # Security reports and guides
+│   ├── system/            # System documentation
+│   └── reports/           # Test results and reports
+├── scripts/               # Utility scripts
+│   ├── init-database.py   # Database initialization
+│   ├── dev-start.sh       # Development startup
+│   └── [various utility scripts]
+├── tests/                 # Test suite
+│   ├── integration/       # Integration tests
+│   ├── setup/             # Test setup utilities
+│   └── unit/              # Unit tests
+├── tools/                 # Development tools
+│   └── nfc-card-programmer/ # NFC programming tools
+├── deployment/            # Infrastructure as code
+│   ├── docker/            # Docker configurations
+│   ├── kubernetes/        # Kubernetes manifests
+│   └── terraform/         # Terraform configurations
+├── requirements/          # Requirements files
+│   ├── requirements-arena-creation.txt
+│   └── requirements-stripe.txt
+├── migrations/            # Database migrations
+├── workflows/             # ComfyUI workflows
+└── .env/                  # Environment configuration
+    └── DB_pass           # Database credentials
 ```
 
 ## 🎯 **Current Status: Production Ready Core System**
@@ -500,4 +534,4 @@ This project is proprietary software. All rights reserved.
 
 **Built with ❤️ for the trading card game community** 🎮✨
 
-*Last updated: August 2025 - Production-ready admin panel with 85% feature completion and SQLAlchemy 2.0+ modernization!*
+*Last updated: September 2025 - Organized project structure, production-ready admin panel with 85% feature completion and SQLAlchemy 2.0+ modernization!*

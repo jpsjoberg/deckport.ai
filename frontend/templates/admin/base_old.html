@@ -1,0 +1,463 @@
+<!doctype html>
+<html lang="en">
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>{% block title %}Deckport Admin{% endblock %}</title>
+    
+    <!-- Tailwind CSS -->
+    <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet" />
+    
+    <!-- Font Awesome for icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" />
+    
+    <!-- Chart.js for analytics -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    
+    <!-- Custom Admin CSS -->
+    <link rel="stylesheet" href="{{ url_for('static', filename='admin/css/admin.css') }}" />
+    
+    {% block head %}{% endblock %}
+</head>
+<body class="bg-gray-900 text-white min-h-screen">
+    <!-- Navigation Sidebar -->
+    <div class="flex">
+        <nav class="w-64 bg-gray-800 min-h-screen shadow-lg">
+            <!-- Admin Header -->
+            <div class="p-6 border-b border-gray-700">
+                <div class="flex items-center space-x-3">
+                    <i class="fas fa-shield-alt text-2xl text-blue-400"></i>
+                    <div>
+                        <h1 class="text-xl font-bold text-white">Deckport Admin</h1>
+                        <p class="text-xs text-gray-400">Control Center</p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Navigation Menu -->
+            <div class="py-2 overflow-y-auto max-h-screen pb-20">
+                <!-- Dashboard - Always visible -->
+                <a href="{{ url_for('admin.dashboard') }}" class="nav-item {% if request.endpoint == 'admin.dashboard' %}active{% endif %}">
+                    <i class="fas fa-tachometer-alt"></i>
+                    <span>Dashboard</span>
+                </a>
+
+                <!-- Core Operations - High Priority -->
+                <div class="nav-category">
+                    <div class="nav-category-title">
+                        <i class="fas fa-bolt text-yellow-400"></i>
+                        <span>Operations</span>
+                    </div>
+                    
+                    <!-- Game Operations -->
+                    <div class="nav-section collapsible" data-section="game-ops">
+                        <div class="nav-section-header">
+                            <div class="nav-section-title">
+                                <i class="fas fa-gamepad"></i>
+                                <span>Game Operations</span>
+                            </div>
+                            <i class="fas fa-chevron-down nav-chevron"></i>
+                        </div>
+                        <div class="nav-section-content">
+                            <a href="{{ url_for('admin.game_operations') }}" class="nav-subitem">
+                                <i class="fas fa-chart-line"></i> Operations Center
+                            </a>
+                            <a href="{{ url_for('admin.live_matches') }}" class="nav-subitem">
+                                <i class="fas fa-eye"></i> Live Matches
+                            </a>
+                            <a href="{{ url_for('admin.card_balance') }}" class="nav-subitem">
+                                <i class="fas fa-balance-scale"></i> Card Balance
+                            </a>
+                            <a href="{{ url_for('admin.tournaments') }}" class="nav-subitem">
+                                <i class="fas fa-trophy"></i> Tournaments
+                            </a>
+                        </div>
+                    </div>
+
+                    <!-- Console Fleet -->
+                    <div class="nav-section collapsible" data-section="console-fleet">
+                        <div class="nav-section-header">
+                            <div class="nav-section-title">
+                                <i class="fas fa-desktop"></i>
+                                <span>Console Fleet</span>
+                            </div>
+                            <i class="fas fa-chevron-down nav-chevron"></i>
+                        </div>
+                        <div class="nav-section-content">
+                            <a href="{{ url_for('admin.console_management') }}" class="nav-subitem">
+                                <i class="fas fa-list"></i> Overview
+                            </a>
+                            <a href="{{ url_for('admin.console_registration') }}" class="nav-subitem">
+                                <i class="fas fa-plus-circle"></i> Registration
+                            </a>
+                            <a href="{{ url_for('admin.arena_management') }}" class="nav-subitem">
+                                <i class="fas fa-mountain"></i> Arenas
+                            </a>
+                        </div>
+                    </div>
+
+                    <!-- Player Management -->
+                    <div class="nav-section collapsible" data-section="players">
+                        <div class="nav-section-header">
+                            <div class="nav-section-title">
+                                <i class="fas fa-users"></i>
+                                <span>Players</span>
+                            </div>
+                            <i class="fas fa-chevron-down nav-chevron"></i>
+                        </div>
+                        <div class="nav-section-content">
+                            <a href="{{ url_for('admin.player_management') }}" class="nav-subitem">
+                                <i class="fas fa-user-friends"></i> Database
+                            </a>
+                            <a href="{{ url_for('admin.player_support') }}" class="nav-subitem">
+                                <i class="fas fa-headset"></i> Support
+                            </a>
+                            <a href="{{ url_for('admin.player_moderation') }}" class="nav-subitem">
+                                <i class="fas fa-gavel"></i> Moderation
+                            </a>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Content & Commerce -->
+                <div class="nav-category">
+                    <div class="nav-category-title">
+                        <i class="fas fa-shopping-cart text-green-400"></i>
+                        <span>Content & Commerce</span>
+                    </div>
+
+                    <!-- Card Management -->
+                    <div class="nav-section collapsible" data-section="cards">
+                        <div class="nav-section-header">
+                            <div class="nav-section-title">
+                                <i class="fas fa-magic"></i>
+                                <span>Cards</span>
+                            </div>
+                            <i class="fas fa-chevron-down nav-chevron"></i>
+                        </div>
+                        <div class="nav-section-content">
+                            <a href="{{ url_for('admin.card_management_index') }}" class="nav-subitem">
+                                <i class="fas fa-tachometer-alt"></i> Dashboard
+                            </a>
+                            <a href="{{ url_for('admin.card_generation') }}" class="nav-subitem">
+                                <i class="fas fa-plus-circle"></i> Generate
+                            </a>
+                            <a href="{{ url_for('admin.card_review') }}" class="nav-subitem">
+                                <i class="fas fa-list"></i> Review
+                            </a>
+                        </div>
+                    </div>
+
+                    <!-- NFC Management -->
+                    <div class="nav-section collapsible" data-section="nfc">
+                        <div class="nav-section-header">
+                            <div class="nav-section-title">
+                                <i class="fas fa-microchip"></i>
+                                <span>NFC Cards</span>
+                            </div>
+                            <i class="fas fa-chevron-down nav-chevron"></i>
+                        </div>
+                        <div class="nav-section-content">
+                            <a href="{{ url_for('admin.nfc_management_dashboard') }}" class="nav-subitem">
+                                <i class="fas fa-tachometer-alt"></i> Dashboard
+                            </a>
+                            <a href="{{ url_for('admin.nfc_cards_list') }}" class="nav-subitem">
+                                <i class="fas fa-list"></i> All Cards
+                            </a>
+                            <a href="{{ url_for('admin.nfc_batches_list') }}" class="nav-subitem">
+                                <i class="fas fa-boxes"></i> Batches
+                            </a>
+                            <a href="{{ url_for('admin.nfc_production_dashboard') }}" class="nav-subitem">
+                                <i class="fas fa-industry"></i> Production
+                            </a>
+                            <a href="{{ url_for('admin.nfc_trades_list') }}" class="nav-subitem">
+                                <i class="fas fa-exchange-alt"></i> Trading
+                            </a>
+                        </div>
+                    </div>
+
+                    <!-- Shop Management -->
+                    <div class="nav-section collapsible" data-section="shop">
+                        <div class="nav-section-header">
+                            <div class="nav-section-title">
+                                <i class="fas fa-store"></i>
+                                <span>Shop</span>
+                            </div>
+                            <i class="fas fa-chevron-down nav-chevron"></i>
+                        </div>
+                        <div class="nav-section-content">
+                            <a href="{{ url_for('admin.shop_management') }}" class="nav-subitem">
+                                <i class="fas fa-tachometer-alt"></i> Dashboard
+                            </a>
+                            <a href="{{ url_for('admin.shop_products') }}" class="nav-subitem">
+                                <i class="fas fa-box"></i> Products
+                            </a>
+                            <a href="{{ url_for('admin.shop_orders') }}" class="nav-subitem">
+                                <i class="fas fa-shopping-cart"></i> Orders
+                            </a>
+                            <a href="{{ url_for('admin.shop_inventory') }}" class="nav-subitem">
+                                <i class="fas fa-warehouse"></i> Inventory
+                            </a>
+                        </div>
+                    </div>
+
+                    <!-- Content Management -->
+                    <div class="nav-section collapsible" data-section="cms">
+                        <div class="nav-section-header">
+                            <div class="nav-section-title">
+                                <i class="fas fa-edit"></i>
+                                <span>Content</span>
+                            </div>
+                            <i class="fas fa-chevron-down nav-chevron"></i>
+                        </div>
+                        <div class="nav-section-content">
+                            <a href="{{ url_for('admin.cms_dashboard') }}" class="nav-subitem">
+                                <i class="fas fa-tachometer-alt"></i> Dashboard
+                            </a>
+                            <a href="{{ url_for('admin.cms_articles') }}" class="nav-subitem">
+                                <i class="fas fa-newspaper"></i> Articles
+                            </a>
+                            <a href="{{ url_for('admin.cms_videos') }}" class="nav-subitem">
+                                <i class="fas fa-play-circle"></i> Videos
+                            </a>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Analytics & Communications -->
+                <div class="nav-category">
+                    <div class="nav-category-title">
+                        <i class="fas fa-chart-line text-blue-400"></i>
+                        <span>Analytics & Comms</span>
+                    </div>
+
+                    <!-- Analytics -->
+                    <div class="nav-section collapsible" data-section="analytics">
+                        <div class="nav-section-header">
+                            <div class="nav-section-title">
+                                <i class="fas fa-chart-bar"></i>
+                                <span>Analytics</span>
+                            </div>
+                            <i class="fas fa-chevron-down nav-chevron"></i>
+                        </div>
+                        <div class="nav-section-content">
+                            <a href="{{ url_for('admin.analytics') }}" class="nav-subitem">
+                                <i class="fas fa-analytics"></i> Overview
+                            </a>
+                        </div>
+                    </div>
+
+                    <!-- Communications -->
+                    <div class="nav-section collapsible" data-section="comms">
+                        <div class="nav-section-header">
+                            <div class="nav-section-title">
+                                <i class="fas fa-bullhorn"></i>
+                                <span>Communications</span>
+                            </div>
+                            <i class="fas fa-chevron-down nav-chevron"></i>
+                        </div>
+                        <div class="nav-section-content">
+                            <a href="{{ url_for('admin.communications') }}" class="nav-subitem">
+                                <i class="fas fa-satellite-dish"></i> Comm Center
+                            </a>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- System Administration -->
+                <div class="nav-category">
+                    <div class="nav-category-title">
+                        <i class="fas fa-cogs text-red-400"></i>
+                        <span>System</span>
+                    </div>
+
+                    <!-- System Admin -->
+                    <div class="nav-section collapsible" data-section="system">
+                        <div class="nav-section-header">
+                            <div class="nav-section-title">
+                                <i class="fas fa-server"></i>
+                                <span>Administration</span>
+                            </div>
+                            <i class="fas fa-chevron-down nav-chevron"></i>
+                        </div>
+                        <div class="nav-section-content">
+                            <a href="{{ url_for('admin.system_admin') }}" class="nav-subitem">
+                                <i class="fas fa-server"></i> System Health
+                            </a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- User Info -->
+            <div class="absolute bottom-0 w-64 p-4 border-t border-gray-700">
+                <div class="flex items-center space-x-3">
+                    <div class="w-8 h-8 bg-blue-500 rounded-full flex items-center justify-center">
+                        <i class="fas fa-user text-sm"></i>
+                    </div>
+                    <div class="flex-1">
+                        <p class="text-sm font-medium">Admin User</p>
+                        <p class="text-xs text-gray-400">Super Admin</p>
+                    </div>
+                    <a href="{{ url_for('logout') }}" class="text-gray-400 hover:text-white">
+                        <i class="fas fa-sign-out-alt"></i>
+                    </a>
+                </div>
+            </div>
+        </nav>
+
+        <!-- Main Content Area -->
+        <main class="flex-1 overflow-x-hidden overflow-y-auto">
+            <!-- Top Header Bar -->
+            <header class="bg-gray-800 shadow-sm border-b border-gray-700">
+                <div class="px-6 py-4">
+                    <div class="flex items-center justify-between">
+                        <div>
+                            <h2 class="text-xl font-semibold text-white">{% block page_title %}Dashboard{% endblock %}</h2>
+                            <p class="text-sm text-gray-400">{% block page_subtitle %}System overview and controls{% endblock %}</p>
+                        </div>
+                        
+                        <!-- Real-time Status Indicators -->
+                        <div class="flex items-center space-x-6">
+                            <!-- System Health -->
+                            <div class="flex items-center space-x-2">
+                                <div class="w-3 h-3 bg-green-400 rounded-full animate-pulse"></div>
+                                <span class="text-sm text-gray-300">System Healthy</span>
+                            </div>
+                            
+                            <!-- Active Consoles -->
+                            <div class="text-center">
+                                <div class="text-lg font-bold text-blue-400" id="active-consoles">-</div>
+                                <div class="text-xs text-gray-400">Consoles Online</div>
+                            </div>
+                            
+                            <!-- Live Matches -->
+                            <div class="text-center">
+                                <div class="text-lg font-bold text-green-400" id="live-matches">-</div>
+                                <div class="text-xs text-gray-400">Live Matches</div>
+                            </div>
+                            
+                            <!-- Emergency Controls -->
+                            <div class="flex space-x-2">
+                                <button class="px-3 py-1 bg-red-600 hover:bg-red-700 rounded text-sm font-medium" onclick="emergencyStop()">
+                                    <i class="fas fa-stop-circle mr-1"></i> Emergency Stop
+                                </button>
+                                <button class="px-3 py-1 bg-yellow-600 hover:bg-yellow-700 rounded text-sm font-medium" onclick="broadcastMessage()">
+                                    <i class="fas fa-broadcast-tower mr-1"></i> Broadcast
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </header>
+
+            <!-- Page Content -->
+            <div class="p-6">
+                {% block content %}{% endblock %}
+            </div>
+        </main>
+    </div>
+
+    <!-- Alert/Notification System -->
+    <div id="alert-container" class="fixed top-4 right-4 z-50 space-y-2"></div>
+
+    <!-- Loading Overlay -->
+    <div id="loading-overlay" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 hidden">
+        <div class="bg-gray-800 p-6 rounded-lg flex items-center space-x-3">
+            <div class="animate-spin rounded-full h-6 w-6 border-b-2 border-blue-400"></div>
+            <span>Loading...</span>
+        </div>
+    </div>
+
+    <!-- Core JavaScript -->
+    <script src="{{ url_for('static', filename='admin/js/admin-core.js') }}"></script>
+    <script src="{{ url_for('static', filename='admin/js/real-time.js') }}"></script>
+    
+    <!-- Real-time header stats -->
+    <script>
+    // Update header stats with real data
+    async function updateHeaderStats() {
+        try {
+            const response = await fetch('/admin/api/dashboard/stats', {
+                credentials: 'same-origin'
+            });
+            const data = await response.json();
+            
+            if (data.error) {
+                console.error('Header stats error:', data.error);
+                return;
+            }
+            
+            // Update header elements
+            const activeConsolesEl = document.getElementById('active-consoles');
+            const liveMatchesEl = document.getElementById('live-matches');
+            
+            if (activeConsolesEl) {
+                activeConsolesEl.textContent = data.active_consoles || 0;
+            }
+            if (liveMatchesEl) {
+                liveMatchesEl.textContent = data.live_matches || 0;
+            }
+            
+        } catch (error) {
+            console.error('Failed to update header stats:', error);
+        }
+    }
+    
+    // Initialize header stats
+    document.addEventListener('DOMContentLoaded', function() {
+        updateHeaderStats();
+        
+        // Update every 30 seconds
+        setInterval(updateHeaderStats, 30000);
+        
+        // Initialize collapsible navigation
+        initializeNavigation();
+    });
+    
+    // Navigation functionality
+    function initializeNavigation() {
+        // Get saved navigation state from localStorage
+        const savedState = JSON.parse(localStorage.getItem('adminNavState') || '{}');
+        
+        // Initialize all collapsible sections
+        document.querySelectorAll('.nav-section.collapsible').forEach(section => {
+            const sectionId = section.dataset.section;
+            const header = section.querySelector('.nav-section-header');
+            const content = section.querySelector('.nav-section-content');
+            
+            // Apply saved state or default to expanded for core operations
+            const isCollapsed = savedState[sectionId] !== undefined ? 
+                savedState[sectionId] : 
+                !['game-ops', 'console-fleet', 'players'].includes(sectionId);
+            
+            if (isCollapsed) {
+                section.classList.add('collapsed');
+            }
+            
+            // Add click handler
+            header.addEventListener('click', function() {
+                toggleSection(section, sectionId);
+            });
+        });
+    }
+    
+    function toggleSection(section, sectionId) {
+        const isCollapsed = section.classList.contains('collapsed');
+        
+        if (isCollapsed) {
+            section.classList.remove('collapsed');
+        } else {
+            section.classList.add('collapsed');
+        }
+        
+        // Save state to localStorage
+        const savedState = JSON.parse(localStorage.getItem('adminNavState') || '{}');
+        savedState[sectionId] = !isCollapsed;
+        localStorage.setItem('adminNavState', JSON.stringify(savedState));
+    }
+    </script>
+    
+    {% block scripts %}{% endblock %}
+</body>
+</html>

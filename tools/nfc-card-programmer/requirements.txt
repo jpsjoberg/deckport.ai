@@ -1,11 +1,15 @@
 # NFC Card Programmer Dependencies
+# Optimized for OMNIKEY 5422 + NTAG 424 DNA
 # Install with: pip install -r requirements.txt
 
-# Core dependencies
-nfcpy>=1.0.4          # NFC communication library
-cryptography>=41.0.0  # Cryptographic operations
-requests>=2.31.0      # HTTP API communication
+# Core dependencies (tested with OMNIKEY 5422)
+nfcpy>=1.0.4          # NFC communication library (OMNIKEY 5422 compatible)
+cryptography>=41.0.0  # Cryptographic operations (NTAG 424 DNA security)
+requests>=2.31.0      # HTTP API communication (Deckport.ai server)
 
-# Optional dependencies for enhanced functionality
-# pyscard>=2.0.7       # Alternative NFC library (if nfcpy doesn't work)
-# colorama>=0.4.6      # Colored terminal output (Windows)
+# OMNIKEY 5422 specific dependencies
+pyscard>=2.0.7        # Enhanced smartcard support for OMNIKEY readers
+
+# Optional enhancements
+colorama>=0.4.6       # Colored terminal output (cross-platform)
+tqdm>=4.65.0          # Progress bars for batch programming

@@ -18,6 +18,10 @@
 - ✅ **Background Videos**: Support for video backgrounds with fallback animations
 - ✅ **Fullscreen Console**: Kiosk-ready interface
 - ✅ **Touch Interface**: Q/W/E keys + touchscreen support
+- ✅ **Complete Battle System**: Energy + Mana + Arena mechanics
+- ✅ **Card Display System**: Animated card reveals with ability videos
+- ✅ **Arena System**: Dynamic arenas with mana generation and hero bonuses
+- ✅ **Resource Management**: Dual Energy/Mana system with validation
 
 ### **🔄 Current Authentication Flow**
 ```
@@ -30,6 +34,128 @@ Boot Screen → Press SPACE → QR Login → Phone Authentication → Player Men
 3. **Phone opens login page** with email/password form
 4. **Player authenticates** with existing account
 5. **Console automatically continues** to player menu
+
+---
+
+## ⚔️ **COMPLETE BATTLE SYSTEM**
+
+### **🎯 Dual Resource System**
+
+Deckport uses **TWO** resource systems working together:
+
+1. **⚡ Energy**: Universal resource that limits cards per turn
+   - **Generation**: Turn number = energy available (Turn 1 = 1 energy, Turn 5 = 5 energy)
+   - **Usage**: Every card costs energy to play
+   - **Purpose**: Prevents infinite card plays, creates turn progression
+
+2. **🔮 Mana**: Arena-dependent resource that determines which cards can be played
+   - **Generation**: Arena provides specific mana colors each turn
+   - **Usage**: Cards may require specific mana colors
+   - **Purpose**: Creates strategic arena selection and deck building
+
+### **🏟️ Arena System**
+
+#### **Mana Colors**
+- **🔴 CRIMSON**: Fire/Aggression magic
+- **🔵 AZURE**: Water/Control magic  
+- **🟢 VERDANT**: Nature/Growth magic
+- **🟡 GOLDEN**: Light/Order magic
+- **🟣 SHADOW**: Dark/Chaos magic
+- **⚪ AETHER**: Neutral/Colorless magic
+
+#### **Arena Effects**
+Each arena provides:
+- **Mana Generation**: 2 mana of arena's color per turn
+- **Hero Bonuses**: Attack/defense bonuses for matching heroes
+- **Hero Penalties**: Penalties for opposing mana types
+- **Special Rules**: Unique arena mechanics (e.g., "Tidal Wave every 3rd turn")
+- **Video Background**: Immersive arena atmosphere
+
+#### **Example Arenas**
+```
+🌋 Crimson Forge
+- Mana: CRIMSON (2 per turn)
+- Bonuses: CRIMSON heroes +2 attack, fire immunity
+- Penalties: AZURE heroes -1 attack/defense
+- Special: "Forge Hammer" - Deal 1 damage once per turn
+
+🌊 Azure Depths  
+- Mana: AZURE (2 per turn)
+- Bonuses: AZURE heroes +2 defense, spell cost reduction
+- Penalties: CRIMSON heroes -1 attack/defense
+- Special: "Tidal Wave" - All creatures take 1 water damage every 3rd turn
+```
+
+### **🦸 Hero + Arena Interaction**
+
+#### **Hero Mana Affinity**
+- Each hero has a **primary mana affinity** (e.g., CRIMSON, AZURE)
+- Heroes get **bonuses** in matching arenas
+- Heroes get **penalties** in opposing arenas
+- **Color Opposition**: CRIMSON ↔ AZURE, VERDANT ↔ SHADOW, GOLDEN ↔ SHADOW
+
+#### **Strategic Implications**
+- **Arena Selection**: Choose arenas that favor your hero
+- **Hero Selection**: Pick heroes that match expected arena
+- **Deck Building**: Include cards that work across multiple mana types
+
+### **🃏 Card Play System**
+
+#### **Card Costs**
+Every card has dual costs:
+```
+🃏 Fire Strike
+⚡ Energy Cost: 2    (Must have 2+ energy)
+🔮 Mana Cost: CRIMSON:1, AETHER:1    (Must have required mana)
+```
+
+#### **Play Validation**
+1. **Check Energy**: Do I have enough energy?
+2. **Check Mana**: Do I have required mana colors?
+3. **Spend Resources**: Deduct energy and mana
+4. **Apply Effects**: Execute card abilities
+5. **Display Animation**: Show card with ability videos
+
+#### **Card Types**
+- **🦸 Hero Cards**: 0 energy cost, played once, affected by arena
+- **⚔️ Action Cards**: Variable energy + mana costs, immediate effects
+- **🏗️ Structure Cards**: Defensive buildings with ongoing effects
+- **✨ Spell Cards**: Instant magical effects
+
+### **🎬 Card Display System**
+
+When a card is played:
+1. **Card slides in** from right side of screen
+2. **Card frame shows**: Name, costs, stats, abilities
+3. **Ability videos play** in transparent center of card frame
+4. **Effects apply** to game state
+5. **Card slides out** after display duration
+
+#### **Ability Videos**
+- Each ability has a **2-second video clip**
+- Videos play in **transparent overlay** on card
+- Multiple abilities play **sequentially**
+- **Video library**: `assets/videos/abilities/[ability_name].mp4`
+
+### **⏱️ Turn Timer System**
+
+#### **Turn Structure**
+1. **Turn Start**: Generate energy = turn number, arena generates mana
+2. **Card Phase**: Scan and play cards (10-second decision timer per card)
+3. **Action Phase**: Direct attacks, end turn
+4. **Turn End**: Unused energy lost, some mana may carry over
+
+#### **Timer States**
+- **🟢 NORMAL**: 30+ seconds remaining
+- **🟡 WARNING**: 15-30 seconds remaining  
+- **🟠 URGENT**: 5-15 seconds remaining
+- **🔴 CRITICAL**: <5 seconds remaining (auto-end turn)
+
+### **🎯 Victory Conditions**
+- **Health Depletion**: Reduce opponent to 0 health
+- **Arena Objective**: Complete arena-specific win condition
+- **Turn Limit**: Higher health after 20 turns
+- **Forfeit**: Player surrenders
 
 ---
 

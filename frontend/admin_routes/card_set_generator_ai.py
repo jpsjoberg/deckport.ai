@@ -1,12 +1,23 @@
+import sys; import os; sys.path.append(os.path.dirname(os.path.dirname(os.path.dirname(__file__))))
 """
 AI-Powered Full Card Set Generation
 Generates complete, balanced card sets with cohesive themes and art prompts
 """
 
 from flask import Blueprint, render_template, request, jsonify, flash, redirect, url_for
-from shared.auth.decorators import admin_required
-from shared.database.connection import SessionLocal
-from shared.models.card_templates import CardTemplate, CardSet
+# Use same admin auth as working routes
+def require_admin_auth(f):
+    from functools import wraps
+    from flask import request, redirect, url_for
+    
+    @wraps(f)
+    def decorated_function(*args, **kwargs):
+        admin_jwt = request.cookies.get("admin_jwt")
+        if not admin_jwt:
+            return redirect(url_for("admin_login", next=request.path))
+        return f(*args, **kwargs)
+    return decorated_function
+from services.api_service import APIService
 import json
 import logging
 from datetime import datetime, timezone
@@ -17,14 +28,17 @@ logger = logging.getLogger(__name__)
 card_set_gen_bp = Blueprint('card_set_generation', __name__, url_prefix='/admin/card-sets')
 
 @card_set_gen_bp.route('/generate', methods=['GET', 'POST'])
-@admin_required
+@require_admin_auth
 def generate_card_set():
     """Generate a complete balanced card set with AI"""
     
     if request.method == 'GET':
         # Show the card set generation form
-        with SessionLocal() as session:
-            existing_sets = session.query(CardSet).all()
+        api_service = APIService()
+        
+        # Get existing card sets via API
+        existing_sets_response = api_service.get('/v1/admin/card-sets')
+        existing_sets = existing_sets_response.get('card_sets', []) if existing_sets_response else []
             
         return render_template('admin/card_sets/generate_ai.html', existing_sets=existing_sets)
     
@@ -39,15 +53,24 @@ def generate_card_set():
         set_size = int(data.get('set_size', 50))
         generation_prompt = data.get('generation_prompt', '')
         
-        # Generate the complete card set
-        generated_set = generate_balanced_card_set_ai(
-            set_name=set_name,
-            set_code=set_code,
-            theme=theme,
-            color_distribution=color_distribution,
-            set_size=set_size,
-            user_prompt=generation_prompt
-        )
+        # Generate the complete card set via API
+        api_service = APIService()
+        
+        set_generation_data = {
+            'set_name': set_name,
+            'set_code': set_code,
+            'theme': theme,
+            'color_distribution': color_distribution,
+            'set_size': set_size,
+            'generation_prompt': generation_prompt
+        }
+        
+        generated_set_response = api_service.post('/v1/admin/card-sets/generate', set_generation_data)
+        
+        if not generated_set_response:
+            raise Exception("Failed to generate card set via API")
+        
+        generated_set = generated_set_response
         
         if request.is_json:
             return jsonify({
@@ -69,7 +92,7 @@ def generate_card_set():
             return redirect(url_for('card_set_generation.generate_card_set'))
 
 @card_set_gen_bp.route('/save-set', methods=['POST'])
-@admin_required
+@require_admin_auth
 def save_generated_set():
     """Save a complete generated card set to the database"""
     
@@ -582,6 +605,13 @@ def generate_balance_recommendations(cards):
         "Balance looks good across all rarities",
         "Color distribution is well-balanced"
     ]
+
+
+
+
+
+
+
 
 
 

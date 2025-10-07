@@ -1,8 +1,33 @@
 extends Node
 
-# Server Logger - Sends real-time logs to server for monitoring and security
+##
+## Server Logger - Real-time Event Logging System
+##
+## This class handles real-time logging of console events to the server for monitoring,
+## security, analytics, and debugging purposes. All significant events are queued and
+## sent to the server in batches for efficient network usage.
+##
+## Key Features:
+## - Real-time event logging to server
+## - Batch transmission for network efficiency
+## - Automatic retry on network failures
+## - Security event monitoring
+## - Performance metrics collection
+## - Error tracking and debugging support
+##
+## Event Types:
+## - System events (startup, shutdown, errors)
+## - User actions (card scans, button presses)
+## - Network events (connections, disconnections)
+## - Security events (authentication, validation)
+## - Performance metrics (frame rates, load times)
+##
+## @author Deckport.ai Development Team
+## @version 1.0
+## @since 2024-12-28
+##
 
-var server_url = "http://127.0.0.1:8002"
+var server_url = "https://deckport.ai"
 var device_id = ""
 var log_queue = []
 var http_request: HTTPRequest

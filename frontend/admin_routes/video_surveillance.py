@@ -1,3 +1,4 @@
+import sys; import os; sys.path.append(os.path.dirname(os.path.dirname(os.path.dirname(__file__))))
 """
 Admin video surveillance routes - Monitor console video streams and manage surveillance
 """

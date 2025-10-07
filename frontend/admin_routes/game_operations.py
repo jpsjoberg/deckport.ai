@@ -1,3 +1,4 @@
+import sys; import os; sys.path.append(os.path.dirname(os.path.dirname(os.path.dirname(__file__))))
 """
 Game Operations Routes for Deckport Admin Panel
 Handles live matches, tournaments, and game balance

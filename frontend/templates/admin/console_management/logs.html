@@ -1,0 +1,178 @@
+{% extends "admin/base.html" %}
+
+{% block title %}Console Logs - {{ console.device_uid }} - Deckport Admin{% endblock %}
+{% block page_title %}Console Logs: {{ console.device_uid }}{% endblock %}
+{% block page_subtitle %}Real-time log monitoring and debugging{% endblock %}
+
+{% block content %}
+<div class="space-y-6">
+    <!-- Console Info -->
+    <div class="bg-white rounded-lg shadow-md p-6">
+        <div class="flex items-center justify-between mb-4">
+            <h2 class="text-xl font-semibold text-gray-900">Console Information</h2>
+            <div class="flex space-x-2">
+                <a href="/admin/consoles/{{ console.id }}" class="bg-blue-600 text-white px-4 py-2 rounded-md hover:bg-blue-700">
+                    <i class="fas fa-arrow-left mr-2"></i>Back to Console
+                </a>
+                <a href="/admin/consoles/{{ console.id }}/logs/download" class="bg-green-600 text-white px-4 py-2 rounded-md hover:bg-green-700">
+                    <i class="fas fa-download mr-2"></i>Download Logs
+                </a>
+            </div>
+        </div>
+        
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+            <div>
+                <p class="text-sm text-gray-500">Device UID</p>
+                <p class="font-mono text-sm">{{ console.device_uid }}</p>
+            </div>
+            <div>
+                <p class="text-sm text-gray-500">Status</p>
+                <span class="px-2 py-1 text-xs rounded-full
+                    {% if console.status == 'active' %}bg-green-100 text-green-800
+                    {% else %}bg-red-100 text-red-800{% endif %}">
+                    {{ console.status }}
+                </span>
+            </div>
+            <div>
+                <p class="text-sm text-gray-500">Location</p>
+                <p class="text-sm">{{ console.location.name if console.location else 'Unknown' }}</p>
+            </div>
+        </div>
+    </div>
+
+    <!-- Log Filters -->
+    <div class="bg-white rounded-lg shadow-md p-6">
+        <h3 class="text-lg font-semibold text-gray-900 mb-4">Log Filters</h3>
+        <form method="get" class="flex space-x-4">
+            <div>
+                <label class="block text-sm font-medium text-gray-700">Log Level</label>
+                <select name="level" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm">
+                    <option value="">All Levels</option>
+                    <option value="CRITICAL" {% if current_level == 'CRITICAL' %}selected{% endif %}>Critical</option>
+                    <option value="ERROR" {% if current_level == 'ERROR' %}selected{% endif %}>Error</option>
+                    <option value="WARNING" {% if current_level == 'WARNING' %}selected{% endif %}>Warning</option>
+                    <option value="INFO" {% if current_level == 'INFO' %}selected{% endif %}>Info</option>
+                </select>
+            </div>
+            <div class="flex items-end">
+                <button type="submit" class="bg-blue-600 text-white px-4 py-2 rounded-md hover:bg-blue-700">
+                    <i class="fas fa-filter mr-2"></i>Filter
+                </button>
+            </div>
+        </form>
+    </div>
+
+    <!-- Crash Reports -->
+    {% if crash_reports %}
+    <div class="bg-white rounded-lg shadow-md p-6">
+        <h3 class="text-lg font-semibold text-gray-900 mb-4">
+            <i class="fas fa-exclamation-triangle text-red-500 mr-2"></i>
+            Crash Reports ({{ crash_reports|length }})
+        </h3>
+        <div class="space-y-3">
+            {% for report in crash_reports[:5] %}
+            <div class="border border-red-200 rounded-lg p-4 bg-red-50">
+                <div class="flex items-center justify-between">
+                    <div>
+                        <h4 class="font-medium text-red-800">{{ report.crash_type }}</h4>
+                        <p class="text-sm text-red-600">{{ report.error_message }}</p>
+                        <p class="text-xs text-red-500">{{ report.crash_time }}</p>
+                    </div>
+                    <span class="px-2 py-1 text-xs bg-red-200 text-red-800 rounded-full">
+                        {{ report.severity }}
+                    </span>
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+    </div>
+    {% endif %}
+
+    <!-- Log Entries -->
+    <div class="bg-white rounded-lg shadow-md p-6">
+        <h3 class="text-lg font-semibold text-gray-900 mb-4">
+            <i class="fas fa-list mr-2"></i>
+            Console Log Entries
+        </h3>
+        
+        {% if logs %}
+        <div class="space-y-2 max-h-96 overflow-y-auto">
+            {% for log in logs %}
+            <div class="border-l-4 pl-4 py-2
+                {% if log.level == 'CRITICAL' %}border-red-500 bg-red-50
+                {% elif log.level == 'ERROR' %}border-red-400 bg-red-25
+                {% elif log.level == 'WARNING' %}border-yellow-400 bg-yellow-25
+                {% else %}border-blue-400 bg-blue-25{% endif %}">
+                
+                <div class="flex items-center justify-between">
+                    <div class="flex items-center space-x-3">
+                        <span class="px-2 py-1 text-xs rounded-full font-medium
+                            {% if log.level == 'CRITICAL' %}bg-red-200 text-red-800
+                            {% elif log.level == 'ERROR' %}bg-red-100 text-red-700
+                            {% elif log.level == 'WARNING' %}bg-yellow-100 text-yellow-700
+                            {% else %}bg-blue-100 text-blue-700{% endif %}">
+                            {{ log.level }}
+                        </span>
+                        <span class="text-sm text-gray-600">{{ log.source }}</span>
+                    </div>
+                    <span class="text-xs text-gray-500">{{ log.timestamp }}</span>
+                </div>
+                
+                <p class="mt-1 text-sm text-gray-800 font-mono">{{ log.message }}</p>
+                
+                {% if log.data %}
+                <details class="mt-2">
+                    <summary class="text-xs text-gray-500 cursor-pointer">Additional Data</summary>
+                    <pre class="mt-1 text-xs text-gray-600 bg-gray-100 p-2 rounded overflow-x-auto">{{ log.data | tojson(indent=2) }}</pre>
+                </details>
+                {% endif %}
+            </div>
+            {% endfor %}
+        </div>
+        
+        <!-- Pagination -->
+        {% if pagination.pages > 1 %}
+        <div class="mt-6 flex justify-center">
+            <nav class="flex space-x-2">
+                {% if pagination.page > 1 %}
+                <a href="?page={{ pagination.page - 1 }}&level={{ current_level }}" class="px-3 py-2 bg-gray-200 text-gray-700 rounded-md hover:bg-gray-300">Previous</a>
+                {% endif %}
+                
+                <span class="px-3 py-2 bg-blue-600 text-white rounded-md">
+                    Page {{ pagination.page }} of {{ pagination.pages }}
+                </span>
+                
+                {% if pagination.page < pagination.pages %}
+                <a href="?page={{ pagination.page + 1 }}&level={{ current_level }}" class="px-3 py-2 bg-gray-200 text-gray-700 rounded-md hover:bg-gray-300">Next</a>
+                {% endif %}
+            </nav>
+        </div>
+        {% endif %}
+        
+        {% else %}
+        <div class="text-center py-8">
+            <i class="fas fa-inbox text-4xl text-gray-400 mb-4"></i>
+            <h3 class="text-lg font-medium text-gray-900">No Logs Found</h3>
+            <p class="text-gray-500">No log entries available for this console.</p>
+            {% if current_level %}
+            <p class="text-sm text-gray-400 mt-2">Try removing the log level filter.</p>
+            {% endif %}
+        </div>
+        {% endif %}
+    </div>
+
+    <!-- Auto-refresh -->
+    <div class="text-center">
+        <button onclick="window.location.reload()" class="bg-gray-600 text-white px-4 py-2 rounded-md hover:bg-gray-700">
+            <i class="fas fa-sync-alt mr-2"></i>Refresh Logs
+        </button>
+    </div>
+</div>
+
+<script>
+// Auto-refresh every 30 seconds
+setTimeout(() => {
+    window.location.reload();
+}, 30000);
+</script>
+{% endblock %}

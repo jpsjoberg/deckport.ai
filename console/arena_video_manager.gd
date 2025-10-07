@@ -9,7 +9,7 @@ signal video_changed(arena_id: int, arena_name: String)
 signal cache_updated(cache_size: int, cache_limit: int)
 
 # Server configuration
-var server_url: String = "http://127.0.0.1:8002"
+var server_url: String = "https://deckport.ai"
 var api_headers: Array[String] = []
 
 # Cache configuration
@@ -324,7 +324,7 @@ func save_arena_list_cache(arena_data: Dictionary):
 
 # === HTTP RESPONSE HANDLERS ===
 
-func _on_http_response(result: int, response_code: int, headers: PackedStringArray, body: PackedByteArray):
+func _on_http_response(result: int, response_code: int, _headers: PackedStringArray, body: PackedByteArray):
 	"""Handle HTTP responses for arena API calls"""
 	var response_text = body.get_string_from_utf8()
 	
@@ -361,7 +361,7 @@ func _on_http_response(result: int, response_code: int, headers: PackedStringArr
 		print("❌ Arena API error: ", response_code, " - ", response_text)
 		arena_loaded.emit({}, false)
 
-func _on_video_download_response(result: int, response_code: int, headers: PackedStringArray, body: PackedByteArray):
+func _on_video_download_response(result: int, response_code: int, _headers: PackedStringArray, body: PackedByteArray):
 	"""Handle video download responses"""
 	var arena_id = video_http_request.get_meta("arena_id", "")
 	var video_type = video_http_request.get_meta("video_type", "")

@@ -1,3 +1,4 @@
+import sys; import os; sys.path.append(os.path.dirname(os.path.dirname(os.path.dirname(__file__))))
 """
 Player Management Routes for Deckport Admin Panel
 Handles player accounts, authentication, and community moderation

@@ -298,32 +298,83 @@ class GameStateHandler:
         await self.manager.send_to_match(update_message, match_id)
     
     async def _handle_card_play(self, message: Dict, connection_id: str, user_id: int):
-        """Handle card play action"""
+        """Handle card play action with full game state validation"""
         match_id = message.get('match_id')
         card_id = message.get('card_id')
-        action = message.get('action')
+        action = message.get('action', 'play')
+        target_id = message.get('target_id')
         
-        if not all([match_id, card_id, action]):
+        if not all([match_id, card_id]):
             await self.manager.send_personal_message(
-                self.protocol.create_error("invalid_card_play", "Match ID, card ID, and action required"),
+                self.protocol.create_error("invalid_card_play", "Match ID and card ID required"),
                 connection_id
             )
             return
         
         logger.info(f"Card play from player {user_id}: {action} card {card_id} in match {match_id}")
         
-        # TODO: Validate card play and update game state
-        # For MVP, just notify other players
-        
-        card_message = self.protocol.create_message("card.played", {
-            "match_id": match_id,
-            "player_id": user_id,
-            "card_id": card_id,
-            "action": action,
-            "timestamp": datetime.now(timezone.utc).isoformat()
-        })
-        
-        await self.manager.send_to_match(card_message, match_id)
+        try:
+            # Get player team from match participants
+            with SessionLocal() as session:
+                participant = session.query(MatchParticipant).filter(
+                    MatchParticipant.match_id == int(match_id),
+                    MatchParticipant.player_id == user_id
+                ).first()
+                
+                if not participant:
+                    await self.manager.send_personal_message(
+                        self.protocol.create_error("not_in_match", "Not a participant in this match"),
+                        connection_id
+                    )
+                    return
+                
+                player_team = participant.team
+            
+            # Use match manager to handle card play if available
+            if self.match_manager:
+                try:
+                    result = await self.match_manager.play_card(
+                        match_id, player_team, card_id, action, target_id, self.manager
+                    )
+                    
+                    # Send success response to player
+                    await self.manager.send_personal_message(
+                        self.protocol.create_message("card.play_result", {
+                            "match_id": match_id,
+                            "success": True,
+                            "result": result,
+                            "timestamp": datetime.now(timezone.utc).isoformat()
+                        }),
+                        connection_id
+                    )
+                    
+                except Exception as e:
+                    # Send error response to player
+                    await self.manager.send_personal_message(
+                        self.protocol.create_error("card_play_failed", str(e)),
+                        connection_id
+                    )
+                    
+            else:
+                # Fallback: just notify other players
+                card_message = self.protocol.create_message("card.played", {
+                    "match_id": match_id,
+                    "player_id": user_id,
+                    "player_team": player_team,
+                    "card_id": card_id,
+                    "action": action,
+                    "target_id": target_id,
+                    "timestamp": datetime.now(timezone.utc).isoformat()
+                })
+                
+                await self.manager.send_to_match(card_message, match_id)
+                
+        except Exception as e:
+            logger.error(f"Error handling card play: {e}")
+            await self.manager.send_personal_message(
+                self.protocol.create_error("card_play_error", "Failed to process card play"),
+                connection_id
+            )
     
     async def _handle_sync_request(self, message: Dict, connection_id: str, user_id: int):
         """Handle request for game state synchronization"""

@@ -3,36 +3,630 @@
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <title>Cards</title>
+    <title>Browse Cards - Deckport</title>
     <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet" />
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" />
+    <style>
+      /* Main site design system */
+      .gradient-text {
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        -webkit-background-clip: text;
+        -webkit-text-fill-color: transparent;
+        background-clip: text;
+      }
+      .card-hover {
+        transition: all 0.3s ease;
+      }
+      .card-hover:hover {
+        transform: translateY(-5px);
+        box-shadow: 0 20px 40px rgba(0, 0, 0, 0.3);
+      }
+      .news-card {
+        background: linear-gradient(135deg, rgba(31, 41, 55, 0.8) 0%, rgba(55, 65, 81, 0.8) 100%);
+        backdrop-filter: blur(10px);
+        border: 1px solid rgba(255, 255, 255, 0.1);
+      }
+      
+      /* Smart Image Glow - Fixed implementation */
+      .card-container {
+        position: relative;
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        width: 200px;
+        height: 280px;
+        margin: 0 auto;
+      }
+      
+      .glow-background {
+        position: absolute;
+        top: -15px;
+        left: -15px;
+        right: -15px;
+        bottom: -15px;
+        background-repeat: no-repeat;
+        background-size: contain;
+        background-position: center;
+        border-radius: 20px;
+        filter: blur(20px);
+        opacity: 0;
+        transition: opacity 0.4s ease;
+        z-index: -1;
+      }
+      
+      .card-image-container {
+        width: 200px;
+        height: 280px;
+        border-radius: 16px;
+        overflow: hidden;
+        background: rgba(55, 65, 81, 0.8);
+        backdrop-filter: blur(10px);
+        border: 1px solid rgba(255, 255, 255, 0.1);
+        transition: all 0.4s ease;
+        position: relative;
+        z-index: 1;
+      }
+      
+      .card-container:hover .glow-background {
+        opacity: 1.6;
+      }
+      
+      .card-container:hover .card-image-container {
+        transform: scale(1.05) rotate(1deg) translateY(-5px);
+      }
+      .card-glow-verdant {
+        position: relative;
+      }
+      .card-glow-verdant::before {
+        content: '';
+        position: absolute;
+        top: -20px;
+        left: -20px;
+        right: -20px;
+        bottom: -20px;
+        background: rgba(34, 197, 94, 1.6);
+        border-radius: inherit;
+        filter: blur(40px);
+        opacity: 0;
+        transition: opacity 0.3s ease;
+        z-index: -1;
+      }
+      .card-glow-verdant:hover::before {
+        opacity: 2;
+      }
+
+      .card-glow-obsidian {
+        position: relative;
+      }
+      .card-glow-obsidian::before {
+        content: '';
+        position: absolute;
+        top: -20px;
+        left: -20px;
+        right: -20px;
+        bottom: -20px;
+        background: rgba(139, 69, 19, 1.6);
+        border-radius: inherit;
+        filter: blur(40px);
+        opacity: 0;
+        transition: opacity 0.3s ease;
+        z-index: -1;
+      }
+      .card-glow-obsidian:hover::before {
+        opacity: 2;
+      }
+
+      .card-glow-radiant {
+        position: relative;
+      }
+      .card-glow-radiant::before {
+        content: '';
+        position: absolute;
+        top: -30px;
+        left: -30px;
+        right: -30px;
+        bottom: -30px;
+        background: rgba(251, 191, 36, 1.8);
+        border-radius: inherit;
+        filter: blur(50px);
+        opacity: 0;
+        transition: opacity 0.3s ease;
+        z-index: -1;
+      }
+      .card-glow-radiant:hover::before {
+        opacity: 2;
+      }
+
+      .card-glow-azure {
+        position: relative;
+      }
+      .card-glow-azure::before {
+        content: '';
+        position: absolute;
+        top: -20px;
+        left: -20px;
+        right: -20px;
+        bottom: -20px;
+        background: rgba(59, 130, 246, 1.6);
+        border-radius: inherit;
+        filter: blur(40px);
+        opacity: 0;
+        transition: opacity 0.3s ease;
+        z-index: -1;
+      }
+      .card-glow-azure:hover::before {
+        opacity: 2;
+      }
+
+      .card-glow-aether {
+        position: relative;
+      }
+      .card-glow-aether::before {
+        content: '';
+        position: absolute;
+        top: -20px;
+        left: -20px;
+        right: -20px;
+        bottom: -20px;
+        background: rgba(168, 85, 247, 1.6);
+        border-radius: inherit;
+        filter: blur(40px);
+        opacity: 0;
+        transition: opacity 0.3s ease;
+        z-index: -1;
+      }
+      .card-glow-aether:hover::before {
+        opacity: 2;
+      }
+
+      .card-glow-crimson {
+        position: relative;
+      }
+      .card-glow-crimson::before {
+        content: '';
+        position: absolute;
+        top: -20px;
+        left: -20px;
+        right: -20px;
+        bottom: -20px;
+        background: rgba(239, 68, 68, 1.6);
+        border-radius: inherit;
+        filter: blur(40px);
+        opacity: 0;
+        transition: opacity 0.3s ease;
+        z-index: -1;
+      }
+      .card-glow-crimson:hover::before {
+        opacity: 2;
+      }
+      
+      /* Strong fallback category glows with proper blur - DOUBLE STRENGTH */
+      .card-glow-creature:hover { 
+        box-shadow: 
+          0 0 50px rgba(34, 197, 94, 1.0) !important,
+          0 0 100px rgba(34, 197, 94, 1.0) !important, 
+          0 0 200px rgba(34, 197, 94, 1.0) !important;
+        border: 2px solid rgba(34, 197, 94, 1.0) !important;
+        background: rgba(34, 197, 94, 0.2) !important;
+      }
+      .card-glow-structure:hover { 
+        box-shadow: 
+          0 0 50px rgba(168, 85, 247, 1.0) !important,
+          0 0 100px rgba(168, 85, 247, 1.0) !important, 
+          0 0 200px rgba(168, 85, 247, 1.0) !important;
+        border: 2px solid rgba(168, 85, 247, 1.0) !important;
+        background: rgba(168, 85, 247, 0.2) !important;
+      }
+      .card-glow-action_fast:hover { 
+        box-shadow: 
+          0 0 50px rgba(239, 68, 68, 1.0) !important,
+          0 0 100px rgba(239, 68, 68, 1.0) !important, 
+          0 0 200px rgba(239, 68, 68, 1.0) !important;
+        border: 2px solid rgba(239, 68, 68, 1.0) !important;
+        background: rgba(239, 68, 68, 0.2) !important;
+      }
+      .card-glow-action_slow:hover { 
+        box-shadow: 
+          0 0 50px rgba(59, 130, 246, 1.0) !important,
+          0 0 100px rgba(59, 130, 246, 1.0) !important, 
+          0 0 200px rgba(59, 130, 246, 1.0) !important;
+        border: 2px solid rgba(59, 130, 246, 1.0) !important;
+        background: rgba(59, 130, 246, 0.2) !important;
+      }
+      .card-glow-equipment:hover { 
+        box-shadow: 
+          0 0 50px rgba(245, 158, 11, 1.0) !important,
+          0 0 100px rgba(245, 158, 11, 1.0) !important, 
+          0 0 200px rgba(245, 158, 11, 1.0) !important;
+        border: 2px solid rgba(245, 158, 11, 1.0) !important;
+        background: rgba(245, 158, 11, 0.2) !important;
+      }
+      .card-glow-enchantment:hover { 
+        box-shadow: 
+          0 0 50px rgba(236, 72, 153, 1.0) !important,
+          0 0 100px rgba(236, 72, 153, 1.0) !important, 
+          0 0 200px rgba(236, 72, 153, 1.0) !important;
+        border: 2px solid rgba(236, 72, 153, 1.0) !important;
+        background: rgba(236, 72, 153, 0.2) !important;
+      }
+      .card-glow-hero:hover { 
+        box-shadow: 
+          0 0 70px rgba(251, 191, 36, 1.0) !important,
+          0 0 140px rgba(251, 191, 36, 1.0) !important, 
+          0 0 280px rgba(251, 191, 36, 1.0) !important;
+        border: 3px solid rgba(251, 191, 36, 1.0) !important;
+        background: rgba(251, 191, 36, 0.3) !important;
+      }
+    </style>
   </head>
   <body class="bg-gray-900 text-white">
-    <header class="p-4 flex justify-between container mx-auto">
-      <a href="/" class="font-bold">Deckport</a>
-      <nav class="space-x-4">
-        <a href="/cards">Cards</a>
-        <a href="/shop">Shop</a>
-        <a href="/login">Login</a>
-      </nav>
-    </header>
-    <main class="container mx-auto p-4">
-      <h1 class="text-2xl font-semibold mb-4">Card Catalog</h1>
-      <form method="get" class="grid grid-cols-1 md:grid-cols-4 gap-2 mb-4">
-        <input name="q" value="{{ q }}" placeholder="Search" class="px-2 py-1 rounded bg-gray-800" />
-        <input name="color" value="{{ color }}" placeholder="Color" class="px-2 py-1 rounded bg-gray-800" />
-        <input name="rarity" value="{{ rarity }}" placeholder="Rarity" class="px-2 py-1 rounded bg-gray-800" />
-        <input name="category" value="{{ category }}" placeholder="Category" class="px-2 py-1 rounded bg-gray-800" />
-        <button class="px-3 py-1 bg-indigo-600 rounded md:col-span-4">Filter</button>
-      </form>
-      <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+    <!-- Navigation -->
+    <nav class="bg-gray-800 border-b border-gray-700 sticky top-0 z-50 backdrop-blur-md bg-opacity-90">
+      <div class="container mx-auto px-4">
+        <div class="flex justify-between items-center py-4">
+          <div class="flex items-center space-x-8">
+            <a href="/" class="text-2xl font-bold gradient-text">Deckport</a>
+            <div class="hidden md:flex space-x-6">
+              <a href="/cards" class="text-white font-semibold flex items-center">
+                <i class="fas fa-layer-group mr-2"></i>Browse Cards
+              </a>
+              <a href="/shop" class="text-gray-300 hover:text-white transition-colors flex items-center">
+                <i class="fas fa-shopping-cart mr-2"></i>Shop
+              </a>
+              <a href="#" class="text-gray-300 hover:text-white transition-colors flex items-center">
+                <i class="fas fa-newspaper mr-2"></i>News
+              </a>
+              <a href="#" class="text-gray-300 hover:text-white transition-colors flex items-center">
+                <i class="fas fa-play-circle mr-2"></i>Videos
+              </a>
+            </div>
+          </div>
+          <div class="flex items-center space-x-4">
+            <a href="/register" class="bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-700 hover:to-purple-700 px-4 py-2 rounded-lg font-medium transition-all duration-300 transform hover:scale-105">Get Started</a>
+            <a href="/login" class="text-gray-300 hover:text-white transition-colors">Login</a>
+          </div>
+        </div>
+      </div>
+    </nav>
+
+    <!-- Page Header -->
+    <section class="bg-gradient-to-br from-indigo-900 via-gray-900 to-purple-900 py-16">
+      <div class="container mx-auto px-4 text-center">
+        <h1 class="text-4xl md:text-5xl font-bold mb-4 gradient-text">
+          <i class="fas fa-layer-group mr-3"></i>Card Catalog
+        </h1>
+        <p class="text-xl text-gray-300 mb-8">Discover powerful cards and build your ultimate deck</p>
+      </div>
+    </section>
+
+    <main class="container mx-auto p-4 py-8">
+      <!-- Filters Section -->
+      <div class="news-card rounded-xl p-6 mb-8">
+        <h2 class="text-xl font-semibold mb-4 flex items-center">
+          <i class="fas fa-filter mr-2 text-indigo-400"></i>Filter Cards
+        </h2>
+        <form method="get" class="space-y-6">
+          <!-- Basic Filters Row -->
+          <div class="grid grid-cols-1 md:grid-cols-4 gap-4">
+            <div>
+              <label class="block text-sm font-medium text-gray-300 mb-2">Search</label>
+              <input name="q" value="{{ q }}" placeholder="Search cards..." 
+                     class="w-full px-4 py-2 rounded-lg bg-gray-700 border border-gray-600 text-white placeholder-gray-400 focus:border-indigo-500 focus:outline-none" />
+            </div>
+            
+            <div>
+              <label class="block text-sm font-medium text-gray-300 mb-2">Rarity</label>
+              <select name="rarity" class="w-full px-4 py-2 rounded-lg bg-gray-700 border border-gray-600 text-white focus:border-indigo-500 focus:outline-none">
+                <option value="">All Rarities</option>
+                {% for r in rarities %}
+                <option value="{{ r }}" {% if r == rarity %}selected{% endif %}>{{ r.title() }}</option>
+                {% endfor %}
+              </select>
+            </div>
+            
+            <div>
+              <label class="block text-sm font-medium text-gray-300 mb-2">Category</label>
+              <select name="category" class="w-full px-4 py-2 rounded-lg bg-gray-700 border border-gray-600 text-white focus:border-indigo-500 focus:outline-none">
+                <option value="">All Categories</option>
+                {% for c in categories %}
+                <option value="{{ c }}" {% if c == category %}selected{% endif %}>{{ c.replace('_', ' ').title() }}</option>
+                {% endfor %}
+              </select>
+            </div>
+            
+            <div>
+              <label class="block text-sm font-medium text-gray-300 mb-2">Mana Color</label>
+              <select name="color" class="w-full px-4 py-2 rounded-lg bg-gray-700 border border-gray-600 text-white focus:border-indigo-500 focus:outline-none">
+                <option value="">All Colors</option>
+                {% for c in colors %}
+                <option value="{{ c }}" {% if c == color %}selected{% endif %}>{{ c.title() }}</option>
+                {% endfor %}
+              </select>
+            </div>
+          </div>
+          
+          <!-- Card Set Filter Row -->
+          <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div>
+              <label class="block text-sm font-medium text-gray-300 mb-2">
+                <i class="fas fa-layer-group mr-1 text-cyan-400"></i>Card Set
+              </label>
+              <select name="card_set" class="w-full px-4 py-2 rounded-lg bg-gray-700 border border-gray-600 text-white focus:border-indigo-500 focus:outline-none">
+                <option value="">All Sets</option>
+                {% for cs in card_sets %}
+                <option value="{{ cs }}" {% if cs == card_set %}selected{% endif %}>{{ cs.replace('_', ' ').title() }}</option>
+                {% endfor %}
+              </select>
+            </div>
+            <div class="flex items-end">
+              <div class="text-sm text-gray-400">
+                <i class="fas fa-info-circle mr-1"></i>
+                Filter by card expansion sets
+              </div>
+            </div>
+          </div>
+          
+          <!-- Advanced Stats Filters -->
+          <div class="grid grid-cols-1 md:grid-cols-4 gap-4">
+            <div>
+              <label class="block text-sm font-medium text-gray-300 mb-2">
+                <i class="fas fa-gem mr-1 text-blue-400"></i>Mana Cost
+              </label>
+              <div class="flex gap-2">
+                <input name="mana_cost_min" value="{{ mana_cost_min or '' }}" placeholder="Min" type="number" min="0" max="15"
+                       class="w-full px-3 py-2 rounded-lg bg-gray-700 border border-gray-600 text-white placeholder-gray-400 focus:border-indigo-500 focus:outline-none" />
+                <input name="mana_cost_max" value="{{ mana_cost_max or '' }}" placeholder="Max" type="number" min="0" max="15"
+                       class="w-full px-3 py-2 rounded-lg bg-gray-700 border border-gray-600 text-white placeholder-gray-400 focus:border-indigo-500 focus:outline-none" />
+              </div>
+            </div>
+            
+            <div>
+              <label class="block text-sm font-medium text-gray-300 mb-2">
+                <i class="fas fa-bolt mr-1 text-yellow-400"></i>Energy Cost
+              </label>
+              <div class="flex gap-2">
+                <input name="energy_cost_min" value="{{ energy_cost_min or '' }}" placeholder="Min" type="number" min="0" max="6"
+                       class="w-full px-3 py-2 rounded-lg bg-gray-700 border border-gray-600 text-white placeholder-gray-400 focus:border-indigo-500 focus:outline-none" />
+                <input name="energy_cost_max" value="{{ energy_cost_max or '' }}" placeholder="Max" type="number" min="0" max="6"
+                       class="w-full px-3 py-2 rounded-lg bg-gray-700 border border-gray-600 text-white placeholder-gray-400 focus:border-indigo-500 focus:outline-none" />
+              </div>
+            </div>
+            
+            <div>
+              <label class="block text-sm font-medium text-gray-300 mb-2">
+                <i class="fas fa-sword mr-1 text-red-400"></i>Attack
+              </label>
+              <div class="flex gap-2">
+                <input name="attack_min" value="{{ attack_min or '' }}" placeholder="Min" type="number" min="0" max="20"
+                       class="w-full px-3 py-2 rounded-lg bg-gray-700 border border-gray-600 text-white placeholder-gray-400 focus:border-indigo-500 focus:outline-none" />
+                <input name="attack_max" value="{{ attack_max or '' }}" placeholder="Max" type="number" min="0" max="20"
+                       class="w-full px-3 py-2 rounded-lg bg-gray-700 border border-gray-600 text-white placeholder-gray-400 focus:border-indigo-500 focus:outline-none" />
+              </div>
+            </div>
+            
+            <div>
+              <label class="block text-sm font-medium text-gray-300 mb-2">
+                <i class="fas fa-heart mr-1 text-green-400"></i>Health
+              </label>
+              <div class="flex gap-2">
+                <input name="health_min" value="{{ health_min or '' }}" placeholder="Min" type="number" min="0" max="25"
+                       class="w-full px-3 py-2 rounded-lg bg-gray-700 border border-gray-600 text-white placeholder-gray-400 focus:border-indigo-500 focus:outline-none" />
+                <input name="health_max" value="{{ health_max or '' }}" placeholder="Max" type="number" min="0" max="25"
+                       class="w-full px-3 py-2 rounded-lg bg-gray-700 border border-gray-600 text-white placeholder-gray-400 focus:border-indigo-500 focus:outline-none" />
+              </div>
+            </div>
+          </div>
+          
+          <!-- Asset Filters and Submit -->
+          <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+            <div>
+              <label class="block text-sm font-medium text-gray-300 mb-2">
+                <i class="fas fa-image mr-1 text-purple-400"></i>Artwork Status
+              </label>
+              <select name="has_artwork" class="w-full px-4 py-2 rounded-lg bg-gray-700 border border-gray-600 text-white focus:border-indigo-500 focus:outline-none">
+                <option value="">All Cards</option>
+                <option value="true" {% if has_artwork == 'true' %}selected{% endif %}>With Artwork</option>
+                <option value="false" {% if has_artwork == 'false' %}selected{% endif %}>Without Artwork</option>
+              </select>
+            </div>
+            
+            <div>
+              <label class="block text-sm font-medium text-gray-300 mb-2">
+                <i class="fas fa-play mr-1 text-indigo-400"></i>Video Status
+              </label>
+              <select name="has_video" class="w-full px-4 py-2 rounded-lg bg-gray-700 border border-gray-600 text-white focus:border-indigo-500 focus:outline-none">
+                <option value="">All Cards</option>
+                <option value="true" {% if has_video == 'true' %}selected{% endif %}>With Video</option>
+                <option value="false" {% if has_video == 'false' %}selected{% endif %}>Without Video</option>
+              </select>
+            </div>
+            
+            <div class="flex items-end">
+              <button type="submit" class="w-full bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-700 hover:to-purple-700 px-6 py-3 rounded-lg font-medium transition-all duration-300 transform hover:scale-105">
+                <i class="fas fa-search mr-2"></i>Apply Filters
+              </button>
+            </div>
+          </div>
+          
+          <!-- Quick Filter Buttons -->
+          <div class="flex flex-wrap gap-2 pt-4 border-t border-gray-600">
+            <span class="text-sm text-gray-400">Quick Filters:</span>
+            <a href="/cards?rarity=LEGENDARY" class="px-3 py-1 bg-yellow-600 hover:bg-yellow-700 rounded-full text-sm transition-colors">
+              <i class="fas fa-crown mr-1"></i>Legendary
+            </a>
+            <a href="/cards?has_artwork=true" class="px-3 py-1 bg-green-600 hover:bg-green-700 rounded-full text-sm transition-colors">
+              <i class="fas fa-image mr-1"></i>With Artwork
+            </a>
+            <a href="/cards?has_video=true" class="px-3 py-1 bg-purple-600 hover:bg-purple-700 rounded-full text-sm transition-colors">
+              <i class="fas fa-play mr-1"></i>With Video
+            </a>
+            <a href="/cards?category=HERO" class="px-3 py-1 bg-red-600 hover:bg-red-700 rounded-full text-sm transition-colors">
+              <i class="fas fa-user-crown mr-1"></i>Heroes
+            </a>
+            <a href="/cards?mana_cost_max=3" class="px-3 py-1 bg-blue-600 hover:bg-blue-700 rounded-full text-sm transition-colors">
+              <i class="fas fa-bolt mr-1"></i>Low Cost
+            </a>
+            <a href="/cards?attack_min=8" class="px-3 py-1 bg-orange-600 hover:bg-orange-700 rounded-full text-sm transition-colors">
+              <i class="fas fa-sword mr-1"></i>High Attack
+            </a>
+          </div>
+        </form>
+      </div>
+      <!-- Cards Grid -->
+      <div class="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-4 gap-6">
         {% for c in items %}
-        <a href="/cards/{{ c.product_sku }}" class="block p-4 bg-gray-800 rounded hover:bg-gray-700">
-          <div class="text-sm text-gray-400">{{ c.product_sku }}</div>
-          <div class="font-semibold">{{ c.name }}</div>
-          <div class="text-xs text-gray-400">{{ c.category }} • {{ c.rarity }}</div>
-        </a>
+        <div class="news-card p-5 rounded-xl overflow-hidden">
+          <a href="/cards/{{ c.product_sku }}" class="block">
+            {% if c.artwork_url %}
+            <!-- Smart Glow Card Container -->
+            <div class="card-container">
+              <!-- Blurred background glow layer -->
+              <div class="glow-background" style="background-image: url('{{ c.artwork_url }}');"></div>
+              
+              <!-- Card image container with rounded corners -->
+              <div class="card-image-container">
+                <img src="/static/cards/thumbnails/{{ c.name.lower().replace(' ', '_').replace("'", "") }}_thumb.png" alt="{{ c.name }}" 
+                     class="w-full h-full object-contain" 
+                     onerror="this.onerror=function(){this.src='/static/placeholder-card.png';}">
+                
+                <!-- Rarity Badge -->
+                <div class="absolute top-3 right-3 z-10">
+                  
+                </div>
+              </div>
+            </div>
+            {% else %}
+            <!-- Fallback for cards without images -->
+            <div class="card-container">
+              <div class="card-image-container bg-gradient-to-br from-gray-700 to-gray-800 flex items-center justify-center
+                         {% if c.colors and c.colors[0] %}card-glow-{{ c.colors[0].lower() }}{% elif 'CRIMSON' in c.product_sku or 'crimson' in c.name.lower() or 'burn' in c.name.lower() or 'fire' in c.name.lower() %}card-glow-crimson{% elif 'AZURE' in c.product_sku or 'azure' in c.name.lower() or 'tide' in c.name.lower() or 'water' in c.name.lower() %}card-glow-azure{% elif 'VERDANT' in c.product_sku or 'verdant' in c.name.lower() or 'grove' in c.name.lower() or 'wild' in c.name.lower() or 'bloom' in c.name.lower() %}card-glow-verdant{% elif 'OBSIDIAN' in c.product_sku or 'obsidian' in c.name.lower() or 'grave' in c.name.lower() or 'coal' in c.name.lower() or 'basalt' in c.name.lower() %}card-glow-obsidian{% elif 'RADIANT' in c.product_sku or 'radiant' in c.name.lower() or 'light' in c.name.lower() or 'solar' in c.name.lower() %}card-glow-radiant{% elif 'AETHER' in c.product_sku or 'aether' in c.name.lower() or 'void' in c.name.lower() %}card-glow-aether{% else %}card-glow-{{ c.category.lower() }}{% endif %}">
+                <div class="text-center text-gray-400">
+                  <i class="fas fa-layer-group text-4xl mb-3"></i>
+                  <div class="font-semibold">{{ c.name }}</div>
+                  
+                </div>
+              </div>
+            </div>
+            {% endif %}
+            
+            <div class="p-4">
+              <div class="flex items-center justify-between mb-2">
+                
+                <span class="text-xs text-gray-400">{{ c.category.replace('_', ' ').title() }}</span>
+              </div>
+              <h3 class="font-bold text-lg mb-2">{{ c.name }}</h3>
+              <div class="flex items-center justify-between">
+                <span class="px-2 py-1 text-xs font-semibold rounded-full
+                             {% if c.rarity == 'LEGENDARY' %}bg-yellow-500 text-black
+                             {% elif c.rarity == 'EPIC' %}bg-purple-500 text-white
+                             {% elif c.rarity == 'RARE' %}bg-blue-500 text-white
+                             {% else %}bg-gray-500 text-white{% endif %}">
+                    {{ c.rarity }}
+                  </span>
+                <i class="fas fa-arrow-right text-indigo-400 opacity-0 group-hover:opacity-100 transition-opacity"></i>
+              </div>
+            </div>
+          </a>
+        </div>
         {% endfor %}
       </div>
+      
+      <!-- Results Summary and Pagination -->
+      {% if total and total > 0 %}
+      <div class="mt-12 space-y-6">
+        <!-- Results Summary -->
+        <div class="text-center text-gray-300">
+          <p class="text-lg">
+            Showing {{ ((page - 1) * page_size + 1) }} - {{ (page - 1) * page_size + items|length }} of {{ total }} cards
+          </p>
+        </div>
+        
+        <!-- Pagination Controls -->
+        {% if total_pages > 1 %}
+        <div class="flex justify-center items-center space-x-4">
+          <!-- Previous Page -->
+          {% if page > 1 %}
+            <a href="{{ url_for('cards_list', page=page-1, q=q, category=category, color=color, rarity=rarity, card_set=card_set, 
+                                mana_cost_min=mana_cost_min, mana_cost_max=mana_cost_max,
+                                energy_cost_min=energy_cost_min, energy_cost_max=energy_cost_max,
+                                attack_min=attack_min, attack_max=attack_max,
+                                health_min=health_min, health_max=health_max,
+                                has_artwork=has_artwork, has_video=has_video) }}" 
+               class="px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg transition-colors">
+              <i class="fas fa-chevron-left mr-2"></i>Previous
+            </a>
+          {% else %}
+            <span class="px-4 py-2 bg-gray-600 text-gray-400 rounded-lg cursor-not-allowed">
+              <i class="fas fa-chevron-left mr-2"></i>Previous
+            </span>
+          {% endif %}
+          
+          <!-- Page Numbers -->
+          <div class="flex items-center space-x-2">
+            {% set start_page = [1, page - 2]|max %}
+            {% set end_page = [total_pages, page + 2]|min %}
+            
+            {% if start_page > 1 %}
+              <a href="{{ url_for('cards_list', page=1, q=q, category=category, color=color, rarity=rarity, card_set=card_set,
+                                  mana_cost_min=mana_cost_min, mana_cost_max=mana_cost_max,
+                                  energy_cost_min=energy_cost_min, energy_cost_max=energy_cost_max,
+                                  attack_min=attack_min, attack_max=attack_max,
+                                  health_min=health_min, health_max=health_max,
+                                  has_artwork=has_artwork, has_video=has_video) }}" 
+                 class="px-3 py-2 bg-gray-700 hover:bg-gray-600 text-white rounded transition-colors">1</a>
+              {% if start_page > 2 %}
+                <span class="px-3 py-2 text-gray-400">...</span>
+              {% endif %}
+            {% endif %}
+            
+            {% for p in range(start_page, end_page + 1) %}
+              {% if p == page %}
+                <span class="px-3 py-2 bg-indigo-600 text-white rounded font-semibold">{{ p }}</span>
+              {% else %}
+                <a href="{{ url_for('cards_list', page=p, q=q, category=category, color=color, rarity=rarity, card_set=card_set,
+                                    mana_cost_min=mana_cost_min, mana_cost_max=mana_cost_max,
+                                    energy_cost_min=energy_cost_min, energy_cost_max=energy_cost_max,
+                                    attack_min=attack_min, attack_max=attack_max,
+                                    health_min=health_min, health_max=health_max,
+                                    has_artwork=has_artwork, has_video=has_video) }}" 
+                   class="px-3 py-2 bg-gray-700 hover:bg-gray-600 text-white rounded transition-colors">{{ p }}</a>
+              {% endif %}
+            {% endfor %}
+            
+            {% if end_page < total_pages %}
+              {% if end_page < total_pages - 1 %}
+                <span class="px-3 py-2 text-gray-400">...</span>
+              {% endif %}
+              <a href="{{ url_for('cards_list', page=total_pages, q=q, category=category, color=color, rarity=rarity, card_set=card_set,
+                                  mana_cost_min=mana_cost_min, mana_cost_max=mana_cost_max,
+                                  energy_cost_min=energy_cost_min, energy_cost_max=energy_cost_max,
+                                  attack_min=attack_min, attack_max=attack_max,
+                                  health_min=health_min, health_max=health_max,
+                                  has_artwork=has_artwork, has_video=has_video) }}" 
+                 class="px-3 py-2 bg-gray-700 hover:bg-gray-600 text-white rounded transition-colors">{{ total_pages }}</a>
+            {% endif %}
+          </div>
+          
+          <!-- Next Page -->
+          {% if page < total_pages %}
+            <a href="{{ url_for('cards_list', page=page+1, q=q, category=category, color=color, rarity=rarity, card_set=card_set,
+                                mana_cost_min=mana_cost_min, mana_cost_max=mana_cost_max,
+                                energy_cost_min=energy_cost_min, energy_cost_max=energy_cost_max,
+                                attack_min=attack_min, attack_max=attack_max,
+                                health_min=health_min, health_max=health_max,
+                                has_artwork=has_artwork, has_video=has_video) }}" 
+               class="px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg transition-colors">
+              Next<i class="fas fa-chevron-right ml-2"></i>
+            </a>
+          {% else %}
+            <span class="px-4 py-2 bg-gray-600 text-gray-400 rounded-lg cursor-not-allowed">
+              Next<i class="fas fa-chevron-right ml-2"></i>
+            </span>
+          {% endif %}
+        </div>
+        {% endif %}
+      </div>
+      {% endif %}
     </main>
   </body>
   </html>

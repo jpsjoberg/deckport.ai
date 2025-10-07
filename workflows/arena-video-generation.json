@@ -1,0 +1,197 @@
+{
+  "1": {
+    "inputs": {
+      "image": "arena_input_image.png",
+      "upload": "image"
+    },
+    "class_type": "LoadImage",
+    "_meta": {
+      "title": "Load Arena Image"
+    }
+  },
+  "2": {
+    "inputs": {
+      "text": "Cinematic camera movement, slow zoom in, subtle parallax effect, atmospheric depth, professional cinematography, smooth motion",
+      "clip": [
+        "15",
+        0
+      ]
+    },
+    "class_type": "CLIPTextEncode",
+    "_meta": {
+      "title": "Video Motion Prompt (Positive)"
+    }
+  },
+  "3": {
+    "inputs": {
+      "text": "static image, no movement, jerky motion, abrupt changes, low quality, artifacts, glitches",
+      "clip": [
+        "15",
+        0
+      ]
+    },
+    "class_type": "CLIPTextEncode",
+    "_meta": {
+      "title": "Video Motion Prompt (Negative)"
+    }
+  },
+  "4": {
+    "inputs": {
+      "width": 1792,
+      "height": 1024,
+      "video_frames": 150,
+      "motion_bucket_id": 127,
+      "fps": 30,
+      "augmentation_level": 0,
+      "min_cfg": 1,
+      "conditioning_aug": [
+        "1",
+        0
+      ],
+      "positive": [
+        "2",
+        0
+      ],
+      "negative": [
+        "3",
+        0
+      ],
+      "model": [
+        "10",
+        0
+      ]
+    },
+    "class_type": "SVD_img2vid_Conditioning",
+    "_meta": {
+      "title": "Arena Video Generation"
+    }
+  },
+  "5": {
+    "inputs": {
+      "seed": 42,
+      "steps": 25,
+      "cfg": 2.5,
+      "sampler_name": "euler",
+      "scheduler": "karras",
+      "denoise": 1,
+      "model": [
+        "10",
+        0
+      ],
+      "positive": [
+        "4",
+        0
+      ],
+      "negative": [
+        "4",
+        1
+      ],
+      "latent_image": [
+        "4",
+        2
+      ]
+    },
+    "class_type": "KSampler",
+    "_meta": {
+      "title": "Video Sampler"
+    }
+  },
+  "6": {
+    "inputs": {
+      "samples": [
+        "5",
+        0
+      ],
+      "vae": [
+        "11",
+        0
+      ]
+    },
+    "class_type": "VAEDecode",
+    "_meta": {
+      "title": "VAE Decode Video"
+    }
+  },
+  "7": {
+    "inputs": {
+      "filename_prefix": "arena_video",
+      "fps": 30,
+      "lossless": false,
+      "quality": 95,
+      "method": "h264-mp4",
+      "images": [
+        "6",
+        0
+      ]
+    },
+    "class_type": "VHS_VideoCombine",
+    "_meta": {
+      "title": "Save Arena Video"
+    }
+  },
+  "8": {
+    "inputs": {
+      "images": [
+        "6",
+        0
+      ]
+    },
+    "class_type": "PreviewImage",
+    "_meta": {
+      "title": "Preview Video Frames"
+    }
+  },
+  "10": {
+    "inputs": {
+      "ckpt_name": "svd_xt_1_1.safetensors"
+    },
+    "class_type": "ImageOnlyCheckpointLoader",
+    "_meta": {
+      "title": "Load SVD Video Model"
+    }
+  },
+  "11": {
+    "inputs": {
+      "vae_name": "svd_xt_1_1.safetensors"
+    },
+    "class_type": "VAELoader",
+    "_meta": {
+      "title": "Load Video VAE"
+    }
+  },
+  "15": {
+    "inputs": {
+      "clip_name1": "t5xxl_fp16.safetensors",
+      "clip_name2": "clip_l.safetensors",
+      "type": "stable_video_diffusion"
+    },
+    "class_type": "DualCLIPLoader",
+    "_meta": {
+      "title": "Load Video CLIP"
+    }
+  },
+  "20": {
+    "inputs": {
+      "motion_type": "zoom_in",
+      "motion_strength": 0.3,
+      "duration_frames": 150,
+      "easing": "ease_in_out"
+    },
+    "class_type": "MotionControl",
+    "_meta": {
+      "title": "Arena Motion Control"
+    }
+  },
+  "21": {
+    "inputs": {
+      "camera_movement": "subtle_parallax",
+      "depth_effect": 0.2,
+      "atmospheric_particles": true,
+      "lighting_animation": "gentle_flicker"
+    },
+    "class_type": "CinematicEffects",
+    "_meta": {
+      "title": "Cinematic Arena Effects"
+    }
+  }
+}

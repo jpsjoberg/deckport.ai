@@ -17,9 +17,62 @@
     </header>
     <main class="container mx-auto p-4">
       <a href="/cards" class="text-sm text-gray-400">← Back</a>
-      <h1 class="text-3xl font-bold mb-2">{{ card.name }}</h1>
-      <div class="text-gray-300 mb-4">{{ card.product_sku }} • {{ card.category }} • {{ card.rarity }}</div>
-      <div class="p-4 bg-gray-800 rounded">Card details coming soon.</div>
+      <div class="grid grid-cols-1 md:grid-cols-2 gap-8">
+        <!-- Card Image -->
+        <div class="flex justify-center">
+          {% if card.artwork_url %}
+          <img src="/static/cards/composite/{{ card.name.lower().replace(' ', '_').replace("'", "") }}_composite.png" alt="{{ card.name }}" 
+               class="rounded-2xl shadow-2xl object-contain border border-gray-600" 
+               style="aspect-ratio: 5/7; max-width: 400px; width: 100%;"
+               onerror="this.src='{{ card.artwork_url }}'; this.onerror=function(){this.src='/static/placeholder-card.png';}">
+          {% else %}
+          <div class="bg-gray-800 rounded-2xl shadow-2xl border border-gray-600 flex items-center justify-center text-gray-400" 
+               style="aspect-ratio: 5/7; max-width: 400px; width: 100%;">
+            Card Image Coming Soon
+          </div>
+          {% endif %}
+        </div>
+        
+        <!-- Card Details -->
+        <div>
+          <h1 class="text-3xl font-bold mb-2">{{ card.name }}</h1>
+          <div class="text-gray-300 mb-4">{{ card.product_sku }} • {{ card.category }} • {{ card.rarity }}</div>
+          
+          {% if card.base_stats %}
+          <div class="bg-gray-800 rounded p-4 mb-4">
+            <h3 class="text-lg font-semibold mb-2">Stats</h3>
+            <div class="grid grid-cols-2 gap-2 text-sm">
+              {% if card.base_stats.attack %}
+              <div>⚔️ Attack: {{ card.base_stats.attack }}</div>
+              {% endif %}
+              {% if card.base_stats.defense %}
+              <div>🛡️ Defense: {{ card.base_stats.defense }}</div>
+              {% endif %}
+              {% if card.base_stats.health %}
+              <div>❤️ Health: {{ card.base_stats.health }}</div>
+              {% endif %}
+              {% if card.base_stats.energy_cost %}
+              <div>⚡ Energy: {{ card.base_stats.energy_cost }}</div>
+              {% endif %}
+            </div>
+          </div>
+          {% endif %}
+          
+          {% if card.rules_text %}
+          <div class="bg-gray-800 rounded p-4 mb-4">
+            <h3 class="text-lg font-semibold mb-2">Rules</h3>
+            <p class="text-gray-300">{{ card.rules_text }}</p>
+          </div>
+          {% endif %}
+          
+          {% if card.flavor_text %}
+          <div class="bg-gray-800 rounded p-4">
+            <h3 class="text-lg font-semibold mb-2">Flavor</h3>
+            <p class="text-gray-400 italic">{{ card.flavor_text }}</p>
+          </div>
+          {% endif %}
+        </div>
+      </div>
     </main>
   </body>
   </html>

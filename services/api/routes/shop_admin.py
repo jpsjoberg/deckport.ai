@@ -137,7 +137,7 @@ def get_products():
                     'is_active': product.is_active,
                     'is_featured': product.is_featured,
                     'product_type': product.product_type,
-                    'category_name': None,  # TODO: Add category relationship
+                    'category_name': product.category.name if hasattr(product, 'category') and product.category else None,
                     'category_id': product.category_id,
                     'image_url': product.image_url,
                     'created_at': product.created_at.isoformat(),
@@ -242,7 +242,7 @@ def get_product(product_id):
                 'currency': product.currency,
                 'product_type': product.product_type,
                 'category_id': product.category_id,
-                'category_name': None,  # TODO: Add category relationship
+                'category_name': product.category.name if hasattr(product, 'category') and product.category else None,
                 'stock_quantity': product.stock_quantity,
                 'low_stock_threshold': product.low_stock_threshold,
                 'track_inventory': product.track_inventory,

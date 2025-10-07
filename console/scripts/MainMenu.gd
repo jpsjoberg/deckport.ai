@@ -270,7 +270,6 @@ func _on_match_found(match_data: Dictionary):
 		"match_id": match_id,
 		"opponent": opponent.get("display_name", "unknown")
 	})
-	})
 	
 	# Update UI
 	is_in_queue = false

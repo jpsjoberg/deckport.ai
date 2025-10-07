@@ -29,9 +29,9 @@ sudo apt install -y \
 echo "👤 Adding user to dialout group..."
 sudo usermod -a -G dialout $USER
 
-# Install Python dependencies
-echo "🐍 Installing Python dependencies..."
-pip3 install --user nfcpy cryptography requests
+# Install Python dependencies (optimized for OMNIKEY 5422)
+echo "🐍 Installing Python dependencies for OMNIKEY 5422..."
+pip3 install --user nfcpy cryptography requests pyscard tqdm colorama
 
 # Test NFC setup
 echo ""
@@ -58,6 +58,7 @@ echo "2. Log out and log back in (or restart) to apply group changes"
 echo "3. Test with: python3 scripts/nfc_card_programmer.py --check-hardware"
 echo ""
 echo "🔧 Supported NFC readers:"
+echo "   ✅ OMNIKEY 5422 (Professional grade, 076b:5422) - RECOMMENDED"
 echo "   - ACR122U (USB, ~$40)"
 echo "   - PN532 (Arduino/Pi, ~$15)" 
 echo "   - ACR1252U (USB contactless, ~$60)"

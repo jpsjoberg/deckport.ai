@@ -1,38 +1,82 @@
 extends Node
-class_name NetworkClient
+# class_name NetworkClient  # Commented out to avoid autoload conflict
 
-# Network Client for Deckport Console
-# Handles all API communication including gameplay, matchmaking, and real-time features
+##
+## Network Client - Real-time Multiplayer Communication System
+##
+## This class handles all network communication between the console and server,
+## including HTTP API calls for game data and WebSocket connections for real-time
+## multiplayer features like matchmaking, battle synchronization, and live updates.
+##
+## Key Features:
+## - HTTP API communication for game data and authentication
+## - WebSocket real-time communication for multiplayer features
+## - Automatic reconnection and error handling
+## - Match state synchronization between players
+## - Matchmaking queue management
+## - Card play validation and broadcasting
+## - Connection state management with fallback mechanisms
+##
+## Network Architecture:
+## - HTTP API (Port 8002): Game data, authentication, card validation
+## - WebSocket (Port 8003): Real-time multiplayer, matchmaking, live updates
+##
+## Dependencies:
+## - Server Logger: Network event logging
+## - Game State Manager: Local state synchronization
+##
+## @author Deckport.ai Development Team
+## @version 1.0
+## @since 2024-12-28
+##
 
+#region Network Signals
+## Emitted when successfully connected to the server
 signal connected_to_server()
+## Emitted when disconnected from the server
 signal disconnected_from_server()
+## Emitted when matchmaking finds a match
 signal match_found(match_data: Dictionary)
+## Emitted when a match begins
 signal match_started(game_state: Dictionary)
+## Emitted when a match concludes
 signal match_ended(result: Dictionary)
+## Emitted when game state is updated during battle
 signal game_state_updated(state: Dictionary)
+## Emitted when a card is played by any player
 signal card_played(card_data: Dictionary)
+## Emitted when battle phase changes (start, main, attack, end)
 signal phase_changed(phase_data: Dictionary)
+## Emitted when turn or battle timer updates
 signal timer_updated(timer_data: Dictionary)
+## Emitted when a network error occurs
 signal error_occurred(error_message: String)
+#endregion
 
-# Server configuration
-var server_url: String = "http://127.0.0.1:8002"
-var websocket_url: String = "ws://127.0.0.1:8003"
-var api_token: String = ""
-var device_uid: String = ""
-var player_id: int = 0
-var current_match_id: String = ""
+#region Server Configuration
+## Network endpoints and connection settings
+var server_url: String = "https://deckport.ai"    ## HTTP API endpoint
+var websocket_url: String = "ws://127.0.0.1:8004"   ## WebSocket real-time endpoint
+var api_token: String = ""                          ## Authentication token
+var device_uid: String = ""                         ## Console device identifier
+var player_id: int = 0                             ## Current player ID
+var current_match_id: String = ""                  ## Active match identifier
+#endregion
 
-# HTTP client for API calls
-var http_client: HTTPRequest
-var websocket: WebSocketPeer
+#region Network Components
+## Core networking objects and connection management
+var http_client: HTTPRequest    ## HTTP client for API calls
+var websocket: WebSocketPeer   ## WebSocket for real-time communication
+#endregion
 
-# Connection state
-var is_network_connected: bool = false
-var is_in_match: bool = false
-var reconnect_attempts: int = 0
-var max_reconnect_attempts: int = 5
-var server_logger
+#region Connection State
+## Network connection status and retry management
+var is_network_connected: bool = false    ## Whether connected to server
+var is_in_match: bool = false            ## Whether currently in an active match
+var reconnect_attempts: int = 0          ## Current reconnection attempt count
+var max_reconnect_attempts: int = 5      ## Maximum reconnection attempts before giving up
+var server_logger                       ## Server logging instance
+#endregion
 
 func _ready():
 	# Initialize server logger
@@ -48,7 +92,7 @@ func _ready():
 	# Initialize WebSocket
 	websocket = WebSocketPeer.new()
 
-func _process(delta):
+func _process(_delta):
 	# Poll WebSocket
 	if websocket.get_ready_state() != WebSocketPeer.STATE_CLOSED:
 		websocket.poll()
@@ -76,12 +120,57 @@ func _process(delta):
 
 # === AUTHENTICATION ===
 
+func authenticate_with_managers():
+	"""Authenticate using device and player session managers"""
+	# Get device connection manager
+	var device_manager = get_node("/root/DeviceConnectionManager")
+	if not device_manager:
+		server_logger.log_error("NetworkClient", "Device connection manager not found")
+		error_occurred.emit("Device authentication not available")
+		return
+	
+	# Get player session manager
+	var player_manager = get_node("/root/PlayerSessionManager")
+	if not player_manager:
+		server_logger.log_error("NetworkClient", "Player session manager not found")
+		error_occurred.emit("Player authentication not available")
+		return
+	
+	# Check if both are authenticated
+	if not device_manager.is_authenticated():
+		server_logger.log_error("NetworkClient", "Device not authenticated")
+		error_occurred.emit("Device authentication required")
+		return
+	
+	if not player_manager.is_session_valid():
+		server_logger.log_error("NetworkClient", "Player not authenticated")
+		error_occurred.emit("Player authentication required")
+		return
+	
+	# Use player JWT for WebSocket connection (includes player identity)
+	api_token = player_manager.player_jwt
+	device_uid = device_manager.get_device_uid()
+	player_id = player_manager.player_id
+	
+	server_logger.log_system_event("NetworkClient", "Authenticating with server", {
+		"device_uid": device_uid,
+		"player_id": player_id
+	})
+	
+	# Connect to WebSocket with player authentication
+	var headers = ["Authorization: Bearer " + api_token]
+	var error = websocket.connect_to_url(websocket_url, headers)
+	
+	if error != OK:
+		server_logger.log_error("NetworkClient", "Failed to connect WebSocket", {"error": error})
+		error_occurred.emit("Failed to connect to server")
+
 func authenticate(token: String, device_id: String):
-	"""Authenticate with the server"""
+	"""Legacy authenticate method - use authenticate_with_managers() instead"""
 	api_token = token
 	device_uid = device_id
 	
-	server_logger.log_system_event("NetworkClient", "Authenticating with server")
+	server_logger.log_system_event("NetworkClient", "Legacy authentication")
 	
 	# Connect to WebSocket with authentication
 	var headers = ["Authorization: Bearer " + api_token]
@@ -240,13 +329,35 @@ func simulate_card_scan(card_sku: String):
 
 # === PRIVATE METHODS ===
 
+func _get_authenticated_headers() -> Array[String]:
+	"""Get authentication headers using session managers"""
+	var headers = ["Content-Type: application/json"]
+	
+	# Get player session manager for player JWT
+	var player_manager = get_node("/root/PlayerSessionManager")
+	if player_manager and player_manager.is_session_valid():
+		headers.append("Authorization: Bearer " + player_manager.player_jwt)
+	
+	# Get device manager for device UID
+	var device_manager = get_node("/root/DeviceConnectionManager")
+	if device_manager:
+		headers.append("X-Device-UID: " + device_manager.get_device_uid())
+	
+	return headers
+
 func _make_api_request(method: String, endpoint: String, data: Dictionary, callback: String):
 	"""Make HTTP API request"""
 	var url = server_url + endpoint
-	var headers = [
-		"Content-Type: application/json",
-		"Authorization: Bearer " + api_token
-	]
+	
+	# Get authentication headers from session managers
+	var headers = _get_authenticated_headers()
+	
+	# Fallback to legacy token if managers not available
+	if headers.is_empty():
+		headers = [
+			"Content-Type: application/json",
+			"Authorization: Bearer " + api_token
+		]
 	
 	var json_data = ""
 	if data != null:
@@ -365,8 +476,8 @@ func _handle_timer_tick(message: Dictionary):
 func _handle_sync_snapshot(message: Dictionary):
 	"""Handle full state synchronization"""
 	server_logger.log_system_event("networkclient_received_state_sync")
-	var_full_state_=_message.get("full_state", {})
-	game_state_updated.emit({"type": "full_sync", "state": full_state})
+	var state_data = message.get("full_state", {})
+	game_state_updated.emit({"type": "full_sync", "state": state_data})
 
 func _handle_error_message(message: Dictionary):
 	"""Handle error message from server"""
@@ -376,7 +487,7 @@ func _handle_error_message(message: Dictionary):
 
 # === HTTP RESPONSE HANDLERS ===
 
-func _on_http_request_completed(result: int, response_code: int, headers: PackedStringArray, body: PackedByteArray):
+func _on_http_request_completed(_result: int, response_code: int, _headers: PackedStringArray, body: PackedByteArray):
 	"""Handle HTTP request completion"""
 	var callback = http_client.get_meta("callback", "")
 	var endpoint = http_client.get_meta("endpoint", "")
@@ -446,7 +557,7 @@ func _on_match_start_response(code: int, data: Dictionary):
 	"""Handle match start response"""
 	if code == 200:
 		server_logger.log_system_event("networkclient_match_started_successfully")
-		is_in_match_=_true
+		is_in_match = true
 		match_started.emit(data.get("game_state", {}))
 	else:
 		var error_msg = data.get("error", "Failed to start match")

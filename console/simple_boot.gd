@@ -31,9 +31,14 @@ func _ready():
 	server_logger = preload("res://server_logger.gd").new()
 	add_child(server_logger)
 	
-	# Initialize device connection manager
-	device_connection_manager = preload("res://device_connection_manager.gd").new()
-	add_child(device_connection_manager)
+	# Get device connection manager autoload singleton
+	if has_node("/root/DeviceConnectionManager"):
+		device_connection_manager = get_node("/root/DeviceConnectionManager")
+		print("✅ DeviceConnectionManager autoload found")
+	else:
+		print("⚠️ DeviceConnectionManager not found - creating fallback")
+		device_connection_manager = preload("res://device_connection_manager.gd").new()
+		add_child(device_connection_manager)
 	
 	# Update server logger with device UID once it's available
 	await get_tree().process_frame  # Wait for device connection manager to initialize

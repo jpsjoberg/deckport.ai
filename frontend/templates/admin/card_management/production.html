@@ -1,0 +1,474 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Card Production - Deckport Admin</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.8.1/font/bootstrap-icons.css" rel="stylesheet">
+</head>
+<body>
+    <nav class="navbar navbar-expand-lg navbar-dark bg-dark">
+        <div class="container-fluid">
+            <a class="navbar-brand" href="/admin/">
+                <i class="bi bi-shield-check"></i> Deckport Admin
+            </a>
+            <div class="navbar-nav">
+                <a class="nav-link" href="/admin/">Dashboard</a>
+                <a class="nav-link" href="/admin/cards">Cards</a>
+                <a class="nav-link active" href="/admin/cards/production">Production</a>
+            </div>
+        </div>
+    </nav>
+
+    <div class="container-fluid mt-4">
+        <div class="row">
+            <div class="col-12">
+                <h1 class="h2 mb-4">
+                    <i class="bi bi-collection"></i> Card Graphics Production
+                    <small class="text-muted">Generate Raw Art, Framed Cards, Videos & Thumbnails</small>
+                </h1>
+            </div>
+        </div>
+
+        <!-- Status Cards -->
+        <div class="row mb-4">
+            <div class="col-md-2">
+                <div class="card border-primary text-center">
+                    <div class="card-body">
+                        <i class="bi bi-collection fs-1 text-primary"></i>
+                        <h5 class="card-title mt-2">Total Cards</h5>
+                        <h3 class="text-primary">{{ db_status.total_cards or 0 }}</h3>
+                        <small class="text-muted">In Database</small>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="col-md-2">
+                <div class="card border-success text-center">
+                    <div class="card-body">
+                        <i class="bi bi-chat-quote fs-1 text-success"></i>
+                        <h5 class="card-title mt-2">Ready</h5>
+                        <h3 class="text-success">{{ db_status.cards_with_prompts or 0 }}</h3>
+                        <small class="text-muted">With Prompts</small>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="col-md-2">
+                <div class="card border-info text-center">
+                    <div class="card-body">
+                        <i class="bi bi-images fs-1 text-info"></i>
+                        <h5 class="card-title mt-2">Generated</h5>
+                        <h3 class="text-info">{{ db_status.cards_with_artwork or 0 }}</h3>
+                        <small class="text-muted">{{ "%.1f"|format(db_status.completion_percentage or 0) }}%</small>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="col-md-2">
+                <div class="card border-warning text-center">
+                    <div class="card-body">
+                        <i class="bi bi-camera-video fs-1 text-warning"></i>
+                        <h5 class="card-title mt-2">Videos</h5>
+                        <h3 class="text-warning">{{ db_status.cards_with_video or 0 }}</h3>
+                        <small class="text-muted">Animated</small>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="col-md-2">
+                <div class="card border-secondary text-center">
+                    <div class="card-body">
+                        <i class="bi bi-exclamation-triangle fs-1 text-secondary"></i>
+                        <h5 class="card-title mt-2">Missing</h5>
+                        <h3 class="text-secondary">{{ db_status.missing_prompts or 0 }}</h3>
+                        <small class="text-muted">No Prompts</small>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="col-md-2">
+                <div class="card border-dark text-center">
+                    <div class="card-body">
+                        <i class="bi bi-cloud fs-1 text-dark"></i>
+                        <h5 class="card-title mt-2">ComfyUI</h5>
+                        {% if comfyui_status.online %}
+                            <span class="badge bg-success">Online</span>
+                        {% else %}
+                            <span class="badge bg-danger">Offline</span>
+                        {% endif %}
+                        <small class="text-muted d-block mt-1">{{ comfyui_status.host }}</small>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Production Controls -->
+        <div class="row">
+            <div class="col-lg-8">
+                <div class="card">
+                    <div class="card-header bg-primary text-white">
+                        <h5 class="card-title mb-0">
+                            <i class="bi bi-play-circle"></i> Graphics Production Control
+                        </h5>
+                    </div>
+                    <div class="card-body">
+                        <div class="alert alert-info">
+                            <strong>Production Scope:</strong> {{ db_status.ready_for_generation or 0 }} cards ready for generation
+                        </div>
+                        
+                        <form id="productionForm">
+                            <div class="row">
+                                <div class="col-md-6">
+                                    <div class="mb-3">
+                                        <label for="productionType" class="form-label">Production Type</label>
+                                        <select class="form-select" id="productionType" onchange="toggleRangeInputs()">
+                                            <option value="all">All Cards with Prompts ({{ db_status.ready_for_generation or 0 }} cards)</option>
+                                            <option value="batch">Custom Range</option>
+                                        </select>
+                                    </div>
+                                </div>
+                                <div class="col-md-6">
+                                    <div class="mb-3">
+                                        <label for="maxWorkers" class="form-label">Parallel Workers</label>
+                                        <select class="form-select" id="maxWorkers">
+                                            <option value="2">2 Workers (Safe)</option>
+                                            <option value="4" selected>4 Workers (Recommended)</option>
+                                            <option value="6">6 Workers (Fast)</option>
+                                        </select>
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <!-- Range Inputs (Hidden by default) -->
+                            <div class="row" id="rangeInputs" style="display: none;">
+                                <div class="col-md-6">
+                                    <div class="mb-3">
+                                        <label for="startIndex" class="form-label">Start Index</label>
+                                        <input type="number" class="form-control" id="startIndex" value="0" min="0" max="2599">
+                                        <div class="form-text">Card index to start from (0-based)</div>
+                                    </div>
+                                </div>
+                                <div class="col-md-6">
+                                    <div class="mb-3">
+                                        <label for="endIndex" class="form-label">End Index</label>
+                                        <input type="number" class="form-control" id="endIndex" placeholder="e.g. 50" min="1" max="2600">
+                                        <div class="form-text">Card index to end at (leave empty for all)</div>
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <div class="row">
+                                <div class="col-12">
+                                    <div class="mb-3">
+                                        <label class="form-label">Asset Generation Options</label>
+                                        <div class="row">
+                                            <div class="col-md-6">
+                                                <div class="form-check">
+                                                    <input class="form-check-input" type="checkbox" id="generateVideos">
+                                                    <label class="form-check-label" for="generateVideos">
+                                                        Generate Video Backgrounds (3-second loops)
+                                                    </label>
+                                                </div>
+                                                <div class="form-check">
+                                                    <input class="form-check-input" type="checkbox" id="generateThumbnails" checked>
+                                                    <label class="form-check-label" for="generateThumbnails">
+                                                        Generate Thumbnails (300x420px)
+                                                    </label>
+                                                </div>
+                                            </div>
+                                            <div class="col-md-6">
+                                                <div class="form-check">
+                                                    <input class="form-check-input" type="checkbox" id="skipExisting" checked>
+                                                    <label class="form-check-label" for="skipExisting">
+                                                        Skip cards with existing assets
+                                                    </label>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <div class="d-grid gap-2 d-md-flex justify-content-md-end">
+                                <button type="button" class="btn btn-outline-info" onclick="refreshStats()">
+                                    <i class="bi bi-arrow-clockwise"></i> Refresh Stats
+                                </button>
+                                <button type="button" class="btn btn-success btn-lg" onclick="startProduction()" 
+                                        {% if not (db_status.ready_for_generation and comfyui_status.online) %}disabled{% endif %}>
+                                    <i class="bi bi-play-fill"></i> Start Graphics Production
+                                </button>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="col-lg-4">
+                <!-- Queue Status -->
+                <div class="card">
+                    <div class="card-header">
+                        <h5 class="card-title mb-0">
+                            <i class="bi bi-list-task"></i> Production Queue
+                        </h5>
+                    </div>
+                    <div class="card-body">
+                        {% if recent_jobs %}
+                            {% for job in recent_jobs %}
+                            <div class="d-flex justify-content-between align-items-center mb-2 p-2 border rounded">
+                                <div>
+                                    <small class="fw-bold">{{ job.job_type.value.replace('_', ' ').title() }}</small><br>
+                                    <small class="text-muted">{{ job.id[:12] }}...</small>
+                                </div>
+                                <div class="text-end">
+                                    {% if job.status.value == 'pending' %}
+                                        <span class="badge bg-warning">Pending</span>
+                                    {% elif job.status.value == 'processing' %}
+                                        <span class="badge bg-primary">{{ job.progress }}%</span>
+                                    {% elif job.status.value == 'completed' %}
+                                        <span class="badge bg-success">Complete</span>
+                                    {% elif job.status.value == 'failed' %}
+                                        <span class="badge bg-danger">Failed</span>
+                                    {% endif %}
+                                    <br>
+                                    <small class="text-muted">{{ job.successful_cards }}/{{ job.total_cards }}</small>
+                                </div>
+                            </div>
+                            {% endfor %}
+                        {% else %}
+                            <p class="text-muted">No recent production jobs</p>
+                            <div class="alert alert-info">
+                                <small>Start a production job to generate card graphics</small>
+                            </div>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Progress Display -->
+        <div class="row mt-4" id="progressSection" style="display: none;">
+            <div class="col-12">
+                <div class="card">
+                    <div class="card-header">
+                        <h5 class="card-title mb-0">
+                            <i class="bi bi-bar-chart"></i> Production Progress
+                        </h5>
+                    </div>
+                    <div class="card-body">
+                        <div id="progressContent">
+                            <!-- Progress will be shown here -->
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.bundle.min.js"></script>
+<script>
+let currentJobId = null;
+let progressInterval = null;
+
+function toggleRangeInputs() {
+    const productionType = document.getElementById('productionType').value;
+    const rangeInputs = document.getElementById('rangeInputs');
+    rangeInputs.style.display = productionType === 'batch' ? 'block' : 'none';
+}
+
+function startProduction() {
+    const formData = {
+        production_type: document.getElementById('productionType').value,
+        max_workers: parseInt(document.getElementById('maxWorkers').value),
+        generate_videos: document.getElementById('generateVideos').checked ? 'true' : 'false',
+        generate_thumbnails: document.getElementById('generateThumbnails').checked ? 'true' : 'false',
+        skip_existing_assets: document.getElementById('skipExisting').checked ? 'true' : 'false'
+    };
+    
+    // Add range data if custom range is selected
+    if (formData.production_type === 'batch') {
+        formData.start_index = parseInt(document.getElementById('startIndex').value) || 0;
+        const endIndex = document.getElementById('endIndex').value;
+        if (endIndex) {
+            formData.end_index = parseInt(endIndex);
+        }
+    }
+    
+    // Calculate actual card count based on selection
+    let cardCount, estimatedHours;
+    
+    if (formData.production_type === 'batch') {
+        const startIdx = formData.start_index || 0;
+        const endIdx = formData.end_index || {{ db_status.ready_for_generation or 0 }};
+        cardCount = endIdx - startIdx;
+        const estimatedMinutes = cardCount * 2.5; // ~2.5 minutes per card
+        estimatedHours = estimatedMinutes < 60 ? `${Math.round(estimatedMinutes)} minutes` : `${Math.round(estimatedMinutes / 60)} hours`;
+    } else {
+        cardCount = {{ db_status.ready_for_generation or 0 }};
+        const estimatedMinutes = cardCount * 2.5;
+        estimatedHours = `${Math.round(estimatedMinutes / 60)} hours`;
+    }
+    
+    if (!confirm(`Start production for ${cardCount} cards? Estimated time: ${estimatedHours}`)) {
+        return;
+    }
+    
+    fetch('/admin/cards/production/start', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(formData)
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            currentJobId = data.job_id;
+            showAlert('success', data.message);
+            startProgressMonitoring(data.job_id);
+        } else {
+            showAlert('danger', 'Production failed: ' + data.error);
+        }
+    })
+    .catch(error => {
+        showAlert('danger', 'Error: ' + error.message);
+    });
+}
+
+function startProgressMonitoring(jobId) {
+    if (progressInterval) {
+        clearInterval(progressInterval);
+    }
+    
+    document.getElementById('progressSection').style.display = 'block';
+    
+    progressInterval = setInterval(() => {
+        fetch(`/admin/cards/production/status/${jobId}`)
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                updateProgressDisplay(data.job);
+                
+                // Stop monitoring if job is complete
+                if (data.job.status === 'completed' || data.job.status === 'failed') {
+                    clearInterval(progressInterval);
+                    progressInterval = null;
+                }
+            }
+        })
+        .catch(error => {
+            console.error('Progress monitoring error:', error);
+        });
+    }, 5000); // Check every 5 seconds
+}
+
+function updateProgressDisplay(job) {
+    const progressDiv = document.getElementById('progressContent');
+    
+    let statusClass = 'primary';
+    if (job.status === 'completed') statusClass = 'success';
+    else if (job.status === 'failed') statusClass = 'danger';
+    else if (job.status === 'processing') statusClass = 'info';
+    
+    const html = `
+        <div class="card border-${statusClass}">
+            <div class="card-header bg-${statusClass} text-white">
+                <h6 class="mb-0">Production Job: ${job.id}</h6>
+            </div>
+            <div class="card-body">
+                <div class="row text-center mb-3">
+                    <div class="col-md-2">
+                        <h5>${job.status.toUpperCase()}</h5>
+                        <small>Status</small>
+                    </div>
+                    <div class="col-md-2">
+                        <h5>${job.progress}%</h5>
+                        <small>Progress</small>
+                    </div>
+                    <div class="col-md-2">
+                        <h5>${job.processed_cards}</h5>
+                        <small>Processed</small>
+                    </div>
+                    <div class="col-md-2">
+                        <h5>${job.successful_cards}</h5>
+                        <small>Successful</small>
+                    </div>
+                    <div class="col-md-2">
+                        <h5>${job.failed_cards}</h5>
+                        <small>Failed</small>
+                    </div>
+                    <div class="col-md-2">
+                        <h5>${job.total_cards}</h5>
+                        <small>Total</small>
+                    </div>
+                </div>
+                
+                ${job.progress > 0 ? `
+                <div class="progress mb-3">
+                    <div class="progress-bar bg-${statusClass}" role="progressbar" 
+                         style="width: ${job.progress}%" 
+                         aria-valuenow="${job.progress}" aria-valuemin="0" aria-valuemax="100">
+                        ${job.progress}%
+                    </div>
+                </div>
+                ` : ''}
+                
+                <div class="row">
+                    <div class="col-md-6">
+                        <h6>Assets Being Generated:</h6>
+                        <ul class="list-unstyled">
+                            <li><i class="bi bi-palette"></i> Raw Artwork (ComfyUI)</li>
+                            <li><i class="bi bi-card-image"></i> Framed Cards (1500x2100px)</li>
+                            <li><i class="bi bi-crop"></i> Frame Overlays (Transparent)</li>
+                            <li><i class="bi bi-image"></i> Thumbnails (300x420px)</li>
+                            ${document.getElementById('generateVideos').checked ? '<li><i class="bi bi-camera-video"></i> Video Backgrounds (3sec loops)</li>' : ''}
+                        </ul>
+                    </div>
+                    <div class="col-md-6">
+                        <h6>Storage Locations:</h6>
+                        <ul class="list-unstyled small">
+                            <li><code>/static/cards/artwork/</code></li>
+                            <li><code>/static/cards/composite/</code></li>
+                            <li><code>/static/cards/frames/</code></li>
+                            <li><code>/static/cards/thumbnails/</code></li>
+                            <li><code>/static/cards/videos/</code></li>
+                        </ul>
+                    </div>
+                </div>
+                
+                ${job.error_message ? `
+                <div class="alert alert-danger mt-3">
+                    <strong>Error:</strong> ${job.error_message}
+                </div>
+                ` : ''}
+            </div>
+        </div>
+    `;
+    
+    progressDiv.innerHTML = html;
+}
+
+function refreshStats() {
+    location.reload();
+}
+
+function showAlert(type, message) {
+    const alertDiv = document.createElement('div');
+    alertDiv.className = `alert alert-${type} alert-dismissible fade show`;
+    alertDiv.innerHTML = `
+        ${message}
+        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+    `;
+    
+    document.querySelector('.container-fluid').insertBefore(alertDiv, document.querySelector('.row'));
+    
+    setTimeout(() => {
+        if (alertDiv.parentNode) {
+            alertDiv.remove();
+        }
+    }, 5000);
+}
+</script>
+</body>
+</html>

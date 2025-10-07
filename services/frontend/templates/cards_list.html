@@ -5,6 +5,104 @@
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <title>Cards</title>
     <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet" />
+    <style>
+      /* Ultra Strong Mana Color Glows - Triple layered for maximum visibility */
+      .card-glow-crimson { 
+        box-shadow: 
+          0 0 20px 4px rgba(220, 38, 38, 1.0),
+          0 0 60px 15px rgba(220, 38, 38, 0.8), 
+          0 0 120px 25px rgba(220, 38, 38, 0.4),
+          0 0 200px rgba(220, 38, 38, 0.2); 
+      }
+      .card-glow-azure { 
+        box-shadow: 
+          0 0 20px 4px rgba(59, 130, 246, 1.0),
+          0 0 60px 15px rgba(59, 130, 246, 0.8), 
+          0 0 120px 25px rgba(59, 130, 246, 0.4),
+          0 0 200px rgba(59, 130, 246, 0.2); 
+      }
+      .card-glow-verdant { 
+        box-shadow: 
+          0 0 20px 4px rgba(34, 197, 94, 1.0),
+          0 0 60px 15px rgba(34, 197, 94, 0.8), 
+          0 0 120px 25px rgba(34, 197, 94, 0.4),
+          0 0 200px rgba(34, 197, 94, 0.2); 
+      }
+      .card-glow-obsidian { 
+        box-shadow: 
+          0 0 20px 4px rgba(139, 69, 19, 1.0),
+          0 0 60px 15px rgba(139, 69, 19, 0.8), 
+          0 0 120px 25px rgba(139, 69, 19, 0.4),
+          0 0 200px rgba(139, 69, 19, 0.2); 
+      }
+      .card-glow-radiant { 
+        box-shadow: 
+          0 0 25px 6px rgba(251, 191, 36, 1.0),
+          0 0 70px 20px rgba(251, 191, 36, 0.9), 
+          0 0 140px 30px rgba(251, 191, 36, 0.5),
+          0 0 220px rgba(251, 191, 36, 0.3); 
+      }
+      .card-glow-aether { 
+        box-shadow: 
+          0 0 20px 4px rgba(168, 85, 247, 1.0),
+          0 0 60px 15px rgba(168, 85, 247, 0.8), 
+          0 0 120px 25px rgba(168, 85, 247, 0.4),
+          0 0 200px rgba(168, 85, 247, 0.2); 
+      }
+      
+      /* Strong fallback category glows */
+      .card-glow-creature { 
+        box-shadow: 
+          0 0 20px 4px rgba(34, 197, 94, 1.0),
+          0 0 60px 15px rgba(34, 197, 94, 0.7), 
+          0 0 120px 25px rgba(34, 197, 94, 0.3); 
+      }
+      .card-glow-structure { 
+        box-shadow: 
+          0 0 20px 4px rgba(168, 85, 247, 1.0),
+          0 0 60px 15px rgba(168, 85, 247, 0.7), 
+          0 0 120px 25px rgba(168, 85, 247, 0.3); 
+      }
+      .card-glow-action_fast { 
+        box-shadow: 
+          0 0 20px 4px rgba(239, 68, 68, 1.0),
+          0 0 60px 15px rgba(239, 68, 68, 0.7), 
+          0 0 120px 25px rgba(239, 68, 68, 0.3); 
+      }
+      .card-glow-action_slow { 
+        box-shadow: 
+          0 0 20px 4px rgba(59, 130, 246, 1.0),
+          0 0 60px 15px rgba(59, 130, 246, 0.7), 
+          0 0 120px 25px rgba(59, 130, 246, 0.3); 
+      }
+      .card-glow-equipment { 
+        box-shadow: 
+          0 0 20px 4px rgba(245, 158, 11, 1.0),
+          0 0 60px 15px rgba(245, 158, 11, 0.7), 
+          0 0 120px 25px rgba(245, 158, 11, 0.3); 
+      }
+      .card-glow-enchantment { 
+        box-shadow: 
+          0 0 20px 4px rgba(236, 72, 153, 1.0),
+          0 0 60px 15px rgba(236, 72, 153, 0.7), 
+          0 0 120px 25px rgba(236, 72, 153, 0.3); 
+      }
+      .card-glow-hero { 
+        box-shadow: 
+          0 0 25px 6px rgba(251, 191, 36, 1.0),
+          0 0 70px 20px rgba(251, 191, 36, 0.8), 
+          0 0 140px 30px rgba(251, 191, 36, 0.4); 
+      }
+      
+      /* Legendary gets the ultimate glow */
+      .card-glow-legendary { 
+        box-shadow: 
+          0 0 30px 8px rgba(251, 191, 36, 1.0),
+          0 0 80px 25px rgba(251, 191, 36, 0.9), 
+          0 0 160px 40px rgba(251, 191, 36, 0.6),
+          0 0 250px rgba(251, 191, 36, 0.4); 
+      }
+    </style>
   </head>
   <body class="bg-gray-900 text-white">
     <header class="p-4 flex justify-between container mx-auto">
@@ -26,11 +124,34 @@
       </form>
       <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
         {% for c in items %}
-        <a href="/cards/{{ c.product_sku }}" class="block p-4 bg-gray-800 rounded hover:bg-gray-700">
-          <div class="text-sm text-gray-400">{{ c.product_sku }}</div>
-          <div class="font-semibold">{{ c.name }}</div>
-          <div class="text-xs text-gray-400">{{ c.category }} • {{ c.rarity }}</div>
-        </a>
+        <div class="flex flex-col items-center">
+          <a href="/cards/{{ c.product_sku }}" class="block group">
+            <div class="bg-gray-800 rounded-xl shadow-xl transition-all duration-500 ease-out overflow-hidden
+                        {% if c.colors and c.colors[0] %}group-hover:card-glow-{{ c.colors[0].lower() }}{% elif 'CRIMSON' in c.product_sku or 'crimson' in c.name.lower() or 'burn' in c.name.lower() or 'fire' in c.name.lower() %}group-hover:card-glow-crimson{% elif 'AZURE' in c.product_sku or 'azure' in c.name.lower() or 'tide' in c.name.lower() or 'water' in c.name.lower() %}group-hover:card-glow-azure{% elif 'VERDANT' in c.product_sku or 'verdant' in c.name.lower() or 'grove' in c.name.lower() or 'wild' in c.name.lower() or 'bloom' in c.name.lower() %}group-hover:card-glow-verdant{% elif 'OBSIDIAN' in c.product_sku or 'obsidian' in c.name.lower() or 'grave' in c.name.lower() or 'coal' in c.name.lower() or 'basalt' in c.name.lower() %}group-hover:card-glow-obsidian{% elif 'RADIANT' in c.product_sku or 'radiant' in c.name.lower() or 'light' in c.name.lower() or 'solar' in c.name.lower() %}group-hover:card-glow-radiant{% elif 'AETHER' in c.product_sku or 'aether' in c.name.lower() or 'void' in c.name.lower() %}group-hover:card-glow-aether{% else %}group-hover:card-glow-{{ c.category.lower() }}{% endif %}
+                        group-hover:card-glow-{{ c.rarity.lower() }}
+                        transform group-hover:scale-110 group-hover:rotate-2 group-hover:-translate-y-2" 
+                 style="aspect-ratio: 5/7; width: 200px;">
+              {% if c.artwork_url %}
+              <img src="{{ c.artwork_url }}" alt="{{ c.name }}" 
+                   class="w-full h-full object-contain transition-all duration-300 group-hover:brightness-110" 
+                   onerror="this.src='/static/cards/thumbnails/{{ c.product_sku.lower() }}_thumb.png'; this.onerror=null;">
+              {% else %}
+              <div class="w-full h-full flex items-center justify-center text-gray-400 text-sm p-4 text-center transition-all duration-300 group-hover:text-white">
+                <div>
+                  <div class="text-lg mb-2">🎴</div>
+                  <div class="font-semibold">{{ c.name }}</div>
+                  <div class="text-xs mt-1">{{ c.rarity }}</div>
+                </div>
+              </div>
+              {% endif %}
+            </div>
+            <div class="mt-2 text-center transition-all duration-300 group-hover:text-white" style="width: 200px;">
+              <div class="text-sm text-gray-400 group-hover:text-gray-300">{{ c.product_sku }}</div>
+              <div class="font-semibold group-hover:text-white">{{ c.name }}</div>
+              <div class="text-xs text-gray-400 group-hover:text-gray-300">{{ c.category }} • {{ c.rarity }}</div>
+            </div>
+          </a>
+        </div>
         {% endfor %}
       </div>
     </main>

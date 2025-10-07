@@ -45,7 +45,7 @@ var equipment_cards: Array = []
 # Network and managers
 var network_client: NetworkClient
 var nfc_manager: NFCManager
-var turn_manager: TurnManager
+var turn_manager
 var server_logger
 
 func _ready():
@@ -57,7 +57,12 @@ func _ready():
 	# Get manager references
 	network_client = get_node("/root/NetworkClient")
 	nfc_manager = get_node("/root/NFCManager") 
-	turn_manager = get_node("/root/TurnManager")
+	# TurnManager not in autoloads - using TurnTimerManager instead
+	turn_manager = get_node("/root/TurnTimerManager")
+	if not turn_manager:
+		print("⚠️ TurnTimerManager not found - creating fallback")
+		turn_manager = preload("res://turn_timer_manager.gd").new()
+		add_child(turn_manager)
 	
 	# Connect signals
 	_connect_signals()
